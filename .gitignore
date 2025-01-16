@@ -9,3 +9,5 @@
 .cxx
 local.properties
 /gradle/key.properties
+/gradle/*.jks
+apk

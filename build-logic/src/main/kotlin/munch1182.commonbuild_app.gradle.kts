@@ -29,7 +29,9 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.findByName(signName)
+            if (signingConfig == null) {
+                signingConfig = signingConfigs.findByName(signName)
+            }
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -37,6 +39,14 @@ android {
             )
         }
     }
+
+
+    afterEvaluate {
+        tasks.named("assembleRelease") {
+            finalizedBy("renameApk")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -44,4 +54,12 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+}
+
+val renameApk by tasks.registering(Copy::class) {
+    val destDir = rootProject.file("apk")
+
+    from("release/app-release.apk")
+    into(destDir)
+    rename { "bbb.apk" }
 }
