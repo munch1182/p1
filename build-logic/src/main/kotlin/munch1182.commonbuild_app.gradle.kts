@@ -41,11 +41,12 @@ android {
     }
 
 
-    afterEvaluate {
-        tasks.named("assembleRelease") {
-            finalizedBy("renameApk")
-        }
-    }
+//    afterEvaluate {
+//        tasks.named("assembleRelease") {
+//            finalizedBy("renameApk")
+//        }
+//    }
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -55,11 +56,15 @@ android {
         jvmTarget = "11"
     }
 }
-
-val renameApk by tasks.registering(Copy::class) {
-    val destDir = rootProject.file("apk")
-
-    from("release/app-release.apk")
-    into(destDir)
-    rename { "bbb.apk" }
-}
+//
+//val renameApk by tasks.registering(Copy::class) {
+//    val destDir = rootProject.file("apk")
+//    val date = SimpleDateFormat("yyyyMMddHHmm").format(Date())
+//    from("release/app-release.apk")
+//    into(destDir)
+//
+//    val dc = android.defaultConfig
+//    val name = "${dc.versionName}_${dc.versionCode}_${date}.apk"
+//    println("name:${name}")
+//    rename { name }
+//}

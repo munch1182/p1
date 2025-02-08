@@ -10,6 +10,8 @@ android {
     buildFeatures {
         compose = true
     }
+
+    setAPkRename()
 }
 
 dependencies {
