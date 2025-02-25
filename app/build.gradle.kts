@@ -7,6 +7,7 @@ plugins {
 
 android {
     namespace = "com.munch1182.p1"
+
     buildFeatures {
         compose = true
     }
@@ -15,7 +16,7 @@ android {
 }
 
 dependencies {
-
+    implementation(projects.lib)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
