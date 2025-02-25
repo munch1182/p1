@@ -5,13 +5,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,22 +33,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            P1Theme {
-                Scaffold(modifier = Modifier.fillMaxWidth()) { innerPadding ->
-                    Click(Modifier.padding(innerPadding))
-                }
-            }
-        }
+        setContentWithBase { Click() }
+
+
+        startActivity(Intent(this, FloatWindowActivity::class.java))
     }
 }
 
 @Composable
-fun Click(modifier: Modifier = Modifier) {
+fun Click() {
     val ctx = LocalContext.current
     var keepFlag by remember { mutableStateOf(false) }
-    Column(modifier = modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        JumpButton("悬浮窗", Intent(Settings.ACTION_SETTINGS))
+    Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        JumpButton("悬浮窗", Intent(ctx, FloatWindowActivity::class.java))
         ClickButton("开发者选项界面", toDeveloperSettings(ctx))
         JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
         JumpButton("关于", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
