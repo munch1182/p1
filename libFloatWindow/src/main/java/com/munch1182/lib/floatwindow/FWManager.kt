@@ -1,59 +1,101 @@
 package com.munch1182.lib.floatwindow
 
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
+import android.graphics.PixelFormat
 import android.provider.Settings
+import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.WindowManager
-import androidx.core.view.children
 
 object FWManager {
 
-    internal val tag = this::class.java.name
-    internal val tagKey = R.id.flow_window
+    // 直接持有view的对象
+    private val map by lazy { mutableMapOf<String, FWWidget>() }
 
-    fun checkPermission(context: Context) = Settings.canDrawOverlays(context)
+    private const val DEFAULT_ID = "window"
 
-    private fun wm(ctx: Context): WindowManager? {
-        return kotlin.runCatching { ctx.applicationContext.getSystemService(Context.WINDOW_SERVICE) as? WindowManager }
-            .getOrNull()
+    fun canDrawOverlays(ctx: Context): Boolean {
+        return Settings.canDrawOverlays(ctx)
     }
 
-    fun hideAll(context: Context): Boolean {
-        val view = findView(context) ?: return false
-        if (!view.isAttachedToWindow) {
-            return true
+    /**
+     * 内部持有了view的对象，所以view的context应该使用Context.applicationContext
+     * 否则会造成内存泄漏
+     */
+    fun create(view: View, id: String = DEFAULT_ID): FWManager {
+        val widget = map[id]
+        if (widget == null) {
+            map[id] = FWWidget(view).create()
         }
-        kotlin.runCatching { wm(context)?.removeView(view) }
-        return true
+        return this
     }
 
-    fun findView(context: Context): View? {
-        val act = context.findActivity() ?: return null
-        val root = act.findViewById<ViewGroup>(android.R.id.content)
-        return root.children.find { it.isTagView() }
+    fun show(id: String = DEFAULT_ID) {
+        map[id]?.show()
     }
 
-    internal fun View.isTagView() = getTag(tagKey) == tag
+    fun hide(id: String = DEFAULT_ID) {
+        map[id]?.hide()
+    }
+
+    fun destroy(id: String = DEFAULT_ID) {
+        map[id]?.destroy() ?: return
+        map.remove(id)
+    }
 }
 
-fun Context.findActivity(): Activity? {
-    var ctx = this
-    while (ctx is ContextWrapper) {
-        if (ctx is Activity) return ctx
-        ctx = ctx.baseContext
+class FWWidget internal constructor(private val view: View) {
+
+    private val ctx = view.context.applicationContext
+    private val lp by lazy { WindowManager.LayoutParams() }
+
+    internal fun create(): FWWidget {
+        if (view.isAttachedToWindow) {
+            return this
+        }
+        view.id = R.id.flow_window
+        updateLP()
+        hide()
+        view.setOnTouchListener(FWTouchListener())
+        ctx.wm()?.addView(view, lp)
+        return this
     }
-    return null
+
+    fun show() {
+        view.visibility = View.VISIBLE
+    }
+
+    internal fun hide() {
+        view.visibility = View.GONE
+    }
+
+    internal fun destroy() {
+        view.setOnTouchListener(null)
+        ctx.wm()?.removeView(view)
+    }
+
+    private fun updateLP() {
+        lp.apply {
+            type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            width = WindowManager.LayoutParams.WRAP_CONTENT
+            height = WindowManager.LayoutParams.WRAP_CONTENT
+            format = PixelFormat.TRANSPARENT
+            gravity = Gravity.CENTER
+            flags =
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        }
+    }
+
 }
 
-interface IFWComponent {
-    fun create(): Boolean
+internal class FWTouchListener : View.OnTouchListener {
+    override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+        TODO("Not yet implemented")
+    }
+}
 
-    fun show()
-
-    fun hide()
-
-    fun destroy()
+fun Context.wm(): WindowManager? {
+    return kotlin.runCatching { getSystemService(Context.WINDOW_SERVICE) as? WindowManager }
+        .getOrNull()
 }

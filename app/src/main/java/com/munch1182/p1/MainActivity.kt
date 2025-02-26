@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
         setContentWithBase { Click() }
 
 
-        startActivity(Intent(this, FloatWindowActivity::class.java))
+        startActivity(Intent(this, FloatWindowViewActivity::class.java))
     }
 }
 
@@ -46,6 +46,7 @@ fun Click() {
     var keepFlag by remember { mutableStateOf(false) }
     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         JumpButton("悬浮窗", Intent(ctx, FloatWindowActivity::class.java))
+        JumpButton("悬浮窗XML", Intent(ctx, FloatWindowViewActivity::class.java))
         ClickButton("开发者选项界面", toDeveloperSettings(ctx))
         JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
         JumpButton("关于", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
