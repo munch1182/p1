@@ -1,12 +1,18 @@
 package com.munch1182.lib.floatwindow
 
+import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
+import android.graphics.Point
+import android.graphics.Rect
 import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.OvershootInterpolator
+import kotlin.math.absoluteValue
 
 object FWManager {
 
@@ -49,6 +55,14 @@ class FWWidget internal constructor(private val view: View) {
 
     private val ctx = view.context.applicationContext
     private val lp by lazy { WindowManager.LayoutParams() }
+    private val canMoveRect by lazy { view.findCanMoveRect() }
+
+    private val touchListener by lazy {
+        FWTouchListener({ x, y, isDowned -> followMove(x, y, isDowned) }, { attachEdge(it) })
+    }
+
+    // 当view贴边后，仍然向该方向滑动的回调
+    private var edgeMoveListener: ((leftTrueOrFalse: Boolean) -> Unit)? = null
 
     internal fun create(): FWWidget {
         if (view.isAttachedToWindow) {
@@ -57,7 +71,7 @@ class FWWidget internal constructor(private val view: View) {
         view.id = R.id.flow_window
         updateLP()
         hide()
-        view.setOnTouchListener(FWTouchListener())
+        view.setOnTouchListener(touchListener)
         ctx.wm()?.addView(view, lp)
         return this
     }
@@ -87,15 +101,152 @@ class FWWidget internal constructor(private val view: View) {
         }
     }
 
+    private fun followMove(x: Int, y: Int, isDowned: Boolean) {
+        val vLoc = view.getInLocation()
+
+        // 如果超出界限，显示没有问题单lp.x的值会一直增加
+        // 导致下一次移动出现问题
+        if ((vLoc.x == canMoveRect.left && x < 0) || (vLoc.x == canMoveRect.right && x > 0)) {
+            // 长按滑动至贴边不触发回调
+            if (isDowned) {
+                edgeMoveListener?.invoke(x < 0)
+            }
+            return
+        }
+        if ((vLoc.y == canMoveRect.top && y < 0) || (vLoc.y == canMoveRect.bottom && y > 0)) {
+            return
+        }
+        lp.x += x
+        lp.y += y
+
+        ctx.wm()?.updateViewLayout(view, lp)
+    }
+
+    private fun attachEdge(xDistance: Int) {
+        if (xDistance == 0) return
+        ValueAnimator.ofInt(0, xDistance).setDuration(if (xDistance > 0) 400L else 300L).apply {
+            interpolator = OvershootInterpolator()
+            addUpdateListener { animation ->
+                val vLoc = view.getInLocation()
+                val x = animation.animatedValue as Int
+                if ((vLoc.x == canMoveRect.left && x < 0) || (vLoc.x == canMoveRect.right && x > 0)) {
+                    animation.cancel()
+                    return@addUpdateListener
+                }
+                lp.x += x
+                ctx.wm()?.updateViewLayout(view, lp)
+            }
+        }.start()
+    }
+
 }
 
-internal class FWTouchListener : View.OnTouchListener {
+internal class FWTouchListener(
+    private val moveListener: ((x: Int, y: Int, isDowned: Boolean) -> Unit)? = null,
+    private val attachEdgeListener: ((xDistance: Int) -> Unit)? = null,
+) : View.OnTouchListener {
+    private val lastMovePoint = Point()
+
+    private var isMoving = false
+    private var halfScreenWidth = -1
+    private var endX = -1
+
     override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-        TODO("Not yet implemented")
+        v ?: return false
+        event ?: return false
+
+
+        if (halfScreenWidth == -1) {
+            // 因为本身有宽度，所以左边判断范围少一点
+            halfScreenWidth = (v.context.screenWidth() - v.width) / 2
+        }
+        if (endX == -1) {
+            // endX = halfScreenWidth * 2 - v.width // 理论上是第一个，但是用第二个好用
+            endX = halfScreenWidth * 2
+        }
+
+        val x = event.rawX.toInt()
+        val y = event.rawY.toInt()
+
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                isMoving = false
+                lastMovePoint.set(x, y)
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+
+                val mX = x - lastMovePoint.x
+                val mY = y - lastMovePoint.y
+                lastMovePoint.set(x, y)
+
+                moveListener?.invoke(mX, mY, !isMoving)
+                isMoving = true
+            }
+
+            MotionEvent.ACTION_UP -> {
+                if (!isMoving) {
+                    v.performClick()
+                    return false
+                }
+                isMoving = false
+
+                val loc = v.getInLocation()
+                val xDistance = if (loc.x > halfScreenWidth) {
+                    (endX - loc.x).absoluteValue
+                } else {
+                    loc.x * -1
+                }
+                attachEdgeListener?.invoke(xDistance)
+            }
+        }
+        return false
     }
 }
 
 fun Context.wm(): WindowManager? {
     return kotlin.runCatching { getSystemService(Context.WINDOW_SERVICE) as? WindowManager }
         .getOrNull()
+}
+
+private fun View.getInLocation(): Point {
+    val loc = IntArray(2)
+    getLocationOnScreen(loc)
+    return Point(loc[0], loc[1])
+}
+
+private fun Context.screenWidth(): Int {
+    return resources.displayMetrics.widthPixels
+}
+
+private fun View.findCanMoveRect(): Rect {
+    return Rect(
+        0,
+        context.getStatusBarHeight(),
+        context.screenWidth() - width,
+        // resources.displayMetrics.heightPixels只包含中间部分而不是整个屏幕
+        resources.displayMetrics.heightPixels + context.getStatusBarHeight() - height
+    )
+}
+
+@SuppressLint("InternalInsetResource")
+private fun Context.getStatusBarHeight(): Int {
+    return kotlin.runCatching {
+        resources.getDimensionPixelSize(
+            resources.getIdentifier(
+                "status_bar_height",
+                "dimen",
+                "android"
+            )
+        )
+    }.getOrNull() ?: 0
+}
+
+@SuppressLint("InternalInsetResource")
+private fun Context.getNavigationBarHeight(): Int {
+    return kotlin.runCatching {
+        resources.getDimensionPixelSize(
+            resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        )
+    }.getOrNull() ?: 0
 }
