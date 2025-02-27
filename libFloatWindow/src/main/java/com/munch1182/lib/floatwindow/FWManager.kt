@@ -11,7 +11,8 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.view.animation.OvershootInterpolator
+import android.view.animation.BounceInterpolator
+import androidx.core.view.isVisible
 import kotlin.math.absoluteValue
 
 object FWManager {
@@ -41,20 +42,56 @@ object FWManager {
         map[id]?.show()
     }
 
+    fun findView(id: String = DEFAULT_ID): View? {
+        return map[id]?.view
+    }
+
+    fun isVisible(id: String = DEFAULT_ID): Boolean {
+        return map[id]?.view?.isVisible ?: false
+    }
+
+    fun update(id: String = DEFAULT_ID, updateLP: WindowManager.LayoutParams.() -> Boolean) {
+        val fwWidget = map[id] ?: return
+        if (!updateLP(fwWidget.lp)) {
+            return
+        }
+        fwWidget.view.context.wm()?.updateViewLayout(fwWidget.view, fwWidget.lp)
+    }
+
+    fun setEdgeMoveListener(
+        id: String = DEFAULT_ID,
+        listener: (leftTrueOrRight: Boolean) -> Unit
+    ): FWManager {
+        map[id]?.edgeMove(listener)
+        return this
+    }
+
     fun hide(id: String = DEFAULT_ID) {
         map[id]?.hide()
+    }
+
+    fun hideAll() {
+        map.forEach { (_, v) -> v.hide() }
+    }
+
+    fun isDestroy(id: String = DEFAULT_ID): Boolean {
+        return map[id]?.view == null
     }
 
     fun destroy(id: String = DEFAULT_ID) {
         map[id]?.destroy() ?: return
         map.remove(id)
     }
+
+    fun destroyAll() {
+        map.forEach { (id, _) -> destroy(id) }
+    }
 }
 
-class FWWidget internal constructor(private val view: View) {
+class FWWidget internal constructor(internal val view: View) {
 
     private val ctx = view.context.applicationContext
-    private val lp by lazy { WindowManager.LayoutParams() }
+    internal val lp by lazy { WindowManager.LayoutParams() }
     private val canMoveRect by lazy { view.findCanMoveRect() }
 
     private val touchListener by lazy {
@@ -62,13 +99,16 @@ class FWWidget internal constructor(private val view: View) {
     }
 
     // 当view贴边后，仍然向该方向滑动的回调
-    private var edgeMoveListener: ((leftTrueOrFalse: Boolean) -> Unit)? = null
+    private var edgeMoveListener: ((leftTrueOrRight: Boolean) -> Unit)? = null
+
+    internal fun edgeMove(listener: (leftTrueOrFalse: Boolean) -> Unit) {
+        edgeMoveListener = listener
+    }
 
     internal fun create(): FWWidget {
         if (view.isAttachedToWindow) {
             return this
         }
-        view.id = R.id.flow_window
         updateLP()
         hide()
         view.setOnTouchListener(touchListener)
@@ -76,7 +116,7 @@ class FWWidget internal constructor(private val view: View) {
         return this
     }
 
-    fun show() {
+    internal fun show() {
         view.visibility = View.VISIBLE
     }
 
@@ -124,8 +164,8 @@ class FWWidget internal constructor(private val view: View) {
 
     private fun attachEdge(xDistance: Int) {
         if (xDistance == 0) return
-        ValueAnimator.ofInt(0, xDistance).setDuration(if (xDistance > 0) 400L else 300L).apply {
-            interpolator = OvershootInterpolator()
+        ValueAnimator.ofInt(0, xDistance).setDuration(if (xDistance > 0) 2000L else 1800L).apply {
+            interpolator = BounceInterpolator()
             addUpdateListener { animation ->
                 val vLoc = view.getInLocation()
                 val x = animation.animatedValue as Int
@@ -172,6 +212,7 @@ internal class FWTouchListener(
             MotionEvent.ACTION_DOWN -> {
                 isMoving = false
                 lastMovePoint.set(x, y)
+                return true
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -182,6 +223,7 @@ internal class FWTouchListener(
 
                 moveListener?.invoke(mX, mY, !isMoving)
                 isMoving = true
+                return true
             }
 
             MotionEvent.ACTION_UP -> {

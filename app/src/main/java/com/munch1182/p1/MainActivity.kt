@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
         setContentWithBase { Click() }
 
 
-        startActivity(Intent(this, FloatWindowViewActivity::class.java))
+        startActivity(Intent(this, FloatWindowActivity::class.java))
     }
 }
 
