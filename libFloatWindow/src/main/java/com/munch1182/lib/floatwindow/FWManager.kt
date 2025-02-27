@@ -8,12 +8,10 @@ import android.graphics.Point
 import android.graphics.Rect
 import android.provider.Settings
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.animation.BounceInterpolator
 import androidx.core.view.isVisible
-import kotlin.math.absoluteValue
 
 object FWManager {
 
@@ -50,12 +48,16 @@ object FWManager {
         return map[id]?.view?.isVisible ?: false
     }
 
-    fun update(id: String = DEFAULT_ID, updateLP: WindowManager.LayoutParams.() -> Boolean) {
+    fun update(id: String = DEFAULT_ID, update: WindowManager.LayoutParams.() -> Boolean) {
+        updateView(id) { _, lp -> update(lp) }
+    }
+
+    fun updateView(id: String = DEFAULT_ID, update: (View, WindowManager.LayoutParams) -> Boolean) {
         val fwWidget = map[id] ?: return
-        if (!updateLP(fwWidget.lp)) {
+        if (!update(fwWidget.view, fwWidget.lp)) {
             return
         }
-        fwWidget.view.context.wm()?.updateViewLayout(fwWidget.view, fwWidget.lp)
+        fwWidget.update()
     }
 
     fun setEdgeMoveListener(
@@ -88,15 +90,12 @@ object FWManager {
     }
 }
 
-class FWWidget internal constructor(internal val view: View) {
+class FWWidget internal constructor(val view: View) {
 
     private val ctx = view.context.applicationContext
     internal val lp by lazy { WindowManager.LayoutParams() }
-    private val canMoveRect by lazy { view.findCanMoveRect() }
-
-    private val touchListener by lazy {
-        FWTouchListener({ x, y, isDowned -> followMove(x, y, isDowned) }, { attachEdge(it) })
-    }
+    private var canMoveRect = view.findCanMoveRect()
+    private val tfl by lazy { TouchFrameLayout(ctx).apply { addView(view) } }
 
     // 当view贴边后，仍然向该方向滑动的回调
     private var edgeMoveListener: ((leftTrueOrRight: Boolean) -> Unit)? = null
@@ -106,27 +105,38 @@ class FWWidget internal constructor(internal val view: View) {
     }
 
     internal fun create(): FWWidget {
-        if (view.isAttachedToWindow) {
+        if (tfl.isAttachedToWindow) {
             return this
         }
         updateLP()
         hide()
-        view.setOnTouchListener(touchListener)
-        ctx.wm()?.addView(view, lp)
+        tfl.setMoveListener { x, y, isMove -> followMove(x, y, isMove) }
+            .setAttachEdgeListener { attachEdge(it) }
+        ctx.wm()?.addView(tfl, lp)
+        updateCanMoveRect()
         return this
     }
 
+    internal fun update() {
+        ctx.wm()?.updateViewLayout(tfl, lp)
+        updateCanMoveRect()
+    }
+
     internal fun show() {
-        view.visibility = View.VISIBLE
+        tfl.visibility = View.VISIBLE
     }
 
     internal fun hide() {
-        view.visibility = View.GONE
+        tfl.visibility = View.GONE
     }
 
     internal fun destroy() {
-        view.setOnTouchListener(null)
-        ctx.wm()?.removeView(view)
+        tfl.setOnTouchListener(null)
+        ctx.wm()?.removeView(tfl)
+    }
+
+    private fun updateCanMoveRect() {
+        canMoveRect = view.findCanMoveRect()
     }
 
     private fun updateLP() {
@@ -159,7 +169,7 @@ class FWWidget internal constructor(internal val view: View) {
         lp.x += x
         lp.y += y
 
-        ctx.wm()?.updateViewLayout(view, lp)
+        update()
     }
 
     private fun attachEdge(xDistance: Int) {
@@ -174,76 +184,11 @@ class FWWidget internal constructor(internal val view: View) {
                     return@addUpdateListener
                 }
                 lp.x += x
-                ctx.wm()?.updateViewLayout(view, lp)
+                update()
             }
         }.start()
     }
 
-}
-
-internal class FWTouchListener(
-    private val moveListener: ((x: Int, y: Int, isDowned: Boolean) -> Unit)? = null,
-    private val attachEdgeListener: ((xDistance: Int) -> Unit)? = null,
-) : View.OnTouchListener {
-    private val lastMovePoint = Point()
-
-    private var isMoving = false
-    private var halfScreenWidth = -1
-    private var endX = -1
-
-    override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-        v ?: return false
-        event ?: return false
-
-
-        if (halfScreenWidth == -1) {
-            // 因为本身有宽度，所以左边判断范围少一点
-            halfScreenWidth = (v.context.screenWidth() - v.width) / 2
-        }
-        if (endX == -1) {
-            // endX = halfScreenWidth * 2 - v.width // 理论上是第一个，但是用第二个好用
-            endX = halfScreenWidth * 2
-        }
-
-        val x = event.rawX.toInt()
-        val y = event.rawY.toInt()
-
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                isMoving = false
-                lastMovePoint.set(x, y)
-                return true
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-
-                val mX = x - lastMovePoint.x
-                val mY = y - lastMovePoint.y
-                lastMovePoint.set(x, y)
-
-                moveListener?.invoke(mX, mY, !isMoving)
-                isMoving = true
-                return true
-            }
-
-            MotionEvent.ACTION_UP -> {
-                if (!isMoving) {
-                    v.performClick()
-                    return false
-                }
-                isMoving = false
-
-                val loc = v.getInLocation()
-                val xDistance = if (loc.x > halfScreenWidth) {
-                    (endX - loc.x).absoluteValue
-                } else {
-                    loc.x * -1
-                }
-                attachEdgeListener?.invoke(xDistance)
-            }
-        }
-        return false
-    }
 }
 
 fun Context.wm(): WindowManager? {
@@ -251,17 +196,13 @@ fun Context.wm(): WindowManager? {
         .getOrNull()
 }
 
-private fun View.getInLocation(): Point {
+internal fun View.getInLocation(): Point {
     val loc = IntArray(2)
     getLocationOnScreen(loc)
     return Point(loc[0], loc[1])
 }
 
-private fun Context.screenWidth(): Int {
-    return resources.displayMetrics.widthPixels
-}
-
-private fun View.findCanMoveRect(): Rect {
+internal fun View.findCanMoveRect(): Rect {
     return Rect(
         0,
         context.getStatusBarHeight(),
@@ -271,8 +212,14 @@ private fun View.findCanMoveRect(): Rect {
     )
 }
 
+
+internal fun Context.screenWidth(): Int {
+    return resources.displayMetrics.widthPixels
+}
+
+
 @SuppressLint("InternalInsetResource")
-private fun Context.getStatusBarHeight(): Int {
+internal fun Context.getStatusBarHeight(): Int {
     return kotlin.runCatching {
         resources.getDimensionPixelSize(
             resources.getIdentifier(
@@ -285,7 +232,7 @@ private fun Context.getStatusBarHeight(): Int {
 }
 
 @SuppressLint("InternalInsetResource")
-private fun Context.getNavigationBarHeight(): Int {
+internal fun Context.getNavigationBarHeight(): Int {
     return kotlin.runCatching {
         resources.getDimensionPixelSize(
             resources.getIdentifier("navigation_bar_height", "dimen", "android")
