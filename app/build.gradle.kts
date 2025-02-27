@@ -26,6 +26,7 @@ android {
 dependencies {
     implementation(projects.lib)
     implementation(projects.libFloatWindow)
+    implementation(projects.libView)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

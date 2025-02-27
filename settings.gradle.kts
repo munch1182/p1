@@ -25,6 +25,7 @@ rootProject.name = "p1"
 include(":app")
 include(":lib")
 include(":libFloatWindow")
+include(":libView")
 
 // 能够以代码的方式引入module
 // 示例：
