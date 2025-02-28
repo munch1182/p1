@@ -51,5 +51,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
 
-    implementation(libs.permissionx)
+    implementation(libs.brvah)
 }

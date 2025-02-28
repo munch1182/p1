@@ -47,6 +47,8 @@ androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation
 
 # https://github.com/guolindev/PermissionX
 permissionx = { group = "com.guolindev.permissionx", name = "permissionx", version.ref = "permissionx" }
+# https://github.com/CymChad/BaseRecyclerViewAdapterHelper/wiki
+brvah = { group = "io.github.cymchad", name = "BaseRecyclerViewAdapterHelper4", version = "4.1.4" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -35,8 +35,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContentWithBase { Click() }
 
-
-        startActivity(Intent(this, SlideMenuActivity::class.java))
+        startActivity(Intent(this, SlideMenuViewActivity::class.java))
     }
 }
 
@@ -47,7 +46,7 @@ fun Click() {
     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         JumpButton("悬浮窗", Intent(ctx, FloatWindowActivity::class.java))
         JumpButton("悬浮窗XML", Intent(ctx, FloatWindowViewActivity::class.java))
-        JumpButton("滑动菜单", Intent(ctx, SlideMenuActivity::class.java))
+        JumpButton("滑动菜单", Intent(ctx, SlideMenuViewActivity::class.java))
         ClickButton("开发者选项界面", toDeveloperSettings(ctx))
         JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
         JumpButton("关于", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))

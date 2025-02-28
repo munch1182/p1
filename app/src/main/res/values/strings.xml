@@ -4,4 +4,6 @@
 
     <item name="float_window" type="id" />
     <item name="float_window_min" type="id" />
+
+    <item name="slide_menu_item_id" type="id" />
 </resources>

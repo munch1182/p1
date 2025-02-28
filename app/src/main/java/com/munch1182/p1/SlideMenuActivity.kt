@@ -27,21 +27,28 @@ class SlideMenuActivity : ComponentActivity() {
 @Composable
 fun SlideMenu() {
     LazyColumn {
-        items(25) {
-            SlideMenuItem(modifier = Modifier.padding(32.dp, 8.dp)) {
-                Text("123", modifier = Modifier.fillMaxWidth())
+        items(55, key = { it }) { index ->
+            SlideMenuItem(index, modifier = Modifier.padding(32.dp, 8.dp)) {
+                Text("index: $index", modifier = Modifier.fillMaxWidth())
             }
         }
     }
 }
 
 @Composable
-fun SlideMenuItem(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    return AndroidView(modifier = modifier, factory = {
-        SlideMenuLayout(it).apply {
-            addView(ComposeView(it).apply { setContent(content) })
-        }
-    })
+fun SlideMenuItem(index: Int, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    return AndroidView(modifier = modifier,
+        factory = {
+            SlideMenuLayout(it).apply {
+                id = R.id.slide_menu_item_id
+                addView(
+                    ComposeView(context).apply { setContent(content) })
+            }
+        },
+        update = {
+            it.tag = index
+        },
+        onReset = {})
 }
 
 @Preview(showBackground = true)

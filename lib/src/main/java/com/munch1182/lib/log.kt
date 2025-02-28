@@ -4,6 +4,6 @@ import android.util.Log
 
 object LogLog {
     fun log(vararg any: Any) {
-        Log.d("LogLog", any.joinToString(" "))
+        Log.d("loglog", any.joinToString(" "))
     }
 }
