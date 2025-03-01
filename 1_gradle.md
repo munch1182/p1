@@ -2,9 +2,53 @@
 
 修改目标：
 
-1. 统一版本和依赖
-2. 统一`build.gradle`文件共有内容
-3. 一些自动化处理，包括 debug 版本号自增; 签名文件配置; 生成文件名修改等
+1. 使用代理
+2. 统一版本和依赖
+3. 统一`build.gradle`文件共有内容
+4. 一些自动化处理，包括 debug 版本号自增; 签名文件配置; 生成文件名修改等
+
+## 使用代理
+
+虽然大部分情况下可以直接使用网络下载`gradle`和相关库，但大多数情况下网络较慢，偶尔还会有网络不稳定的情况，所以建议使用代理。
+
+1. 使用系统代理
+2. 使用国内镜像
+
+使用镜像需要进行配置，而且不能兼顾所有下载，所以建议使用系统代理。但如果要配置国内镜像，方法如下：
+
+gradle 镜像
+
+```properties
+# gradle/wrapper/gradle-wrapper.properties
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.10.2-bin.zip
+# 改为
+distributionUrl=https\://mirrors.cloud.tencent.com/gradle/gradle-8.10.2-bin.zip
+# 而且建议将-bin改为-all, 可以将源码一同下载
+```
+
+库代理
+
+```gradle
+<!-- settings.gradle.kts -->
+pluginManagement {
+    repositories {
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/jcenter") }
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://mavem.aliyun.com/repository/gradle-plugin")}
+        maven { url = uri("https://mavem.aliyun.com/repository/public")}
+    }
+}
+dependencyResolutionManagement{
+    repositories {
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/jcenter") }
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://mavem.aliyun.com/repository/gradle-plugin")}
+        maven { url = uri("https://mavem.aliyun.com/repository/public")}
+    }
+}
+```
 
 ## 统一版本和依赖
 
