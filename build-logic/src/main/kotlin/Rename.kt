@@ -26,7 +26,7 @@ fun AbstractAppExtension.setAPkRename(onlyRelease: Boolean = true) {
             appName = "${appName}_${flavorName}"
         }
         val buildType = buildType.name
-        val vName = versionName ?: "unkown"
+        val vName = versionName ?: "unknown"
         val vCode = versionCode
         val timestamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(Date())
         // 使用了一个impl类，可能会被更改

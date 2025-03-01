@@ -12,6 +12,7 @@ gradle = "8.8.0"
 jetbrainsKotlinJvm = "1.9.24"
 appcompat = "1.6.1"
 material = "1.10.0"
+activity = "1.8.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +35,14 @@ gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+
+# https://developer.android.google.cn/develop/ui/views/launch/splash-screen/migrate?hl=zh-cn
+# https://developer.android.google.cn/jetpack/androidx/releases/core?hl=zh-cn
+androidx-core-splash = { group = "androidx.core", name = "core-splashscreen", version = "1.0.1" }
+# https://developer.android.google.cn/topic/libraries/app-startup?hl=zh-cn
+# https://developer.android.google.cn/jetpack/androidx/releases/startup?hl=zh-cn
+androidx-startup = { group = "androidx.startup", name = "startup-runtime", version = "1.1.1" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
