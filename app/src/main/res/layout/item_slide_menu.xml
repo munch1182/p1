@@ -15,11 +15,12 @@
 
     <TextView
         android:id="@+id/slide_menu_del"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:gravity="center"
         android:background="#ccc000"
         android:padding="8dp"
-        android:text="123123"
+        android:text="DEL"
         android:textColor="@color/white"
         tools:ignore="HardcodedText" />
 </com.munch1182.lib.view.SlideMenuLayout>

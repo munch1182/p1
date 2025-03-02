@@ -2,8 +2,7 @@ package com.munch1182.lib.view
 
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
-import android.view.MotionEvent
+import android.view.View
 import android.widget.FrameLayout
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
@@ -15,51 +14,7 @@ class SlideMenuLayout @JvmOverloads constructor(
     @StyleRes defStyleRes: Int = 0
 ) : FrameLayout(context, attr, defStyleAttr, defStyleRes) {
 
-    private var lastX = 0f
-
-    // 滑动回调，开始滑动和结束滑动都会回调
-    private var onSlideListener: ((Boolean) -> Unit)? = null
-
-    fun setOnSlideListener(listener: (Boolean) -> Unit): SlideMenuLayout {
-        onSlideListener = listener
-        return this
-    }
-
-    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
-        when (ev.action) {
-            MotionEvent.ACTION_DOWN -> onSlideListener?.invoke(true)
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> onSlideListener?.invoke(false)
-        }
-        return true
-    }
-
-    override fun performClick(): Boolean {
-        return super.performClick()
-    }
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        val x = event.x
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                lastX = x
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                val mX = x - lastX
-                Log.d("loglog", "onTouchEvent: $lastX $x $mX")
-                scrollBy(-mX.toInt(), 0)
-                lastX = x
-            }
-
-            MotionEvent.ACTION_UP -> {
-                if (x == lastX) {
-                    performClick()
-                    return false
-                }
-            }
-        }
-        return true
-    }
+    private val TAG = "SlideMenuLayout"
 
     override fun onLayout(
         changed: Boolean, left: Int, top: Int, right: Int, bottom: Int
@@ -72,10 +27,19 @@ class SlideMenuLayout @JvmOverloads constructor(
             v.layout(0, 0, v.measuredWidth, v.measuredHeight)
         }
         // 将最后一个view作为菜单并且放在最后，未滑动前不可见
-        val menu = getChildAt(childCount - 1)
+        val menu = menuView ?: return
         val menuTop = (height - menu.measuredHeight) / 2
-        menu.layout(width, menuTop, width + menu.measuredWidth, menuTop + menu.measuredHeight)
+        menu.layout(width - menu.measuredWidth, menuTop, width, menuTop + menu.measuredHeight)
     }
+
+    val menuView: View?
+        get() = getChildAt(childCount - 1)
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        setMeasuredDimension(measuredWidth + (menuView?.measuredWidth ?: 0), measuredHeight)
+    }
+
 
     // 如果子控件大于一个，则最后一个子控件作为菜单项
 //    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
