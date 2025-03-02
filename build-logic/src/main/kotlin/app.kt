@@ -5,7 +5,7 @@ import java.util.Properties
 
 object AppVersion {
     const val COMPILE_SDK = 35
-    const val MIN_SDK = 24
+    const val MIN_SDK = 26
     const val TARGET_SDK = 35
 
     // 所以所有对外版本必须提交后交付

@@ -6,13 +6,11 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +30,7 @@ import com.munch1182.lib.keepScreenOn
 import com.munch1182.lib.navigationHeight
 import com.munch1182.lib.screen
 import com.munch1182.lib.screenDisplay
+import com.munch1182.lib.startActivity
 import com.munch1182.lib.statusHeight
 import com.munch1182.lib.toast
 import com.munch1182.lib.versionCodeCompat
@@ -45,13 +44,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         keepScreenOn()
-        setContent {
-            P1Theme {
-                Scaffold(modifier = Modifier.fillMaxWidth()) { innerPadding ->
-                    Click(Modifier.padding(innerPadding))
-                }
-            }
-        }
+        setContentWithBase { Click(it) }
+        startActivity<SlideMenuActivity>()
     }
 }
 
@@ -61,6 +55,7 @@ fun Click(modifier: Modifier = Modifier) {
     val act = ctx.findActivity()
     var keepFlag by remember { mutableStateOf(false) }
     Column(modifier = modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        JumpButton("滑动", Intent(ctx, SlideMenuActivity::class.java))
         ClickButton("开发者选项界面", toDeveloperSettings(ctx))
         JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
         JumpButton("关于界面", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
@@ -116,7 +111,5 @@ fun JumpButton(text: String, intent: Intent) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    P1Theme {
-        Click()
-    }
+    P1Theme { Click() }
 }
