@@ -2,6 +2,7 @@ package com.munch1182.p1
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -28,7 +29,13 @@ import com.munch1182.lib.clearScreenOn
 import com.munch1182.lib.findActivity
 import com.munch1182.lib.isDeveloperMode
 import com.munch1182.lib.keepScreenOn
+import com.munch1182.lib.navigationHeight
+import com.munch1182.lib.screen
+import com.munch1182.lib.screenDisplay
+import com.munch1182.lib.statusHeight
 import com.munch1182.lib.toast
+import com.munch1182.lib.versionCodeCompat
+import com.munch1182.lib.versionName
 import com.munch1182.p1.ui.theme.P1Theme
 
 class MainActivity : ComponentActivity() {
@@ -37,6 +44,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        keepScreenOn()
         setContent {
             P1Theme {
                 Scaffold(modifier = Modifier.fillMaxWidth()) { innerPadding ->
@@ -50,28 +58,44 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Click(modifier: Modifier = Modifier) {
     val ctx = LocalContext.current
+    val act = ctx.findActivity()
     var keepFlag by remember { mutableStateOf(false) }
     Column(modifier = modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        JumpButton("悬浮窗", Intent(Settings.ACTION_SETTINGS))
         ClickButton("开发者选项界面", toDeveloperSettings(ctx))
         JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
-        JumpButton("关于", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
-        //  JumpButton("测试", Intent("com.tencent.mm.plugin.appbrand.ui.AppBrandUI00"))
+        JumpButton("关于界面", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
         ClickButton(if (keepFlag) "关闭屏幕常亮" else "保持屏幕常亮", {
-            val act = ctx.findActivity() ?: return@ClickButton
             keepFlag = !keepFlag
-            if (keepFlag) act.keepScreenOn() else act.clearScreenOn()
+            if (keepFlag) act?.keepScreenOn() else act?.clearScreenOn()
         })
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(screenStr())
+            Text("CURR SDK: ${Build.VERSION.SDK_INT}")
+            Text("${versionName}($versionCodeCompat)")
+        }
     }
+}
+
+private fun screenStr(): String {
+    val sc = screen()
+    val sd = screenDisplay()
+    val equalsHeight = sc.height() == (sd.heightPixels + statusHeight())
+    val navHeight = if (equalsHeight) 0 else navigationHeight()
+    return "${sc.width()}(${sd.widthPixels}) x ${sc.height()}(${statusHeight()} + ${sd.heightPixels} + $navHeight)"
 }
 
 
 fun toDeveloperSettings(ctx: Context): () -> Unit {
-    if (ctx.isDeveloperMode()) {
+    if (isDeveloperMode()) {
         return { ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)) }
     } else {
         // todo 去请求关于界面打开开发者模式并返回跳转
-        return { ctx.toast("开发者模式未开启") }
+        return { toast("开发者模式未开启") }
     }
 }
 

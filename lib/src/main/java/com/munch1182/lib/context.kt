@@ -3,8 +3,16 @@ package com.munch1182.lib
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
+import android.os.Build
+import android.view.WindowManager
 import android.widget.Toast
 
+
+internal val ctx: Context
+    get() = AppHelper
 
 fun Context.findActivity(): Activity? {
     var ctx = this
@@ -15,6 +23,22 @@ fun Context.findActivity(): Activity? {
     return null
 }
 
-fun Context.toast(msg: String) {
-    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+fun toast(msg: String) {
+    Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
 }
+
+inline fun <reified ACT : Activity> Context.startActivity() {
+    startActivity(Intent(this, ACT::class.java))
+}
+
+val versionName: String?
+    get() = packInfo.versionName
+
+val versionCodeCompat: Long
+    get() = packInfo.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.longVersionCode else it.versionCode.toLong() }
+
+val packInfo: PackageInfo
+    get() = ctx.packageManager.getPackageInfo(ctx.packageName, PackageManager.GET_CONFIGURATIONS)
+
+val wm: WindowManager
+    get() = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
