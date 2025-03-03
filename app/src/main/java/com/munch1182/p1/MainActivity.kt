@@ -6,7 +6,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -42,10 +41,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        keepScreenOn()
         setContentWithBase { Click(it) }
-        startActivity<SlideMenuActivity>()
+        startActivity<DialogActivity>()
     }
 }
 
@@ -55,7 +52,9 @@ fun Click(modifier: Modifier = Modifier) {
     val act = ctx.findActivity()
     var keepFlag by remember { mutableStateOf(false) }
     Column(modifier = modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        JumpButton("滑动", Intent(ctx, SlideMenuActivity::class.java))
+        JumpButton("定位相关", Intent(ctx, LocationActivity::class.java))
+        JumpButton("dialog相关", Intent(ctx, DialogActivity::class.java))
+        JumpButton("剪切板相关", Intent(ctx, ClipboardActivity::class.java))
         ClickButton("开发者选项界面", toDeveloperSettings(ctx))
         JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
         JumpButton("关于界面", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))

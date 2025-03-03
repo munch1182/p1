@@ -18,4 +18,6 @@
         screen. This is required. -->
         <item name="postSplashScreenTheme">@style/Theme.P1</item>
     </style>
+
+    <style name="Theme.P1.Dialog" parent="Theme.AppCompat.Dialog.Alert" />
 </resources>
