@@ -14,7 +14,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.chad.library.adapter4.BaseQuickAdapter
 import com.chad.library.adapter4.viewholder.QuickViewHolder
 import com.munch1182.lib.keepScreenOn
-import com.munch1182.lib.view.ClickItemTouchHelper
+import com.munch1182.lib.view.ItemSlideHelper
+import com.munch1182.lib.view.menuView
 import kotlin.random.Random
 
 class SlideMenuViewActivity : AppCompatActivity() {
@@ -26,7 +27,14 @@ class SlideMenuViewActivity : AppCompatActivity() {
         setContentView(RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@SlideMenuViewActivity)
             this.adapter = adapter
-            ClickItemTouchHelper(this)
+//            ClickItemTouchHelper(this)
+            addOnItemTouchListener(
+                ItemSlideHelper(this, object : ItemSlideHelper.SimpleCallback() {
+                    override fun getHorizontalRange(holder: RecyclerView.ViewHolder?): Int {
+                        return holder?.menuView?.width ?: 0
+                    }
+                })
+            )
         })
 
         adapter.submitList(List(100) { it * 2 })
