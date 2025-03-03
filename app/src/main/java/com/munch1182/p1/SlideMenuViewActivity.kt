@@ -30,8 +30,8 @@ class SlideMenuViewActivity : AppCompatActivity() {
 //            ClickItemTouchHelper(this)
             addOnItemTouchListener(
                 ItemSlideHelper(this, object : ItemSlideHelper.SimpleCallback() {
-                    override fun getHorizontalRange(holder: RecyclerView.ViewHolder?): Int {
-                        return holder?.menuView?.width ?: 0
+                    override fun findTargetMenuView(holder: RecyclerView.ViewHolder?): View? {
+                        return holder?.menuView
                     }
                 })
             )
