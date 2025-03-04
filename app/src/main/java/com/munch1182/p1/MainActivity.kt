@@ -41,37 +41,37 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        setContentWithBase { Click(it) }
-        startActivity<DialogActivity>()
+        setContentWithBase { Click() }
+        startActivity<CameraActivity>()
     }
 }
 
 @Composable
-fun Click(modifier: Modifier = Modifier) {
+fun Click() {
     val ctx = LocalContext.current
     val act = ctx.findActivity()
     var keepFlag by remember { mutableStateOf(false) }
-    Column(modifier = modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        JumpButton("定位相关", Intent(ctx, LocationActivity::class.java))
-        JumpButton("dialog相关", Intent(ctx, DialogActivity::class.java))
-        JumpButton("剪切板相关", Intent(ctx, ClipboardActivity::class.java))
-        ClickButton("开发者选项界面", toDeveloperSettings(ctx))
-        JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
-        JumpButton("关于界面", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
-        ClickButton(if (keepFlag) "关闭屏幕常亮" else "保持屏幕常亮", {
-            keepFlag = !keepFlag
-            if (keepFlag) act?.keepScreenOn() else act?.clearScreenOn()
-        })
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(screenStr())
-            Text("CURR SDK: ${Build.VERSION.SDK_INT}")
-            Text("${versionName}($versionCodeCompat)")
-        }
+    JumpButton("权限相关", Intent(ctx, ResultActivity::class.java))
+    JumpButton("相机相关", Intent(ctx, CameraActivity::class.java))
+    JumpButton("定位相关", Intent(ctx, LocationActivity::class.java))
+    JumpButton("dialog相关", Intent(ctx, DialogActivity::class.java))
+    JumpButton("剪切板相关", Intent(ctx, ClipboardActivity::class.java))
+    ClickButton("开发者选项界面", toDeveloperSettings(ctx))
+    JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
+    JumpButton("关于界面", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
+    ClickButton(if (keepFlag) "关闭屏幕常亮" else "保持屏幕常亮", {
+        keepFlag = !keepFlag
+        if (keepFlag) act?.keepScreenOn() else act?.clearScreenOn()
+    })
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(screenStr())
+        Text("CURR SDK: ${Build.VERSION.SDK_INT}")
+        Text("${versionName}($versionCodeCompat)")
     }
 }
 

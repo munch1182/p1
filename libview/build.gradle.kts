@@ -9,6 +9,7 @@ android {
 
 dependencies {
 
+    implementation(projects.lib)
     implementation(libs.androidx.core.ktx)
 
     testImplementation(libs.junit)

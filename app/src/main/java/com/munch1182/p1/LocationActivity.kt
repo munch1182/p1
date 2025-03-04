@@ -4,10 +4,8 @@ import android.Manifest
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,25 +25,23 @@ import com.munch1182.p1.ui.theme.P1Theme
 class LocationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentWithBase { Location(it) }
+        setContentWithBase { Location() }
     }
 }
 
 @Composable
-fun Location(modifier: Modifier = Modifier) {
+fun Location() {
     val ctx = LocalContext.current
     var permissionListStr by remember { mutableStateOf("") }
     var gpsIsOpen by remember { mutableStateOf(false) }
-    Column(modifier = modifier.padding(16.dp)) {
-        Button({
-            permissionListStr = getPermissionListStr()
-            gpsIsOpen = LocationHelper.isGpsOpen
-        }) { Text("检查状态") }
-        Spacer(Modifier.height(16.dp))
-        Button({}) { Text("申请权限") }
-        Button({ LocationHelper.openGPS(ctx) }) { Text("申请打开GPS") }
-        Text("GPS是否已开启：$gpsIsOpen\n权限列表：\n$permissionListStr")
-    }
+    Button({
+        permissionListStr = getPermissionListStr()
+        gpsIsOpen = LocationHelper.isGpsOpen
+    }) { Text("检查状态") }
+    Spacer(Modifier.height(16.dp))
+    Button({}) { Text("申请权限") }
+    Button({ LocationHelper.openGPS(ctx) }) { Text("申请打开GPS") }
+    Text("GPS是否已开启：$gpsIsOpen\n权限列表：\n$permissionListStr")
 }
 
 fun getPermissionListStr(): String {

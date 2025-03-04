@@ -5,9 +5,7 @@ import android.app.Application
 import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.content.ContextWrapper
-import android.os.Build
 import android.os.Bundle
-import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.startup.Initializer
 
 class LibContextInitializer : Initializer<AppHelper> {
@@ -49,6 +47,3 @@ open class ActivityLifecycleSimpleCallbacks : ActivityLifecycleCallbacks {
     override fun onActivityDestroyed(activity: Activity) {
     }
 }
-
-@ChecksSdkIntAtLeast(parameter = 0)
-fun checkSDK(sdkInt: Int) = Build.VERSION.SDK_INT >= sdkInt

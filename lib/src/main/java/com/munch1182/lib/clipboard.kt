@@ -18,7 +18,7 @@ object ClipboardHelper {
     fun copyFrom(): ClipData.Item? {
         // 权限不足仍会被返回false
         if (cbm?.hasPrimaryClip() == true) {
-            return cbm?.primaryClip?.getItemAt(0) ?: return null
+            return kotlin.runCatching { cbm?.primaryClip?.getItemAt(0) ?: return null }.getOrNull()
         }
         return null
     }
@@ -34,22 +34,23 @@ object ClipboardHelper {
     inline fun <reified T> putTo(data: T, isSensitive: Boolean = false) {
         if (data == null) return
         val clipData = when (T::class) {
-            String::class -> ClipData.newPlainText("text", data.toString())
-            Uri::class -> ClipData.newUri(AppHelper.contentResolver, "uri", data as Uri)
-            Intent::class -> ClipData.newIntent("intent", data as Intent)
+            String::class -> ClipData.newPlainText("", data.toString())
+            Uri::class -> ClipData.newUri(AppHelper.contentResolver, "", data as Uri)
+            Intent::class -> ClipData.newIntent("", data as Intent)
             else -> null
         } ?: return
         cbm?.setPrimaryClip(clipData.updateSensitive(isSensitive))
     }
 
     fun putHtmlTo(data: String, isSensitive: Boolean = false) {
-        cbm?.setPrimaryClip(ClipData.newHtmlText("html", data, data).updateSensitive(isSensitive))
+        cbm?.setPrimaryClip(ClipData.newHtmlText("", data, data).updateSensitive(isSensitive))
     }
 
     fun ClipData.updateSensitive(isSensitive: Boolean = false): ClipData {
+        if (!isSensitive) return this
         description.extras = PersistableBundle().apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, isSensitive)
+                putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
             } else {
                 putBoolean("android.content.extra.IS_SENSITIVE", true)
             }
