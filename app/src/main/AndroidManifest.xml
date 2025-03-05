@@ -27,6 +27,11 @@
         android:theme="@style/Theme.P1">
 
         <activity
+            android:name="com.munch1182.libcamera2.QrCodeScanActivity"
+            android:theme="@style/Theme.P1.AppCompat"
+            android:exported="false" />
+
+        <activity
             android:name="com.munch1182.libcamera.Scan2Activity"
             android:exported="false"
             android:theme="@style/Theme.P1.AppCompat" />

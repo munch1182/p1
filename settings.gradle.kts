@@ -36,6 +36,7 @@ include(":app")
 include(":lib")
 include(":libview")
 include(":libCamera")
+include(":libcamera2")
 
 // 能够以代码的方式引入module
 // 示例：

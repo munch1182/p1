@@ -19,6 +19,7 @@ dependencies {
     implementation(projects.lib)
     implementation(projects.libview)
     implementation(projects.libCamera)
+    implementation(projects.libcamera2)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
