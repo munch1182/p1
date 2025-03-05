@@ -11,7 +11,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.FragmentActivity
 import com.munch1182.lib.PermissionHelper
 import com.munch1182.lib.appDetailsPage
-import com.munch1182.libcamera.ScanActivity
+import com.munch1182.libcamera.Scan2Activity
 import com.munch1182.p1.ui.theme.P1Theme
 
 class CameraActivity : FragmentActivity() {
@@ -35,8 +35,11 @@ class CameraActivity : FragmentActivity() {
     fun Camera() {
         val ctx = LocalContext.current
         Button({
-            if (!PermissionHelper.check(android.Manifest.permission.CAMERA)) rfa.launch(android.Manifest.permission.CAMERA)
-            scan.launch(Intent(ctx, ScanActivity::class.java))
+            if (!PermissionHelper.check(android.Manifest.permission.CAMERA)) {
+                rfa.launch(android.Manifest.permission.CAMERA)
+                return@Button
+            }
+            scan.launch(Intent(ctx, Scan2Activity::class.java))
         }) { Text("开始扫描") }
     }
 

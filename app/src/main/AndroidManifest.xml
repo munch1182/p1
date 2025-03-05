@@ -27,6 +27,11 @@
         android:theme="@style/Theme.P1">
 
         <activity
+            android:name="com.munch1182.libcamera.Scan2Activity"
+            android:exported="false"
+            android:theme="@style/Theme.P1.AppCompat" />
+
+        <activity
             android:name=".SoundMeterActivity"
             android:exported="false" />
         <activity

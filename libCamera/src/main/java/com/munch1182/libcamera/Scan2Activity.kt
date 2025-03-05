@@ -1,6 +1,7 @@
 package com.munch1182.libcamera
 
 import android.os.Bundle
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -13,21 +14,23 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.common.util.concurrent.ListenableFuture
 import com.munch1182.libCamera.R
 
-class ScanActivity : AppCompatActivity() {
+class Scan2Activity : AppCompatActivity() {
 
     private lateinit var lfpcp: ListenableFuture<ProcessCameraProvider>
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        kotlin.runCatching { initCamera() }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_scan)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { _, insets ->
+            val s = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            findViewById<View>(R.id.previewTitleBar).setPadding(
+                s.left, s.top, s.right, s.bottom
+            )
             insets
         }
 
-        kotlin.runCatching { initCamera() }
     }
 
     private fun initCamera() {
