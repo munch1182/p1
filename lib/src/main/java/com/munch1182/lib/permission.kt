@@ -15,8 +15,8 @@ object PermissionHelper {
                 PermissionChecker.PERMISSION_GRANTED
     }
 
-    fun checkAll(permissions: Array<String>): Boolean {
-        permissions.forEach { if (check(it)) return false }
+    fun checkAll(vararg permissions: String): Boolean {
+        permissions.forEach { if (!check(it)) return false }
         return true
     }
 

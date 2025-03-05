@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentManager
 import com.munch1182.lib.PermissionHelper
 import com.munch1182.lib.findActivity
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -45,15 +46,16 @@ class ResultHelper private constructor(
                 fragment = InvisibleFragment()
                 fm.beginTransaction()
                     .add(fragment, InvisibleFragment.TAG)
-                    .commitAllowingStateLoss()
+                    .commitNowAllowingStateLoss()
             }
             return fragment
         }
+
     private val scope: CoroutineScope
         get() = fragment.scope
 
     internal fun request() {
-        scope.launch {
+        scope.launch(Dispatchers.Main) {
             builder.reqs.forEach {
                 val ctx = builder.context
                 if (it is INTENT && it.judge?.invoke(ctx) == true) {
@@ -187,6 +189,10 @@ class ResultHelper private constructor(
             return this
         }
 
+        /**
+         * 除了个别权限需要重点多次提醒外，不建议反复弹出提醒权限
+         * 而是应该在调用该功能的时候弹出弹窗，每次根据功能(和是否被永久拒绝)弹出(不一样的)弹窗，并且被拒绝就终止流程
+         */
         fun explain(explain: (request: Request) -> IResultDialog): Builder {
             this.explain = explain
             return this

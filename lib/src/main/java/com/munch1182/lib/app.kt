@@ -7,6 +7,10 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.os.Bundle
 import androidx.startup.Initializer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlin.coroutines.CoroutineContext
 
 class LibContextInitializer : Initializer<AppHelper> {
     override fun create(context: Context): AppHelper {
@@ -18,11 +22,15 @@ class LibContextInitializer : Initializer<AppHelper> {
 }
 
 
-object AppHelper : ContextWrapper(null) {
+object AppHelper : ContextWrapper(null), CoroutineScope {
+
 
     internal fun manualInit(app: Application) {
         attachBaseContext(app)
     }
+
+    override val coroutineContext: CoroutineContext
+        get() = SupervisorJob() + Dispatchers.Default
 }
 
 open class ActivityLifecycleSimpleCallbacks : ActivityLifecycleCallbacks {

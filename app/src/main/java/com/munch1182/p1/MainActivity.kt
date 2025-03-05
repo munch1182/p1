@@ -51,6 +51,7 @@ fun Click() {
     val ctx = LocalContext.current
     val act = ctx.findActivity()
     var keepFlag by remember { mutableStateOf(false) }
+    JumpButton("分贝相关", Intent(ctx, SoundMeterActivity::class.java))
     JumpButton("权限相关", Intent(ctx, ResultActivity::class.java))
     JumpButton("相机相关", Intent(ctx, CameraActivity::class.java))
     JumpButton("定位相关", Intent(ctx, LocationActivity::class.java))

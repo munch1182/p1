@@ -1,7 +1,7 @@
 [versions]
 agp = "8.8.2"
 kotlin = "2.0.0"
-coreKtx = "1.10.1"
+coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
@@ -13,6 +13,7 @@ jetbrainsKotlinJvm = "1.9.24"
 appcompat = "1.6.1"
 material = "1.10.0"
 activity = "1.8.0"
+constraintlayout = "2.1.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -43,6 +44,7 @@ androidx-core-splash = { group = "androidx.core", name = "core-splashscreen", ve
 # https://developer.android.google.cn/topic/libraries/app-startup?hl=zh-cn
 # https://developer.android.google.cn/jetpack/androidx/releases/startup?hl=zh-cn
 androidx-startup = { group = "androidx.startup", name = "startup-runtime", version = "1.1.1" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
