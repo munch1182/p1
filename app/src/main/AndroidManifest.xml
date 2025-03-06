@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -12,7 +30,33 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.P1">
         <activity
-            android:name=".SlideMenuActivity"
+            android:name=".TestBtnActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.munch1182.libcamera2.QrCodeScanActivity"
+            android:exported="false"
+            android:theme="@style/Theme.P1.AppCompat" />
+        <activity
+            android:name="com.munch1182.libcamera.Scan2Activity"
+            android:exported="false"
+            android:theme="@style/Theme.P1.AppCompat" />
+        <activity
+            android:name=".SoundMeterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CameraActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ResultActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DialogActivity"
+            android:exported="false" />
+        <activity
+            android:name=".LocationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ClipboardActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

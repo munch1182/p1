@@ -1,4 +1,4 @@
-package com.munch1182.lib
+package com.munch1182.lib.base
 
 import android.app.Activity
 import android.content.Context
@@ -7,8 +7,10 @@ import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
+import com.munch1182.lib.AppHelper
 
 
 internal val ctx: Context
@@ -26,6 +28,12 @@ fun Context.findActivity(): Activity? {
 fun toast(msg: String) {
     Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
 }
+
+fun Context.startActivity(target: Class<out Activity>, bundle: Bundle? = null) =
+    startActivity(Intent(this, target).apply {
+        val extras = bundle ?: return@apply
+        putExtras(extras)
+    })
 
 inline fun <reified ACT : Activity> Context.startActivity() {
     startActivity(Intent(this, ACT::class.java))

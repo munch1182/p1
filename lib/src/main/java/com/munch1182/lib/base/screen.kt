@@ -1,4 +1,4 @@
-package com.munch1182.lib
+package com.munch1182.lib.base
 
 import android.annotation.SuppressLint
 import android.app.Activity

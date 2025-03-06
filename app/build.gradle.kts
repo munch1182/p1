@@ -18,7 +18,11 @@ android {
 dependencies {
     implementation(projects.lib)
     implementation(projects.libview)
-    
+    implementation(projects.libCamera)
+    implementation(projects.libcamera2)
+
+    implementation("androidx.compose.runtime:runtime:1.7.5")
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.5")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
