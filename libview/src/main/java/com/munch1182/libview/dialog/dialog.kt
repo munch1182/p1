@@ -1,23 +1,5 @@
 package com.munch1182.libview.dialog
 
-import android.content.Context
-import com.munch1182.lib.AppHelper
-
-object DialogViewManager {
-    internal var listener: OnDialogCreateListener? = null
-    fun setOnDialogCreateListener(listener: OnDialogCreateListener) {
-        this.listener = listener
-    }
-}
-
-interface OnDialogCreateListener {
-    fun onCreateMessage(context: Context): MessageDialog? = null
-    fun onCreateBottom(context: Context): BottomDialog? = null
-    fun onCreatePop(context: Context): PopDialog? = null
-    fun onCreateTop(context: Context): TopDialog? = null
-    fun onCreateProgress(context: Context): ProgressDialog? = null
-}
-
 object DialogHelper {
     fun newMessage(msg: String) = MessageDialog()
     fun newBottom(items: Array<String>) = BottomDialog()
@@ -28,6 +10,7 @@ object DialogHelper {
 
 interface IDialog {
     fun show()
+    fun dismiss()
     fun create(): IDialog
 
     fun canCancelNoChose(can: Boolean = false): IDialog {
@@ -39,7 +22,7 @@ interface IDialog {
         return this
     }
 
-    // 取消显示的回调
+    // 显示取消的回调
     fun onDismissListener(listener: (IDialog) -> Unit): IDialog {
         return this
     }
@@ -47,6 +30,8 @@ interface IDialog {
 
 interface ITitleDialog {
     fun title(title: String): ITitleDialog
+
+    fun noTitle(no: Boolean = false): ITitleDialog
 }
 
 class PopDialog : IDialog {
@@ -55,6 +40,9 @@ class PopDialog : IDialog {
 
     override fun create(): IDialog {
         return this
+    }
+
+    override fun dismiss() {
     }
 }
 
@@ -70,27 +58,21 @@ class BottomDialog : IDialog, ITitleDialog {
     override fun title(title: String): BottomDialog {
         return this
     }
+
+    override fun dismiss() {
+    }
+
+    override fun noTitle(no: Boolean): BottomDialog {
+        return this
+    }
 }
 
 class MessageDialog : IDialog, ITitleDialog {
 
-    inner class Builder {
-
-        fun create(
-            message: String,
-            title: String,
-            ok: String = AppHelper.getString(android.R.string.ok),
-            cancel: String = AppHelper.getString(android.R.string.cancel)
-        ) {
-
-        }
-
-        fun build(): Builder {
-            return this
-        }
+    override fun show() {
     }
 
-    override fun show() {
+    override fun dismiss() {
     }
 
     override fun create(): IDialog {
@@ -100,10 +82,17 @@ class MessageDialog : IDialog, ITitleDialog {
     override fun title(title: String): MessageDialog {
         return this
     }
+
+    override fun noTitle(no: Boolean): MessageDialog {
+        return this
+    }
 }
 
 class TopDialog : IDialog {
     override fun show() {
+    }
+
+    override fun dismiss() {
     }
 
     override fun create(): IDialog {
@@ -122,11 +111,18 @@ class ProgressDialog : IDialog, ITitleDialog {
     override fun show() {
     }
 
+    override fun dismiss() {
+    }
+
     override fun create(): IDialog {
         return this
     }
 
     override fun title(title: String): ITitleDialog {
+        return this
+    }
+
+    override fun noTitle(no: Boolean): ITitleDialog {
         return this
     }
 }

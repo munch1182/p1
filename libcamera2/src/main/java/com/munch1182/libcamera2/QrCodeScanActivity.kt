@@ -22,8 +22,8 @@ import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.client.android.Intents
 import com.google.zxing.common.HybridBinarizer
 import com.journeyapps.barcodescanner.CaptureManager
+import com.munch1182.lib.base.asPermissionCheck
 import com.munch1182.lib.base.toast
-import com.munch1182.lib.helper.PermissionHelper
 import com.munch1182.libCamera2.R
 import com.munch1182.libCamera2.databinding.ActivityQrCodeScanBinding
 import kotlinx.coroutines.Dispatchers
@@ -183,7 +183,7 @@ class ImageSelect(
     fun selectImage() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            if (!PermissionHelper.checkAll(
+            if (!checkAll(
                     Manifest.permission.READ_MEDIA_IMAGES,
                     Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
                 )
@@ -198,7 +198,7 @@ class ImageSelect(
             }
 
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (!PermissionHelper.check(Manifest.permission.READ_MEDIA_IMAGES)) {
+            if (!Manifest.permission.READ_MEDIA_IMAGES.asPermissionCheck()) {
                 requestPermissCompat.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
                 return
             }
@@ -209,5 +209,9 @@ class ImageSelect(
     private fun launch() {
         getContent.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
+}
+
+private fun checkAll(vararg permissions: String): Boolean {
+    return permissions.all { it.asPermissionCheck() }
 }
 

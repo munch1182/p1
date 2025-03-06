@@ -16,11 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.munch1182.lib.base.appDetailsPage
 import com.munch1182.lib.base.findActivity
 import com.munch1182.lib.base.simpleDateStr
 import com.munch1182.lib.helper.ClipboardHelper
 import com.munch1182.lib.helper.ClipboardHelper.cbm
-import com.munch1182.lib.helper.appDetailsPage
 import com.munch1182.p1.ui.theme.P1Theme
 
 class ClipboardActivity : ComponentActivity() {

@@ -71,7 +71,9 @@ open class Logger(private val tag: String) {
         }
 
         fun fmtStace(e: StackTraceElement): String {
-            return "${e.className.split(".").lastOrNull()}#${e.methodName}(${e.fileName}:${e.lineNumber})"
+            return "${
+                e.className.split(".").lastOrNull()
+            }#${e.methodName}(${e.fileName}:${e.lineNumber})"
         }
 
         private fun fmtStr(str: String): String {
@@ -137,4 +139,5 @@ open class Logger(private val tag: String) {
     }
 }
 
-object LogLog : Logger("LogLog")
+// Editor // Live Templates // ll => Loglog.log("${$cursor$}")
+object Loglog : Logger("LogLog")

@@ -6,8 +6,10 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.WindowManager
 import android.widget.Toast
 import com.munch1182.lib.AppHelper
@@ -39,6 +41,8 @@ inline fun <reified ACT : Activity> Context.startActivity() {
     startActivity(Intent(this, ACT::class.java))
 }
 
+fun Intent.withPName() = setData(Uri.parse("package:${ctx.packageName}"))
+
 val versionName: String?
     get() = packInfo.versionName
 
@@ -50,3 +54,9 @@ val packInfo: PackageInfo
 
 val wm: WindowManager
     get() = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+val appDetailsPage: Intent
+    get() = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.fromParts("package", ctx.packageName, null)
+    )

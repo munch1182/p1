@@ -20,8 +20,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.coroutineScope
-import com.munch1182.lib.helper.PermissionHelper
-import com.munch1182.lib.helper.appDetailsPage
+import com.munch1182.lib.base.appDetailsPage
+import com.munch1182.lib.base.asPermissionCheck
 import com.munch1182.lib.other.SoundMeter
 import com.munch1182.p1.ui.theme.P1Theme
 import kotlinx.coroutines.Dispatchers
@@ -85,7 +85,7 @@ class SoundMeterActivity : FragmentActivity() {
         }) { Text("切换声道: ${if (channel == AudioFormat.CHANNEL_IN_MONO) "单声道" else "双声道"}") }
         Spacer(Modifier.height(16.dp))
         Button({
-            if (!PermissionHelper.check(Manifest.permission.RECORD_AUDIO)) {
+            if (!Manifest.permission.RECORD_AUDIO.asPermissionCheck()) {
                 rfa.launch(Manifest.permission.RECORD_AUDIO)
                 return@Button
             }

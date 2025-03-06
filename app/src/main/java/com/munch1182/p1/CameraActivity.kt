@@ -13,8 +13,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.munch1182.lib.helper.PermissionHelper
-import com.munch1182.lib.helper.appDetailsPage
+import com.munch1182.lib.base.appDetailsPage
+import com.munch1182.lib.base.asPermissionCheck
 import com.munch1182.libcamera2.CameraHelper
 import com.munch1182.libcamera2.registerScan
 import com.munch1182.p1.ui.theme.P1Theme
@@ -53,7 +53,7 @@ class CameraActivity : FragmentActivity() {
     fun Camera() {
         val str by vm.result.observeAsState()
         Button({
-            if (!PermissionHelper.check(android.Manifest.permission.CAMERA)) {
+            if (!android.Manifest.permission.CAMERA.asPermissionCheck()) {
                 rfa.launch(android.Manifest.permission.CAMERA)
                 return@Button
             }

@@ -18,7 +18,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.munch1182.lib.helper.LocationHelper
-import com.munch1182.lib.helper.PermissionHelper
 import com.munch1182.p1.ui.theme.P1Theme
 
 // https://developer.android.google.cn/develop/sensors-and-location/location/permissions?hl=zh-cn
@@ -57,13 +56,14 @@ fun getPermissionListStr(): String {
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
     }
-    val map =
-        permissions.map { it.replace("android.permission.", "") to PermissionHelper.check(it) }
-    return StringBuilder().apply {
-        map.forEach {
-            append("${it.first}: ${it.second}\n")
-        }
-    }.toString()
+//    val map =
+//        permissions.map { it.replace("android.permission.", "") to PermissionHelper.check(it) }
+//    return StringBuilder().apply {
+//        map.forEach {
+//            append("${it.first}: ${it.second}\n")
+//        }
+//    }.toString()
+    return ""
 }
 
 @Preview

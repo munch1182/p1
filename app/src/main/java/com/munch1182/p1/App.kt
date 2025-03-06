@@ -16,12 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.munch1182.lib.DefaultActivityLifecycleCallbacks
 import com.munch1182.lib.base.keepScreenOn
+import com.munch1182.lib.helper.ActivityCurrHelper
 import com.munch1182.p1.ui.theme.P1Theme
 
 class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ActivityCurrHelper.register()
         registerActivityLifecycleCallbacks(object : DefaultActivityLifecycleCallbacks() {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 super.onActivityCreated(activity, savedInstanceState)
@@ -37,16 +39,20 @@ fun ComponentActivity.setContentWithBase(
     parent: CompositionContext? = null,
     content: @Composable () -> Unit
 ) {
+    setContentNoContainer(parent) { modifier ->
+        Column(modifier = modifier.padding(16.dp)) { content() }
+    }
+}
+
+
+fun ComponentActivity.setContentNoContainer(
+    parent: CompositionContext? = null,
+    content: @Composable (Modifier) -> Unit
+) {
     setContent(parent) {
         P1Theme {
             Scaffold(modifier = Modifier.fillMaxWidth()) { innerPadding ->
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .padding(16.dp)
-                ) {
-                    content()
-                }
+                content(Modifier.padding(innerPadding))
             }
         }
     }

@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
-        startActivity<TestBtnActivity>()
+        startActivity<ResultActivity>()
     }
 }
 
