@@ -4,54 +4,56 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
+import com.munch1182.lib.base.Logger
 
-class ContractHelper internal constructor(private val fm: FragmentManager) {
-
-    fun <I, O> contract(contracts: ActivityResultContract<I, O>): Input<I, O> {
-        return Input(Context(fm, contracts))
-    }
-
-    class Input<I, O> internal constructor(private val context: Context<I, O>) {
-        fun input(input: I?) = ResultExecutor(context.apply { this.input = input })
-    }
+class ContractHelper internal constructor(private val act: FragmentActivity, private val fm: FragmentManager) {
 
     companion object {
-        fun init(act: FragmentActivity) = ContractHelper(act.supportFragmentManager)
-        fun init(frag: Fragment) = ContractHelper(frag.childFragmentManager)
+        fun init(act: FragmentActivity) = ContractHelper(act, act.supportFragmentManager)
+        fun init(frag: Fragment) = ContractHelper(frag.requireActivity(), frag.childFragmentManager)
+
+        internal val logger = Logger("ContractHelper")
+    }
+
+    fun <I, O> contract(contract: ActivityResultContract<I, O>) = Result(Ctx(act, fm, contract))
+
+    class Result<I, O> internal constructor(private val ctx: Ctx<I, O, O>) {
+        fun input(input: I?) = Input(ctx.apply { ctx.input = input })
+    }
+
+    class Input<I, O> internal constructor(private val ctx: Ctx<I, O, O>) {
+        fun <O2> mapResult(mapper: (O) -> O2) = Request(ctx.new(mapper))
+        fun request(l: OnResultListener<O>) = Request(ctx).request(l)
+    }
+
+    class Request<I, O, O2> internal constructor(private val ctx: Ctx<I, O, O2>) {
+        fun request(l: OnResultListener<O2>) = ctx.request(l)
     }
 
     @FunctionalInterface
-    fun interface OnResultListener<T> {
-        fun onResult(result: T)
+    fun interface OnResultListener<O> {
+        fun onResult(result: O)
     }
 
-    internal open class Context<I, O>(
-        val fm: FragmentManager,
-        var contract: ActivityResultContract<I, O>? = null,
-        var input: I? = null
-    )
-}
+    internal open class Ctx<I, O, O2> internal constructor(
+        internal val act: FragmentActivity,
+        internal val fm: FragmentManager,
+        internal val contract: ActivityResultContract<I, O>,
+        internal var input: I? = null,
+        internal var mapper: ((O) -> O2)? = null
+    ) {
 
-open class ResultExecutor<I, O> internal constructor(internal val ctx: ContractHelper.Context<I, O>) {
-
-    @Suppress("UNCHECKED_CAST")
-    open fun request(listener: ContractHelper.OnResultListener<O>) {
-        val frag = getFragment()
-        if (frag is ContractFragment<*, *>) {
-            (frag as? ContractFragment<I, O>)?.launch(ctx.input, listener)
+        @Suppress("UNCHECKED_CAST")
+        open fun request(l: OnResultListener<O2>) {
+            mapper?.let { mp ->
+                ContractFragment.get(fm, contract).launch(input) { l.onResult(mp.invoke(it)) }
+            } ?: ContractFragment.get(fm, contract).launch(input, l as OnResultListener<O>)
         }
-    }
 
-    internal open fun getFragment(): Fragment {
-        val fm = ctx.fm
-        val contract = ctx.contract ?: throw IllegalStateException("contract is null")
-        return fm.findFragmentByTag(ContractFragment.TAG)?.let {
-            // 更新fragment，否则无法更新传入的contract
-            if (it.isAdded) fm.beginTransaction().remove(it).commitNowAllowingStateLoss()
-            null
-            // Fragment直接传参的方法需要保证使用期间页面不被重建
-        } ?: ContractFragment(contract).apply {
-            fm.beginTransaction().add(this, ContractFragment.TAG).commitNowAllowingStateLoss()
+        fun <O3> new(mapper: ((O) -> O3)): Ctx<I, O, O3> = Ctx(act, fm, contract, input, mapper)
+
+        override fun toString(): String {
+            return "$contract <- ($input) "
         }
     }
 }

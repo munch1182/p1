@@ -4,8 +4,11 @@ import android.content.res.Resources
 import android.content.res.TypedArray
 import android.graphics.Color
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.provider.MediaStore
 import androidx.annotation.ArrayRes
 import androidx.annotation.ColorInt
+import com.munch1182.lib.AppHelper
 
 
 @get:ColorInt
@@ -54,3 +57,20 @@ fun getIdsArray(@ArrayRes arrayId: Int): IntArray {
     ota.recycle()
     return array
 }
+
+fun Uri.getPath(proj: Array<String>, columnName: String): String? {
+    var res: String? = null
+    runCatching {
+        val cursor = AppHelper.contentResolver.query(this, proj, null, null, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                val columnIndex = cursor.getColumnIndexOrThrow(columnName)
+                res = cursor.getString(columnIndex)
+            }
+        }
+        cursor?.close()
+    }
+    return res
+}
+
+fun Uri.getMediaPath() = getPath(arrayOf(MediaStore.Images.Media.DATA), MediaStore.Images.Media.DATA)

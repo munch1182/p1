@@ -41,11 +41,12 @@ inline fun <reified ACT : Activity> Context.startActivity() {
     startActivity(Intent(this, ACT::class.java))
 }
 
-fun Intent.withPName() = setData(Uri.parse("package:${ctx.packageName}"))
+fun Intent.withPName() = setData(Uri.fromParts("package", ctx.packageName, null))
 
 val versionName: String?
     get() = packInfo.versionName
 
+@Suppress("DEPRECATION")
 val versionCodeCompat: Long
     get() = packInfo.let { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.longVersionCode else it.versionCode.toLong() }
 
@@ -56,7 +57,4 @@ val wm: WindowManager
     get() = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
 val appDetailsPage: Intent
-    get() = Intent(
-        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-        Uri.fromParts("package", ctx.packageName, null)
-    )
+    get() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).withPName()

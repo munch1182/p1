@@ -14,7 +14,6 @@ object LocationHelper {
     val isGpsOpen: Boolean
         get() = lm?.let { LocationManagerCompat.isLocationEnabled(it) } ?: false
 
-    fun openGPS(context: Context) {
-        context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-    }
+    val gpsOpenIntent: Intent
+        get() = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
 }

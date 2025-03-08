@@ -6,8 +6,15 @@ import org.json.JSONException
 import org.json.JSONObject
 
 
-open class Logger(private val tag: String) {
+open class Logger(private val tag: String, private var enable: Boolean = true) {
+
+    fun enable(enable: Boolean = false): Logger {
+        this.enable = enable
+        return this
+    }
+
     fun log(vararg any: Any?) {
+        if (!enable) return
         val thread = Thread.currentThread()
         val trace = thread.stackTrace
         val threadName = thread.name
@@ -20,6 +27,15 @@ open class Logger(private val tag: String) {
                 Log.d(tag, s)
             }
         }
+    }
+
+    fun logStr(str: String) {
+        if (!enable) return
+        val thread = Thread.currentThread()
+        val trace = thread.stackTrace
+        val threadName = thread.name
+
+        Log.d(tag, "$str\t[thread($threadName)/${trace.dumpStackInfo()}]")
     }
 
     private fun Array<StackTraceElement>.dumpStackInfo(): String {
@@ -140,4 +156,4 @@ open class Logger(private val tag: String) {
 }
 
 // Editor // Live Templates // ll => Loglog.log("${$cursor$}")
-object Loglog : Logger("LogLog")
+object Loglog : Logger("LogLog", true)

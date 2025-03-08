@@ -39,7 +39,7 @@ fun Location() {
     }) { Text("检查状态") }
     Spacer(Modifier.height(16.dp))
     Button({}) { Text("申请权限") }
-    Button({ LocationHelper.openGPS(ctx) }) { Text("申请打开GPS") }
+    Button({  }) { Text("申请打开GPS") }
     Text("GPS是否已开启：$gpsIsOpen\n权限列表：\n$permissionListStr")
 }
 
