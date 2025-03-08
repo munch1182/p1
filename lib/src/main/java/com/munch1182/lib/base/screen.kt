@@ -33,6 +33,7 @@ fun screen(): Rect {
         wm.currentWindowMetrics.bounds
     } else {
         DisplayMetrics().apply {
+            @Suppress("DEPRECATION")
             (wm.defaultDisplay).getRealMetrics(this)
         }.let {
             Rect(0, 0, it.widthPixels, it.heightPixels)
@@ -45,6 +46,7 @@ fun Activity.statusHeight(): Int {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             it.getInsets(WindowInsetsCompat.Type.statusBars()).top
         } else {
+            @Suppress("DEPRECATION")
             it.systemWindowInsetTop
         }
     } ?: 0
