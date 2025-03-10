@@ -38,7 +38,7 @@ open class ResultExecutor<I, O> internal constructor(internal val ctx: ContractH
     open fun request(listener: ContractHelper.OnResultListener<O>) {
         val frag = getFragment()
         if (frag is ContractFragment<*, *>) {
-            (frag as? ContractFragment<I, O>)?.launch(ctx.input, listener)
+            (frag as ContractFragment<I, O>).launch(ctx.input, listener)
         }
     }
 

@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.base.asPermissionCheck
 import com.munch1182.lib.base.asPermissionCheckRationale
+import com.munch1182.lib.result.PermissionHelper.DialogCreator
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -23,16 +24,6 @@ class PermissionHelper internal constructor(internal val ctx: Context) {
     fun permission(permission: Array<String>) =
         PermissionExecutor(ctx.apply { this.input = permission })
 
-    /**
-     * 根据状态显示权限介绍弹窗
-     *
-     * 不建议在[PermissionHelper.State.Before]中显示弹窗，
-     * 因为可能权限已经被永久拒绝但是检测出来依然是[PermissionHelper.Result.Denied]导致空弹窗口而无权限请求的情形
-     */
-    fun dialogIfNeed(creator: DialogCreator): PermissionHelper {
-        ctx.creator = creator
-        return this
-    }
 
     internal class Context internal constructor(
         val ctx: FragmentActivity,
@@ -79,10 +70,20 @@ class PermissionHelper internal constructor(internal val ctx: Context) {
     fun interface DialogCreator {
         fun create(ctx: android.content.Context, state: State, result: Map<String, Result>): ResultDialog?
     }
-
 }
 
 class PermissionExecutor internal constructor(internal val ctx: PermissionHelper.Context) {
+
+    /**
+     * 根据状态显示权限介绍弹窗
+     *
+     * 不建议在[PermissionHelper.State.Before]中显示弹窗，
+     * 因为可能权限已经被永久拒绝但是检测出来依然是[PermissionHelper.Result.Denied]导致空弹窗口而无权限请求的情形
+     */
+    fun dialogIfNeed(creator: DialogCreator): PermissionExecutor {
+        ctx.creator = creator
+        return this
+    }
 
     fun request(listener: ContractHelper.OnResultListener<Map<String, PermissionHelper.Result>>) {
         ctx.ctx.lifecycleScope.launch {
@@ -100,7 +101,7 @@ class PermissionExecutor internal constructor(internal val ctx: PermissionHelper
         val (newPermission, result) = check(permission, !state.isBefore)
         // 如果全授予或者全永久拒绝，则直接回调（此处不处理设置页面跳转）
         if (newPermission.isEmpty()) return l.onResult(result)
-        // 如果权限被拒绝后仍被拒绝，则返回。就是全流程只会请求两次，第二次无论是拒绝还是永久拒绝（虽然第二次就不会有拒绝选项而是永久拒绝）都不会再继续请求
+        // 如果权限被拒绝后仍被拒绝，则返回。就是全流程只会请求两次，第二次无论是拒绝还是永久拒绝（虽然大部分权限第二次就不会有拒绝选项而是永久拒绝）都不会再继续请求
         if (state.isDeniedForever) return l.onResult(result)
         // 如果还有权限需要申请，则先判断是否需要弹窗提示
         val isContinue = dialogContinue(state, result)
@@ -109,9 +110,21 @@ class PermissionExecutor internal constructor(internal val ctx: PermissionHelper
         // 但在第二次及以后的请求中若无弹窗/或者确认取消，则结束流程
         if (!isContinue) return l.onResult(result)
         // 实际执行权限请求
-        ResultExecutor(ctx).request()
+        requestImpl()
         // 循环执行
         return dialogPermissionLogic(state.newState, newPermission, l)
+    }
+
+    private suspend fun requestImpl(): Map<String, Boolean> {
+        return suspendCoroutine { c ->
+            val frag = PermissionIntentFragment.get(ctx.fm)
+            if (frag is PermissionIntentFragment) {
+                frag.launchPermission(ctx.input) { c.resume(it) }
+            } else {
+                c.resume(mapOf())
+            }
+
+        }
     }
 
     private suspend fun dialogContinue(

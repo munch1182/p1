@@ -20,6 +20,7 @@ fun <I, O> contract(contracts: ActivityResultContract<I, O>) =
 fun permission(vararg permissions: String) = PermissionHelper.init(ActivityCurrHelper.currAsFA!!).permission(permissions.into())
 
 // 用于需要多版本判断的情形
+@NeedInitialize("ActivityCurrHelper.register")
 fun PermissionHelper.permission(permission: () -> Array<String>) = permission(permission.invoke())
 
 @NeedInitialize("ActivityCurrHelper.register")

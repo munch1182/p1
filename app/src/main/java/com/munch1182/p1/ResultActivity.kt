@@ -67,15 +67,15 @@ class ResultActivity : FragmentActivity() {
         }
         ButtonDefault("录制一段音频") {
             PermissionHelper.init(ctx)
+                .permission(arrayOf(permission.RECORD_AUDIO))
                 .dialogIfNeed { context, state, r ->
                     if (!state.isBefore && r.needDeniedDialog(permission.RECORD_AUDIO)) {
-                        context.newDialog("没有该权限则录制功能不可用，请授予录音权限！", "去授权", "录音权限")
+                        context.newDialog("没有该权限则录制功能不可用，请授予录音权限！", "授权", "录音权限")
                     } else {
                         null
                     }
 
                 }
-                .permission(arrayOf(permission.RECORD_AUDIO))
                 .request { data = it.toString() }
         }
         ButtonDefault("连接蓝牙设备") {

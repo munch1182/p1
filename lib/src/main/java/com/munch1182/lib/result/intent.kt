@@ -20,7 +20,7 @@ class IntentHelper private constructor(internal val ctx: Context) {
 
     fun judgeFirst(judgeFirst: JudgeFirst) = Judge(ctx.apply { this.judgeFirst = judgeFirst })
 
-    fun intent(intent: Intent) = ResultExecutor(ctx.apply { this.input = intent })
+    fun intent(intent: Intent) = IntentExecutor(ctx.apply { this.input = intent })
 
     class Judge internal constructor(private val context: Context) {
         fun intent(intent: Intent) = JudgeExecutor(context.apply { this.input = intent })
@@ -47,15 +47,22 @@ class IntentHelper private constructor(internal val ctx: Context) {
     }
 }
 
+class IntentExecutor internal constructor(internal val ctx: IntentHelper.Context) {
+    fun request(listener: ContractHelper.OnResultListener<ActivityResult>) {
+        val frag = PermissionIntentFragment.get(ctx.fm)
+        if (frag is PermissionIntentFragment) {
+            frag.launchIntent(ctx.input, listener)
+        }
+    }
+}
+
 class JudgeExecutor internal constructor(internal val ctx: IntentHelper.Context) {
     fun request(listener: ContractHelper.OnResultListener<Boolean>) {
         val judgeFirst = ctx.judgeFirst ?: return
-        if (judgeFirst.invoke(ctx.ctx)) {
-            return listener.onResult(true)
-        }
+        if (judgeFirst.invoke(ctx.ctx)) return listener.onResult(true)
         ctx.ctx.lifecycleScope.launch {
             if (dialogContinue() == false) return@launch listener.onResult(false)
-            ResultExecutor(ctx).request { listener.onResult(judgeFirst.invoke(ctx.ctx)) }
+            IntentExecutor(ctx).request { listener.onResult(judgeFirst.invoke(ctx.ctx)) }
         }
     }
 
