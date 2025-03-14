@@ -31,12 +31,10 @@ class PermissionIntentFragment : Fragment() {
     private val permission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         ContractHelper.logger.logStr("PermissionIntentFragment launchPermission callback $it")
         permissionCallback?.onResult(it)
-        permissionCallback = null
     }.apply { ContractHelper.logger.logStr("PermissionIntentFragment register RequestMultiplePermissions") }
     private val intent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         ContractHelper.logger.logStr("PermissionIntentFragment launchIntent callback $it")
         intentCallback?.onResult(it)
-        intentCallback = null
     }.apply { ContractHelper.logger.logStr("PermissionIntentFragment register StartActivityForResult") }
 
     fun launchPermission(permissions: Array<String>?, listener: ContractHelper.OnResultListener<Map<String, Boolean>>) {

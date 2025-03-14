@@ -1,10 +1,14 @@
 package com.munch1182.lib.result
 
+import android.app.Activity
 import androidx.activity.result.ActivityResult
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
-fun PermissionHelper.Dialog.ifOk(ifOk: (Map<String, PermissionHelper.Result>) -> Boolean): ContactHelper {
+/**
+ * [ifOk]系列方法不会实际执行，知道[request]才会实际执行
+ */
+fun PermissionHelper.With.ifOk(ifOk: (Map<String, PermissionHelper.Result>) -> Boolean): ContactHelper {
     if (ctx is PCTXWrapper) {
         return ContactHelper(ctx.apply { this.ifOk = ifOk })
     }
@@ -17,6 +21,14 @@ fun PermissionHelper.Request.ifOk(ifOk: (Map<String, PermissionHelper.Result>) -
     }
     return ContactHelper(PCTXWrapper(ctx, ifOk))
 }
+
+fun PermissionHelper.Dialog.ifOk(ifOk: (Map<String, PermissionHelper.Result>) -> Boolean): ContactHelper {
+    if (ctx is PCTXWrapper) {
+        return ContactHelper(ctx.apply { this.ifOk = ifOk })
+    }
+    return ContactHelper(PCTXWrapper(ctx, ifOk))
+}
+
 
 fun IntentHelper.Request.ifOk(ifOk: (ActivityResult) -> Boolean): ContactHelper {
     if (ctx is ICTXWrapper) {
@@ -95,8 +107,8 @@ internal class PCTXWrapper internal constructor(
     override fun request(l: ContractHelper.OnResultListener<Map<String, PermissionHelper.Result>>) {
         act.lifecycleScope.launch {
             // 最后一个要自己调用返回回调
-            if (runAllIfOkUntilSelf()) toCtx().request(l)
-            // 如果任一过程中失败，则不会回调
+            if (runAllIfOkUntilSelf()) return@launch toCtx().request(l)
+            l.onResult(buildMap { input!!.forEach { p -> put(p, PermissionHelper.Result.Denied) } })
         }
     }
 
@@ -123,8 +135,8 @@ internal class ICTXWrapper internal constructor(
     override fun request(l: ContractHelper.OnResultListener<ActivityResult>) {
         act.lifecycleScope.launch {
             // 最后一个要自己调用返回回调
-            if (runAllIfOkUntilSelf()) toCtx().request(l)
-            // 如果任一过程中失败，则不会回调
+            if (runAllIfOkUntilSelf()) return@launch toCtx().request(l)
+            l.onResult(ActivityResult(Activity.RESULT_CANCELED, null))
         }
     }
 
@@ -151,8 +163,8 @@ internal class JCTXWrapper internal constructor(
     override fun request(l: ContractHelper.OnResultListener<Boolean>) {
         act.lifecycleScope.launch {
             // 最后一个要自己调用返回回调
-            if (runAllIfOkUntilSelf()) toCtx().request(l)
-            // 如果任一过程中失败，则不会回调
+            if (runAllIfOkUntilSelf()) return@launch toCtx().request(l)
+            l.onResult(false)
         }
     }
 
@@ -172,7 +184,7 @@ internal class JCTXWrapper internal constructor(
 }
 
 class ContactHelper internal constructor(private val wrapper: IWrapper) {
-    fun permission(permissions: Array<String>) = PermissionHelper.Dialog(wrapper.newPCTWrapper(permissions))
+    fun permission(permissions: Array<String>) = PermissionHelper.With(wrapper.newPCTWrapper(permissions))
     fun dialogBefore(dialog: IntentDialogCreator) = IntentHelper.Intent(wrapper.newICTWrapper(dialog))
     fun intent(intent: android.content.Intent) = IntentHelper.Intent(wrapper.newICTWrapper()).intent(intent)
     fun judge(judge: Judge) = JudgeIntentHelper.Dialog(wrapper.newJCTXWrapper(judge))

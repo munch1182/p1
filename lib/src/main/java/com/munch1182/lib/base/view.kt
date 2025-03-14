@@ -6,6 +6,9 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 fun View.setDoubleClickListener(tag: Int, time: Long = 300L, listener: View.OnClickListener) {
     setOnClickListener {
@@ -26,6 +29,16 @@ fun newWWLP() = newLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.L
 fun newMWLP() = newLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
 fun newMMLP() = newLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 fun newWMLP() = newLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
+
+fun newFLWWLP() = FrameLayout.LayoutParams(newWWLP())
+
+fun View.paddingSystemBars() {
+    ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
+        val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+        v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+        insets
+    }
+}
 
 /**
  * 生成一个圆角的Drawable

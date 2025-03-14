@@ -11,6 +11,7 @@ dependencies {
 
     implementation(projects.lib)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.recyclerview)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

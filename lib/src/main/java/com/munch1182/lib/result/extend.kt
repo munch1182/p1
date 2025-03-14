@@ -29,8 +29,13 @@ fun PermissionHelper.permission(permission: () -> Array<String>) = permission(pe
 fun intent(intent: Intent) = IntentHelper.init(act).intent(intent)
 fun judge(judge: Judge) = JudgeIntentHelper.init(act).judge(judge)
 
-fun PermissionHelper.Dialog.ifAllGrant() = ifOk { it.all { p -> p.value.isGranted } }
+// todo: 将所有返回值统一返回？ 加个方法即可，但是有没有必要？
+/**
+ * [ifOk]系列方法不会实际执行，知道[request]才会实际执行
+ */
+fun PermissionHelper.With.ifAllGrant() = ifOk { it.all { p -> p.value.isGranted } }
 fun PermissionHelper.Request.ifAllGrant() = ifOk { it.all { p -> p.value.isGranted } }
+fun PermissionHelper.Dialog.ifAllGrant() = ifOk { it.all { p -> p.value.isGranted } }
 
 fun JudgeIntentHelper.Request.ifOk() = ifOk { it }
 fun JudgeIntentHelper.Request.ifNotOk() = ifOk { !it }
