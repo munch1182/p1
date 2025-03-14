@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.TypedValue
 import android.view.WindowManager
 import android.widget.Toast
 import com.munch1182.lib.AppHelper
@@ -58,3 +59,6 @@ val wm: WindowManager
 
 val appDetailsPage: Intent
     get() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).withPName()
+
+fun Int.dp2Px() = ctx.resources.displayMetrics.density * this
+fun Int.sp2Px() = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, this.toFloat(), ctx.resources.displayMetrics).toInt()
