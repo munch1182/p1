@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
-        startActivity<BluetoothActivity>()
+        startActivity<SoundMeterActivity>()
     }
 }
 
@@ -51,6 +51,8 @@ fun Click() {
     val ctx = LocalContext.current
     val act = ctx.findActivity()
     var keepFlag by remember { mutableStateOf(false) }
+    JumpButton("讯飞大模型相关", Intent(ctx, XFSparkchainActivity::class.java))
+    JumpButton("markdown相关", Intent(ctx, MarkdownActivity::class.java))
     JumpButton("蓝牙相关", Intent(ctx, BluetoothActivity::class.java))
     JumpButton("分贝相关", Intent(ctx, SoundMeterActivity::class.java))
     JumpButton("滑动列表", Intent(ctx, RecyclerViewActivity::class.java))

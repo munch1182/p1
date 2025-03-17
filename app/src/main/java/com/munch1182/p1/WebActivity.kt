@@ -1,6 +1,7 @@
 package com.munch1182.p1
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.webkit.WebSettings
@@ -20,9 +21,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class WebActivity : ComponentActivity() {
+
+    companion object {
+        fun showData(ctx: Context, data: String): Intent {
+            return Intent(ctx, WebActivity::class.java).apply { putExtra("data", data) }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentNoContainer { Web(it) }
+        val data = intent?.getStringExtra("data")
+        setContentNoContainer { Web(it, data) }
     }
 
     override fun getOnBackInvokedDispatcher(): OnBackInvokedDispatcher {
@@ -33,12 +42,14 @@ class WebActivity : ComponentActivity() {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun Web(modifier: Modifier = Modifier) {
+fun Web(modifier: Modifier = Modifier, data: String?) {
     var url by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
-        launch(Dispatchers.IO) {
-            delay(300)
-            url = "https://www.baidu.com"
+    if (data == null) {
+        LaunchedEffect(Unit) {
+            launch(Dispatchers.IO) {
+                delay(300)
+                url = "https://www.baidu.com"
+            }
         }
     }
     AndroidView(factory = { context ->
@@ -48,7 +59,7 @@ fun Web(modifier: Modifier = Modifier) {
                 domStorageEnabled = true
                 cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
             }
-            loadData("<html><body>loading...</body></html>", "text/html", "utf-8")
+            loadData(data ?: "<html><body>loading...</body></html>", "text/html", "utf-8")
         }
     }, modifier = modifier, update = { url?.apply { it.loadUrl(this) } })
 }

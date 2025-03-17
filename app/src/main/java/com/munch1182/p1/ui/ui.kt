@@ -13,4 +13,4 @@ import androidx.compose.ui.unit.dp
 fun Split() = Spacer(Modifier.height(16.dp))
 
 @Composable
-fun ButtonDefault(text: String, onClick: () -> Unit) = Button(onClick) { Text(text) }
+fun ButtonDefault(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) = Button(onClick, modifier) { Text(text) }

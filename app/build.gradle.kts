@@ -21,10 +21,16 @@ dependencies {
     implementation(projects.libCamera)
     implementation(projects.libcamera2)
 
-    implementation("androidx.compose.runtime:runtime:1.7.5")
-    implementation("androidx.compose.runtime:runtime-livedata:1.7.5")
+    implementation("org.jetbrains:markdown:0.7.3")
+
+    implementation(files("libs/SparkChain.aar"))
+
+    implementation(libs.runtime)
+    implementation(libs.runtime.livedata)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

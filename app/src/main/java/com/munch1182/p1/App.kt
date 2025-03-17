@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.State
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.LiveData
 import com.munch1182.lib.DefaultActivityLifecycleCallbacks
 import com.munch1182.lib.base.keepScreenOn
 import com.munch1182.lib.helper.ActivityCurrHelper
@@ -57,3 +60,7 @@ fun ComponentActivity.setContentNoContainer(
         }
     }
 }
+
+@Suppress("UNCHECKED_CAST")
+@Composable
+fun <T> LiveData<T>.observeAsStateNotNull(): State<T> = observeAsState() as State<T>

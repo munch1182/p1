@@ -9,7 +9,12 @@ import com.munch1182.lib.helper.ActivityCurrHelper
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+fun Map<String, PermissionHelper.Result>.isAllGrant() = values.all { it == PermissionHelper.Result.Granted }
+
 suspend fun PermissionHelper.Request.request() = suspendCoroutine { c -> request { c.resume(it) } }
+suspend fun PermissionHelper.With.request() = suspendCoroutine { c -> request { c.resume(it) } }
+suspend fun PermissionHelper.Intent.request() = suspendCoroutine { c -> request { c.resume(it) } }
+suspend fun PermissionHelper.Dialog.request() = suspendCoroutine { c -> request { c.resume(it) } }
 suspend fun IntentHelper.Request.request() = suspendCoroutine { c -> request { c.resume(it) } }
 suspend fun JudgeIntentHelper.Request.request() = suspendCoroutine { c -> request { c.resume(it) } }
 
@@ -33,9 +38,9 @@ fun judge(judge: Judge) = JudgeIntentHelper.init(act).judge(judge)
 /**
  * [ifOk]系列方法不会实际执行，知道[request]才会实际执行
  */
-fun PermissionHelper.With.ifAllGrant() = ifOk { it.all { p -> p.value.isGranted } }
-fun PermissionHelper.Request.ifAllGrant() = ifOk { it.all { p -> p.value.isGranted } }
-fun PermissionHelper.Dialog.ifAllGrant() = ifOk { it.all { p -> p.value.isGranted } }
+fun PermissionHelper.With.ifAllGrant() = ifOk { it.isAllGrant() }
+fun PermissionHelper.Request.ifAllGrant() = ifOk { it.isAllGrant() }
+fun PermissionHelper.Dialog.ifAllGrant() = ifOk { it.isAllGrant() }
 
 fun JudgeIntentHelper.Request.ifOk() = ifOk { it }
 fun JudgeIntentHelper.Request.ifNotOk() = ifOk { !it }
