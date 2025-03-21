@@ -1,28 +1,36 @@
 package com.munch1182.p1
 
 import android.Manifest
+import android.content.Intent
 import android.media.AudioFormat
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.munch1182.lib.AppHelper
+import com.munch1182.lib.base.toByteArray
+import com.munch1182.lib.helper.FileHelper
 import com.munch1182.lib.other.RecordManager
 import com.munch1182.lib.other.calculateDB
+import com.munch1182.lib.result.intent
 import com.munch1182.lib.result.isAllGrant
 import com.munch1182.lib.result.permission
 import com.munch1182.p1.ui.ButtonDefault
+import com.munch1182.p1.ui.CheckBoxLabel
 import com.munch1182.p1.ui.Split
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -30,6 +38,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.FileOutputStream
 
 class SoundMeterActivity : FragmentActivity() {
 
@@ -46,6 +55,27 @@ class SoundMeterActivity : FragmentActivity() {
         ManageView()
         Split()
         RecordView()
+        Split()
+        //FileView()
+    }
+
+    @Composable
+    fun FileView() {
+        val path by vm.path.observeAsState()
+
+        path?.let {
+            if (it.success) {
+                Text("已保存文件到: ${it.realPath}, 点击分享", modifier = Modifier.clickable {
+                    intent(Intent(Intent.ACTION_SEND).apply {
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        setDataAndType(it.uri!!, AppHelper.contentResolver.getType(it.uri))
+                        putExtra(Intent.EXTRA_STREAM, it.uri)
+                    }.let { i -> Intent.createChooser(i, "share") }).request {}
+                })
+            } else {
+                Text("文件保存失败")
+            }
+        }
     }
 
     @Composable
@@ -69,16 +99,20 @@ class SoundMeterActivity : FragmentActivity() {
     fun RecordView() {
         val isRecording by vm.isRecording.observeAsState(false)
         val meterValue by vm.meterValue.collectAsStateWithLifecycle()
+        var file by remember { mutableStateOf(false) }
+
+        CheckBoxLabel("保存到文件", file, { file = it })
 
         ButtonDefault(if (isRecording) "停止录音" else "开始录音") {
             permission(Manifest.permission.RECORD_AUDIO).request {
                 if (!it.isAllGrant()) return@request
-                lifecycleScope.launch(Dispatchers.IO) { vm.toggle() }
+                lifecycleScope.launch(Dispatchers.IO) { vm.toggle(file) }
             }
         }
-        Spacer(Modifier.height(16.dp))
+
+        Split()
         Text("分贝：${meterValue.soundMete}")
-        Spacer(Modifier.height(16.dp))
+        Split()
         Text("最低: ${meterValue.min}")
         Text("中位: ${meterValue.avg}")
         Text("最高: ${meterValue.max}")
@@ -94,10 +128,12 @@ class SoundMeterVM : ViewModel() {
     private var _isRecording = MutableLiveData(false)
     private val meterValueRef = MeterValue()
     private var _meterValue = MutableStateFlow(meterValueRef)
+    private var _path = MutableLiveData<PathResult?>(null)
 
     val smsv: LiveData<SoundMeterShowValue> = _smsv
     val isRecording: LiveData<Boolean> = _isRecording
     val meterValue: StateFlow<MeterValue> = _meterValue.asStateFlow()
+    val path: LiveData<PathResult?> = _path
 
     private val avgSize = 100
     private val list = ArrayList<Double>(avgSize)
@@ -112,7 +148,7 @@ class SoundMeterVM : ViewModel() {
         _isRecording.postValue(sm.isRecording)
     }
 
-    suspend fun startRecord() {
+    suspend fun startRecord(file: Boolean = false) {
         if (sm.sampleRate != smsvRef.sampleRate || sm.channel != smsvRef.channel) {
             sm.release()
             sm = RecordManager(smsvRef.sampleRate, smsvRef.channel)
@@ -121,10 +157,15 @@ class SoundMeterVM : ViewModel() {
         sm.start()
         _isRecording.postValue(sm.isRecording)
 
+
+        val name = "record.pcm"
+        val (f, fos) = if (file) FileHelper.newCacheFile(name).let { it to FileOutputStream(it) } else null to null
         while (sm.isRecording) {
             delay(100L)
-            val read = sm.readWithReadValue()
-            val soundMete = read?.let { it.first.calculateDB(it.second) } ?: 0.0
+            val (bytes, read) = sm.readWithReadValue() ?: continue
+            val db = bytes.calculateDB(read)
+
+            fos?.write(bytes.toByteArray())
 
             if (list.size >= avgSize) {
                 list.sort()
@@ -133,12 +174,23 @@ class SoundMeterVM : ViewModel() {
                 meterValueRef.avg = list[avgSize / 2] // 中间值
                 list.clear()
             }
-            list.add(soundMete)
-            meterValueRef.soundMete = soundMete
+            list.add(db)
+            meterValueRef.soundMete = db
             _meterValue.emit(meterValueRef.new())
         }
-    }
+        runCatching {
+            fos?.flush()
+            fos?.close()
+        }
+        if (file) {
+            if (f != null) {
+                _path.postValue(PathResult(true, Uri.fromFile(f), f.path))
+            } else {
+                _path.postValue(PathResult())
+            }
+        }
 
+    }
 
     private fun newSM(new: SoundMeterShowValue.() -> Unit) {
         new(smsvRef)
@@ -165,7 +217,7 @@ class SoundMeterVM : ViewModel() {
         }
     }
 
-    suspend fun toggle() = if (sm.isRecording) stopRecord() else startRecord()
+    suspend fun toggle(file: Boolean = false) = if (sm.isRecording) stopRecord() else startRecord(file)
 
     class SoundMeterShowValue(var sampleRate: Int = 44100, var channel: Int = AudioFormat.CHANNEL_IN_MONO) {
         constructor(v: SoundMeterShowValue) : this(v.sampleRate, v.channel)
@@ -178,6 +230,8 @@ class SoundMeterVM : ViewModel() {
 
         fun new() = MeterValue(this)
     }
+
+    class PathResult(val success: Boolean = false, val uri: Uri? = null, val realPath: String? = null)
 }
 
 
