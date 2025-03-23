@@ -1,4 +1,4 @@
-package com.munch1182.lib
+package com.munch1182.lib.base
 
 import android.app.Activity
 import android.content.Context
@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.view.WindowManager
 import android.widget.Toast
+import com.munch1182.lib.AppHelper
 
 
 internal val ctx: Context
