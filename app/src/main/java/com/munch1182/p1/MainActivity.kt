@@ -27,6 +27,7 @@ import com.munch1182.p1.ui.JumpButton
 import com.munch1182.p1.ui.setContentWithBase
 import com.munch1182.p1.ui.theme.P1Theme
 import com.munch1182.p1.ui.theme.PagePadding
+import com.munch1182.p1.views.TaskActivity
 
 class MainActivity : ComponentActivity() {
 
@@ -38,6 +39,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun Click() {
+        JumpButton("任务队列", clazz = TaskActivity::class)
         ClickButton("开发者选项界面") { toDeveloperSettings() }
         JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))
         JumpButton("关于界面", intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))

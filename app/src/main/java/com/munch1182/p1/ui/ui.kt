@@ -4,10 +4,13 @@ import android.app.Activity
 import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -16,6 +19,7 @@ import androidx.compose.ui.Modifier
 import com.munch1182.p1.base.curr
 import com.munch1182.p1.ui.theme.P1Theme
 import com.munch1182.p1.ui.theme.PagePadding
+import kotlin.reflect.KClass
 
 fun ComponentActivity.setContentNoContainer(content: @Composable (PaddingValues) -> Unit) {
     setContent {
@@ -27,14 +31,26 @@ fun ComponentActivity.setContentNoContainer(content: @Composable (PaddingValues)
     }
 }
 
-fun ComponentActivity.setContentWithBase(content: @Composable () -> Unit) {
+fun ComponentActivity.setContentWithBase(content: @Composable LazyItemScope.() -> Unit) {
     setContentNoContainer { ip ->
         LazyColumn(
             modifier = Modifier
                 .padding(ip)
                 .padding(PagePadding)
         ) {
-            item { content() }
+            item { content(this) }
+        }
+    }
+}
+
+fun ComponentActivity.setContentWithNoScroll(content: @Composable ColumnScope.() -> Unit) {
+    setContentNoContainer { ip ->
+        Column(
+            modifier = Modifier
+                .padding(ip)
+                .padding(PagePadding)
+        ) {
+            content(this)
         }
     }
 }
@@ -45,8 +61,8 @@ fun ClickButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit
 }
 
 @Composable
-fun JumpButton(text: String, modifier: Modifier = Modifier, clazz: Class<out Activity>) {
-    JumpButton(text, modifier, Intent(curr, clazz))
+fun JumpButton(text: String, modifier: Modifier = Modifier, clazz: KClass<out Activity>) {
+    JumpButton(text, modifier, Intent(curr, clazz.java))
 }
 
 @Composable
