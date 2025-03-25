@@ -22,11 +22,13 @@ import com.munch1182.lib.base.toast
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
 import com.munch1182.p1.base.curr
+import com.munch1182.p1.base.str
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.JumpButton
 import com.munch1182.p1.ui.setContentWithBase
 import com.munch1182.p1.ui.theme.P1Theme
 import com.munch1182.p1.ui.theme.PagePadding
+import com.munch1182.p1.views.LanguageActivity
 import com.munch1182.p1.views.TaskActivity
 
 class MainActivity : ComponentActivity() {
@@ -39,16 +41,17 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun Click() {
-        JumpButton("任务队列", clazz = TaskActivity::class)
-        ClickButton("开发者选项界面") { toDeveloperSettings() }
-        JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))
-        JumpButton("关于界面", intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
+        JumpButton(str(R.string.task_queue), clazz = TaskActivity::class)
+        JumpButton(str(R.string.switch_language), clazz = LanguageActivity::class)
+        ClickButton(str(R.string.develop_option)) { toDeveloperSettings() }
+        JumpButton(str(R.string.settings), intent = Intent(Settings.ACTION_SETTINGS))
+        JumpButton(str(R.string.about), intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
         Column(
             modifier = Modifier.padding(top = PagePadding),
             horizontalAlignment = Alignment.Start
         ) {
             Text(screenStr())
-            Text("CURR SDK: ${Build.VERSION.SDK_INT}")
+            Text("${str(R.string.curr_sdk)}: ${Build.VERSION.SDK_INT}")
             Text("$versionName($versionCodeCompat)")
         }
     }
@@ -74,9 +77,7 @@ class MainActivity : ComponentActivity() {
     @Preview(showBackground = true)
     @Composable
     fun GreetingPreview() {
-        P1Theme {
-            Click()
-        }
+        P1Theme { Click() }
     }
 }
 

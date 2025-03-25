@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">p1</string>
+    <string name="add_new_task">add task</string>
+    <string name="remove_all_incomplete_task">remove all incomplete task</string>
+    <string name="task_queue">task queue</string>
+    <string name="develop_option">developer options</string>
+    <string name="settings">settings</string>
+    <string name="about">about</string>
+    <string name="current_language">current language</string>
+    <string name="switch_language">switch language</string>
+</resources>

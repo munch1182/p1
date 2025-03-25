@@ -11,7 +11,6 @@ android {
     buildFeatures {
         compose = true
     }
-
     setAPkRename()
 }
 
