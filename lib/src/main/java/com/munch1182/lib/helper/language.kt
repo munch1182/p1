@@ -1,25 +1,21 @@
 package com.munch1182.lib.helper
 
+import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.munch1182.lib.base.ctx
 import java.util.Locale
 
-open class LanguageHelper {
 
-    fun currLocale(): Locale = if (AppCompatDelegate.getApplicationLocales().isEmpty.not()) {
-        AppCompatDelegate.getApplicationLocales()[0]
-    } else {
-        null
-    } ?: Locale.getDefault()
+interface LanguageHelperImpl {
 
-    @Deprecated("mut set first")
-    fun allLocales(): Array<Locale> {
-        val compat = AppCompatDelegate.getApplicationLocales()
-        if (compat.isEmpty) return arrayOf()
-        return Array(compat.size()) { compat.get(it)!! }
+    fun currLocale(): Locale = AppCompatDelegate.getApplicationLocales().get(0) ?: ctx.resources.configuration.locales.get(0) ?: Locale.getDefault()
+
+    fun updateLocale(lang: String) {
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
     }
 
-    fun updateLocale(langs: String) {
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(langs))
+    fun attachContent(baseCtx: Context) {
+
     }
 }

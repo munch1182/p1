@@ -15,8 +15,6 @@ import androidx.lifecycle.viewModelScope
 import com.munch1182.lib.base.Loglog
 import com.munch1182.lib.base.asStateFlow
 import com.munch1182.lib.base.toDateStr
-import com.munch1182.p1.R
-import com.munch1182.p1.base.str
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.setContentWithNoScroll
 import com.munch1182.p1.ui.theme.FontManySize
@@ -41,8 +39,8 @@ class TaskActivity : AppCompatActivity() {
     private fun Views() {
         val list = vm.output.collectAsState()
         val ls = rememberLazyListState()
-        ClickButton(str(R.string.add_new_task)) { vm.newTask() }
-        ClickButton(str(R.string.remove_all_incomplete_task)) { vm.clear() }
+        ClickButton("添加任务") { vm.newTask() }
+        ClickButton("移除所有未完成的任务") { vm.clear() }
         LaunchedEffect(list.value.size) {
             ls.scrollToItem(list.value.size, 0)
         }
