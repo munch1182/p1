@@ -16,6 +16,9 @@
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
         <activity
+            android:name=".views.DialogActivity"
+            android:exported="false" />
+        <activity
             android:name=".views.LanguageActivity"
             android:exported="false" />
         <activity
@@ -30,9 +33,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <!--   兼容android12及以下的语言切换     -->
+        </activity> <!-- 兼容android12及以下的语言切换 -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"
