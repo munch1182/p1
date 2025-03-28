@@ -27,7 +27,7 @@ class WebContentActivity : AppCompatActivity() {
 
     companion object {
         private const val KEY_URL = "url"
-        fun url(ctx: Context, url: String): Intent {
+        fun url(ctx: Context, url: String? = null): Intent {
             return Intent(ctx, WebContentActivity::class.java).putExtra(KEY_URL, url)
         }
     }

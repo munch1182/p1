@@ -32,17 +32,28 @@ class ResultActivity : BaseActivity() {
     @Composable
     fun View() {
         var result by remember { mutableStateOf("") }
+        val callback: (Any?) -> Unit = { result = it.toString() }
         ClickButton("选择图片") {
-            ContractHelper.init(currFM).contract(ActivityResultContracts.PickVisualMedia()).input(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)).request { result = it.toString() }
+            ContractHelper.init(currFM)
+                .contract(ActivityResultContracts.PickVisualMedia())
+                .input(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                .request(callback)
         }
         ClickButton("请求相机权限") {
-            PermissionHelper.init(currFM).permission(arrayOf(Manifest.permission.CAMERA)).request { result = it.toString() }
+            PermissionHelper.init(currFM)
+                .permission(arrayOf(Manifest.permission.CAMERA))
+                .request(callback)
         }
         ClickButton("请求跳转") {
-            IntentHelper.init(currFM).intent(WebContentActivity.url(curr, "https://www.baidu.com")).request { result = it.toString() }
+            IntentHelper.init(currFM)
+                .intent(WebContentActivity.url(curr))
+                .request(callback)
         }
         ClickButton("悬浮窗权限") {
-            JudgeHelper.init(currFM).judge { Settings.canDrawOverlays(it) }.intent(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).wPName()).request { result = it.toString() }
+            JudgeHelper.init(currFM)
+                .judge { Settings.canDrawOverlays(it) }
+                .intent(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).wPName())
+                .request(callback)
         }
 
         Text(result)

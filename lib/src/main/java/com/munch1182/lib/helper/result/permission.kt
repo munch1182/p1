@@ -22,6 +22,5 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager
-    ) : ContractHelper.Ctx<Array<String>, Map<String, Boolean>>(act, fm, ActivityResultContracts.RequestMultiplePermissions()) {
-    }
+    ) : ContractHelper.Ctx<Array<String>, Map<String, Boolean>>(act, fm, ActivityResultContracts.RequestMultiplePermissions())
 }
