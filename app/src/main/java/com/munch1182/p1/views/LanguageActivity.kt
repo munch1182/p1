@@ -1,7 +1,6 @@
 package com.munch1182.p1.views
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.munch1182.lib.base.Loglog
 import com.munch1182.lib.base.findActivity
 import com.munch1182.p1.R
+import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.LanguageHelper
 import com.munch1182.p1.base.str
 import com.munch1182.p1.ui.CheckBoxWithLabel
@@ -23,7 +23,7 @@ import com.munch1182.p1.ui.setContentWithNoScroll
 import java.util.Locale
 
 // https://developer.android.google.cn/guide/topics/resources/app-languages.html?hl=zh-cn#impl-overview
-class LanguageActivity : AppCompatActivity() {
+class LanguageActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentWithNoScroll { View() }

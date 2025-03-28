@@ -2,7 +2,6 @@ package com.munch1182.p1.views
 
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
@@ -12,9 +11,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.munch1182.lib.base.Loglog
 import com.munch1182.lib.base.asStateFlow
+import com.munch1182.lib.base.log
 import com.munch1182.lib.base.toDateStr
+import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.setContentWithNoScroll
 import com.munch1182.p1.ui.theme.FontManySize
@@ -28,7 +28,7 @@ import kotlinx.coroutines.runBlocking
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.random.Random
 
-class TaskActivity : AppCompatActivity() {
+class TaskActivity : BaseActivity() {
     private val vm by viewModels<VM>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,12 +54,12 @@ class TaskActivity : AppCompatActivity() {
                     Info.Type.Add -> Color.Cyan
                 }
                 Text(bean.text, fontSize = FontManySize, color = color)
-
             }
         }
     }
 
     class VM : ViewModel() {
+        private val log = this.log(false)
         private val queue by lazy { LinkedBlockingQueue<Runnable>() }
         private val executeOutput = mutableListOf<Info>()
 
@@ -84,14 +84,14 @@ class TaskActivity : AppCompatActivity() {
                         queue.take().run()
                     }
                 } catch (_: Exception) {
-                    Loglog.log("LinkedBlockingQueue quit by interrupt")
+                    log.logStr("LinkedBlockingQueue quit by interrupt")
                 }
-                Loglog.log("LinkedBlockingQueue break")
+                log.logStr("LinkedBlockingQueue break")
             }
         }
 
         private fun newText(text: String, type: Info.Type = Info.Type.Normal) {
-            Loglog.log(text)
+            log.logStr(text)
             executeOutput.add(Info(text, type))
             viewModelScope.launch { _output.emit(executeOutput.toTypedArray()) }
         }

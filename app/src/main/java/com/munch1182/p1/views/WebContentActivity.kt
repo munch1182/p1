@@ -1,0 +1,66 @@
+package com.munch1182.p1.views
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.window.OnBackInvokedDispatcher
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
+import com.munch1182.p1.ui.setContentNoContainer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+class WebContentActivity : AppCompatActivity() {
+
+    companion object {
+        private const val KEY_URL = "url"
+        fun url(ctx: Context, url: String): Intent {
+            return Intent(ctx, WebContentActivity::class.java).putExtra(KEY_URL, url)
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentNoContainer { View(it) }
+    }
+
+    override fun getOnBackInvokedDispatcher(): OnBackInvokedDispatcher {
+        setResult(RESULT_OK, Intent().apply { putExtra("result", "ok") })
+        return super.getOnBackInvokedDispatcher()
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    @Composable
+    fun View(pd: PaddingValues) {
+        var url by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(Unit) {
+            launch(Dispatchers.IO) {
+                delay(300)
+                url = intent.getStringExtra(KEY_URL) ?: "https://www.baidu.com"
+            }
+        }
+        AndroidView(factory = { context ->
+            WebView(context).apply {
+                settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                }
+                loadData("<html><body>loading...</body></html>", "text/html", "utf-8")
+            }
+        }, modifier = Modifier.padding(pd), update = { url?.apply { it.loadUrl(this) } })
+    }
+}

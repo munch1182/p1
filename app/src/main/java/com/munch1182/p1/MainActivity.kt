@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -17,10 +16,12 @@ import com.munch1182.lib.base.isInDeveloperMode
 import com.munch1182.lib.base.navigationHeight
 import com.munch1182.lib.base.screen
 import com.munch1182.lib.base.screenDisplay
+import com.munch1182.lib.base.startActivity
 import com.munch1182.lib.base.statusHeight
 import com.munch1182.lib.base.toast
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
+import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.LanguageHelper
 import com.munch1182.p1.base.curr
 import com.munch1182.p1.base.str
@@ -31,19 +32,22 @@ import com.munch1182.p1.ui.theme.P1Theme
 import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
+import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.TaskActivity
 
-class MainActivity : ComponentActivity() {
+class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
+        startActivity<ResultActivity>()
     }
 
     @Composable
     fun Click() {
-        JumpButton("弹窗", clazz = DialogActivity::class)
+        JumpButton("权限相关", clazz = ResultActivity::class)
+        JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
         JumpButton("语言切换", clazz = LanguageActivity::class)
         ClickButton("开发者选项") { toDeveloperSettings() }
@@ -68,7 +72,6 @@ class MainActivity : ComponentActivity() {
         return "${sc.width()}(${sd.widthPixels}) x ${sc.height()}(${statusHeight()} + ${sd.heightPixels} + $navHeight)"
     }
 
-
     private fun toDeveloperSettings() {
         if (isInDeveloperMode()) {
             curr.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
@@ -76,7 +79,6 @@ class MainActivity : ComponentActivity() {
             toast("开发者模式未开启")
         }
     }
-
 
     @Preview(showBackground = true)
     @Composable

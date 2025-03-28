@@ -1,23 +1,25 @@
 package com.munch1182.lib.base
 
 import android.util.Log
+import androidx.lifecycle.LifecycleOwner
 import org.json.JSONArray
 import org.json.JSONObject
 
+open class Logger(val tag: String, var enable: Boolean = true) {
 
-open class Logger(private val tag: String, private var enable: Boolean = true) {
+    constructor(any: Any, enable: Boolean = true) : this(any::class.java.simpleName, enable)
 
     fun logStr(str: String) {
-        if (!enable) return
+        if (!isLogEnable) return
         val thread = Thread.currentThread()
         val trace = thread.stackTrace
         val threadName = thread.name
 
-        Log.d(tag, "$str\t[thread($threadName)/${trace.dumpStackInfo()}]")
+        Log.d(actualLogTag, "$str\t[thread($threadName)/${trace.dumpStackInfo()}]")
     }
 
     fun log(vararg any: Any?) {
-        if (!enable) return
+        if (!isLogEnable) return
         val thread = Thread.currentThread() // stack绑定位置
         val trace = thread.stackTrace
         val threadName = thread.name
@@ -28,9 +30,9 @@ open class Logger(private val tag: String, private var enable: Boolean = true) {
         Any2StrFmt.any2Str(data).split(Any2StrFmt.LINE_SEPARATOR).forEachIndexed { index, it ->
             if (index == 0) {
                 val content = "$it [thread($threadName)_${trace.dumpStackInfo()}]"
-                if (isErr) Log.e(tag, content) else Log.d(tag, content)
+                if (isErr) Log.e(actualLogTag, content) else Log.d(actualLogTag, content)
             } else {
-                if (isErr) Log.e(tag, it) else Log.d(tag, it)
+                if (isErr) Log.e(actualLogTag, it) else Log.d(actualLogTag, it)
             }
         }
     }
@@ -45,6 +47,18 @@ open class Logger(private val tag: String, private var enable: Boolean = true) {
         }
         return ""
     }
+
+    protected open val isLogEnable: Boolean
+        get() = getLoggerGlobal().forceEnable || enable
+    protected open val actualLogTag: String
+        get() = getLoggerGlobal().prefix?.let { "${it}$$tag" } ?: tag
+
+    protected open fun getLoggerGlobal() = LoggerGlobal
+}
+
+object LoggerGlobal {
+    var prefix: String? = null
+    var forceEnable: Boolean = false // 忽略其余enable
 }
 
 // Editor // Live Templates // ll => Loglog.log("${$cursor$}")
@@ -74,22 +88,14 @@ internal object Any2StrFmt {
     }
 
     private fun String.toFmtStr(): String {
-        return kotlin.runCatching { JSONObject(this).toString(4) }.getOrNull()
-            ?: kotlin.runCatching { JSONArray(this).toString(4) }.getOrNull()
-            ?: "\"$this\""
+        return kotlin.runCatching { JSONObject(this).toString(4) }.getOrNull() ?: kotlin.runCatching { JSONArray(this).toString(4) }.getOrNull() ?: "\"$this\""
     }
 
     private fun Throwable.toFmtStr(): String {
         val any = this
         val sb = StringBuilder()
         val cause = any.cause
-        sb.append("EXCEPTION: ")
-            .append('[')
-            .append(any.javaClass.canonicalName)
-            .append(':')
-            .append(any.message)
-            .append(']')
-            .append(LINE_SEPARATOR)
+        sb.append("EXCEPTION: ").append('[').append(any.javaClass.canonicalName).append(':').append(any.message).append(']').append(LINE_SEPARATOR)
         if (cause == null) {
             any.stackTrace.forEachIndexed { index, e ->
                 if (index > 0) {
@@ -98,12 +104,7 @@ internal object Any2StrFmt {
                 sb.append("\t\t").append(e.toFmtStr())
             }
         } else {
-            sb.append("CAUSED: [")
-                .append(cause.javaClass.canonicalName)
-                .append(':')
-                .append(any.message)
-                .append(']')
-                .append(LINE_SEPARATOR)
+            sb.append("CAUSED: [").append(cause.javaClass.canonicalName).append(':').append(any.message).append(']').append(LINE_SEPARATOR)
             cause.stackTrace.forEachIndexed { index, e ->
                 if (index > 0) {
                     sb.append(LINE_SEPARATOR)
@@ -131,3 +132,42 @@ internal object Any2StrFmt {
         else -> this.toString()
     }
 }
+
+fun Any.log(enable: Boolean = true) = Logger(this, enable)
+
+fun Logger.logLife(owner: LifecycleOwner, prefix: String = "Life") {
+    if (!enable) return
+    owner.lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+        override fun onCreate(owner: LifecycleOwner) {
+            super.onCreate(owner)
+            logStr("${prefix}: onCreate")
+        }
+
+        override fun onStart(owner: LifecycleOwner) {
+            super.onStart(owner)
+            logStr("${prefix}: onStart")
+        }
+
+        override fun onResume(owner: LifecycleOwner) {
+            super.onResume(owner)
+            logStr("${prefix}: onResume")
+        }
+
+        override fun onPause(owner: LifecycleOwner) {
+            super.onPause(owner)
+            logStr("${prefix}: onPause")
+        }
+
+        override fun onStop(owner: LifecycleOwner) {
+            super.onStop(owner)
+            logStr("${prefix}: onStop")
+        }
+
+        override fun onDestroy(owner: LifecycleOwner) {
+            super.onDestroy(owner)
+            logStr("${prefix}: onDestroy")
+        }
+    })
+}
+
+fun Logger.newLog(tag: String) = Logger("${this.tag}$$tag", enable)

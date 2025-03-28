@@ -2,6 +2,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <!--  ResultActivity  -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!--  webActivity  -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!--  ResultActivity  -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -15,6 +26,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
+        <activity
+            android:name=".views.WebContentActivity"
+            android:exported="false" />
+        <activity
+            android:name=".views.ResultActivity"
+            android:exported="false" />
         <activity
             android:name=".views.DialogActivity"
             android:exported="false" />
@@ -33,15 +50,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- 兼容android12及以下的语言切换 -->
-        <service
-            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
-            android:enabled="false"
-            android:exported="false">
-            <meta-data
-                android:name="autoStoreLocales"
-                android:value="false" />
-        </service>
+        </activity>
     </application>
 
 </manifest>
