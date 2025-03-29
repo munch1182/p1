@@ -10,6 +10,7 @@ import android.window.OnBackInvokedDispatcher
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,7 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import com.munch1182.lib.base.Loglog
 import com.munch1182.p1.ui.setContentNoContainer
+import com.munch1182.p1.ui.theme.PagePadding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -48,19 +51,31 @@ class WebContentActivity : AppCompatActivity() {
         var url by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(Unit) {
             launch(Dispatchers.IO) {
-                delay(300)
+                delay(200)
+                url = ""
+                delay(30)
                 url = intent.getStringExtra(KEY_URL) ?: "https://www.baidu.com"
             }
         }
-        AndroidView(factory = { context ->
-            WebView(context).apply {
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+        if (url == null) {
+            Text("loading...", modifier = Modifier
+                .padding(pd)
+                .padding(PagePadding))
+        } else {
+            AndroidView(factory = { context ->
+                WebView(context).apply {
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                    }
+                    loadData("<html><body>loading...</body></html>", "text/html", "utf-8")
                 }
-                loadData("<html><body>loading...</body></html>", "text/html", "utf-8")
-            }
-        }, modifier = Modifier.padding(pd), update = { url?.apply { it.loadUrl(this) } })
+            }, modifier = Modifier.padding(pd), update = {
+                Loglog.log("${1111}")
+                if (url.isNullOrBlank().not()) it.loadUrl(url!!)
+
+            })
+        }
     }
 }

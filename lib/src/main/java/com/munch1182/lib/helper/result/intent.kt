@@ -54,7 +54,7 @@ class IntentHelper internal constructor(private val act: FragmentActivity, priva
         // 无弹窗也会跳转
         private suspend fun dialogCollapse(): Boolean {
             return withContext(Dispatchers.Main) {
-                val dialog = dp?.onCreateDialog(act) ?: return@withContext true
+                val dialog = dp?.onCreateDialog(act) ?: return@withContext log.logStr("dialog result true event no dialog provider").let { true }
                 suspendCoroutine { c ->
                     dialog.owner.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
                     log.logStr("request dialog before start intent")

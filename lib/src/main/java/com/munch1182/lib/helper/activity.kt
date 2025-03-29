@@ -2,6 +2,7 @@ package com.munch1182.lib.helper
 
 import android.app.Activity
 import android.app.Application
+import androidx.fragment.app.FragmentActivity
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.DefaultActivityLifecycleCallbacks
 import com.munch1182.lib.base.log
@@ -46,3 +47,6 @@ object ActivityCurrHelper {
         app.unregisterActivityLifecycleCallbacks(callback)
     }
 }
+
+val curr: Activity get() = ActivityCurrHelper.curr ?: throw IllegalStateException("should call ActivityCurrHelper#register")
+val currFM: FragmentActivity get() = ActivityCurrHelper.curr as? FragmentActivity ?: throw IllegalStateException("should call ActivityCurrHelper#register and curr should be FragmentActivity")

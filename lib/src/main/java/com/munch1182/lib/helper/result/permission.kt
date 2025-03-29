@@ -26,9 +26,10 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
         internal val log = this.log()
     }
 
-    fun permission(p: Array<String>) = Dialog(Ctx(act, fm).apply { input = p })
+    fun permission(permission: Array<String>) = Dialog(Ctx(act, fm).apply { input = permission })
 
     class Dialog internal constructor(private val ctx: Ctx) {
+        // 不建议在[State.Before]时显示弹窗，否则需要解释[State.Before]的弹窗和[State.DeniedForever]的弹窗前后依次出现的语境
         fun dialogWhen(dp: PermissionCanRequestDialogProvider?) = Intent(ctx.apply { this.dp = dp })
         fun request(l: OnResultListener<Map<String, Result>>) = Request(ctx).request(l)
     }

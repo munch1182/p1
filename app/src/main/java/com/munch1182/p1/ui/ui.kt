@@ -22,7 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.munch1182.p1.base.curr
+import com.munch1182.lib.helper.curr
 import com.munch1182.p1.ui.theme.P1Theme
 import com.munch1182.p1.ui.theme.PagePadding
 import kotlin.reflect.KClass

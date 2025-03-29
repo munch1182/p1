@@ -21,9 +21,9 @@ import com.munch1182.lib.base.statusHeight
 import com.munch1182.lib.base.toast
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
+import com.munch1182.lib.helper.curr
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.LanguageHelper
-import com.munch1182.p1.base.curr
 import com.munch1182.p1.base.str
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.JumpButton

@@ -12,9 +12,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.window.Dialog
+import com.munch1182.lib.helper.curr
 import com.munch1182.lib.helper.dialog.container
 import com.munch1182.p1.base.BaseActivity
-import com.munch1182.p1.base.curr
 import com.munch1182.p1.base.show
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.Split
