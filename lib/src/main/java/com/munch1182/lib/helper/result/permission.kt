@@ -6,11 +6,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
-import com.munch1182.lib.base.Logger
 import com.munch1182.lib.base.OnResultListener
 import com.munch1182.lib.base.appSetting
 import com.munch1182.lib.base.asPermissionCheck
 import com.munch1182.lib.base.asPermissionCheckRationale
+import com.munch1182.lib.base.log
 import com.munch1182.lib.base.onDestroyed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,7 +23,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
     companion object {
         fun init(act: FragmentActivity) = PermissionHelper(act, act.supportFragmentManager)
         fun init(frag: Fragment) = PermissionHelper(frag.requireActivity(), frag.childFragmentManager)
-        internal val log = Logger("permission: ")
+        internal val log = this.log()
     }
 
     fun permission(p: Array<String>) = Dialog(Ctx(act, fm).apply { input = p })
@@ -88,7 +88,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
             return newRes
         }
 
-        // 如果在被拒绝及之后没有设置用户提示，默认等同与用户拒绝
+        // 为了避免无法取消的无限请求，如果在被拒绝及之后没有设置用户提示，默认等同与用户拒绝
         private suspend fun dialogCollapse(state: State, permission: Array<String>): Boolean {
             if (permission.isEmpty()) return true
             return withContext(Dispatchers.Main) {
@@ -126,7 +126,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
 
     @FunctionalInterface
     fun interface PermissionCanRequestDialogProvider {
-        fun onCreateDialog(ctx: Context, state: State, permission: Array<String>): PermissionCanRequestDialog?
+        fun onCreateDialog(ctx: Context, state: State, permission: Array<String>): AllowDenyDialog?
     }
 
     sealed class State {

@@ -4,22 +4,26 @@ import android.annotation.SuppressLint
 import android.view.MotionEvent
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.LifecycleOwner
+import com.munch1182.lib.helper.dialog.DialogProvider
 import com.munch1182.lib.helper.dialog.ResultDialog
 
 
-interface PermissionCanRequestDialog : ResultDialog<PermissionCanRequestDialog.PermissionCanRequest> {
-    sealed class PermissionCanRequest {
-        data object Allow : PermissionCanRequest()
-        data object Deny : PermissionCanRequest()
+interface AllowDenyDialog : ResultDialog<AllowDenyDialog.Result> {
+    sealed class Result {
+        data object Allow : Result()
+        data object Deny : Result()
 
         val isAllow: Boolean get() = this is Allow
         val isDeny: Boolean get() = this is Deny
     }
 }
 
-class PermissionCanRequestDialogContainer(private val dialog: AlertDialog) : PermissionCanRequestDialog {
-    private var _result: PermissionCanRequestDialog.PermissionCanRequest = PermissionCanRequestDialog.PermissionCanRequest.Deny
-    override val result: PermissionCanRequestDialog.PermissionCanRequest get() = _result
+@FunctionalInterface
+fun interface AllDenyDialogProvider : DialogProvider<AllowDenyDialog, AllowDenyDialog.Result>
+
+class AllowDenyDialogContainer(private val dialog: AlertDialog) : AllowDenyDialog {
+    private var _result: AllowDenyDialog.Result = AllowDenyDialog.Result.Deny
+    override val result: AllowDenyDialog.Result get() = _result
     override val owner: LifecycleOwner = dialog
 
     @SuppressLint("ClickableViewAccessibility")
@@ -27,15 +31,15 @@ class PermissionCanRequestDialogContainer(private val dialog: AlertDialog) : Per
         dialog.show()
         dialog.apply {
             getButton(AlertDialog.BUTTON_POSITIVE)?.setOnTouchListener { _, event ->
-                if (event?.action == MotionEvent.ACTION_UP) _result = PermissionCanRequestDialog.PermissionCanRequest.Allow
+                if (event?.action == MotionEvent.ACTION_UP) _result = AllowDenyDialog.Result.Allow
                 return@setOnTouchListener false
             }
             getButton(AlertDialog.BUTTON_NEGATIVE)?.setOnTouchListener { _, event ->
-                if (event?.action == MotionEvent.ACTION_UP) _result = PermissionCanRequestDialog.PermissionCanRequest.Deny
+                if (event?.action == MotionEvent.ACTION_UP) _result = AllowDenyDialog.Result.Deny
                 return@setOnTouchListener false
             }
         }
     }
 }
 
-fun AlertDialog.asPermissionDialog() = PermissionCanRequestDialogContainer(this)
+fun AlertDialog.asAllowDenyDialog() = AllowDenyDialogContainer(this)

@@ -15,12 +15,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.munch1182.lib.base.appSetting
 import com.munch1182.lib.base.wPName
+import com.munch1182.lib.helper.result.AllDenyDialogProvider
 import com.munch1182.lib.helper.result.ContractHelper
 import com.munch1182.lib.helper.result.IntentHelper
 import com.munch1182.lib.helper.result.JudgeHelper
 import com.munch1182.lib.helper.result.PermissionHelper
 import com.munch1182.lib.helper.result.PermissionHelper.PermissionCanRequestDialogProvider
-import com.munch1182.lib.helper.result.asPermissionDialog
+import com.munch1182.lib.helper.result.asAllowDenyDialog
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.curr
 import com.munch1182.p1.base.currFM
@@ -70,6 +71,16 @@ class ResultActivity : BaseActivity() {
         Text(result)
     }
 
+    private fun intentDialog(title: String = "跳转", msg: String, sure: String = "前往"): AllDenyDialogProvider {
+        return AllDenyDialogProvider { ctx ->
+            AlertDialog.Builder(ctx).setTitle(title)
+                .setMessage(msg)
+                .setPositiveButton(sure) { _, _ -> }
+                .setNegativeButton("拒绝") { _, _ -> }
+                .create().asAllowDenyDialog()
+        }
+    }
+
     private fun permissionDialog(name: String): PermissionCanRequestDialogProvider {
         return PermissionCanRequestDialogProvider { ctx, state, p ->
             val (msg, ok) = when (state) {
@@ -80,7 +91,7 @@ class ResultActivity : BaseActivity() {
             AlertDialog.Builder(ctx).setTitle("权限请求").setMessage(msg)
                 .setPositiveButton(ok) { _, _ -> }
                 .setNegativeButton("拒绝") { _, _ -> }
-                .create().asPermissionDialog()
+                .create().asAllowDenyDialog()
         }
     }
 }
