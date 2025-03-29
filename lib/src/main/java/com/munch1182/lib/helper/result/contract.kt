@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.munch1182.lib.base.Logger
+import com.munch1182.lib.base.OnResultListener
 
 
 class ContractHelper internal constructor(private val act: FragmentActivity, private val fm: FragmentManager) {
@@ -24,11 +25,6 @@ class ContractHelper internal constructor(private val act: FragmentActivity, pri
 
     class Request<I, O> internal constructor(private val ctx: Ctx<I, O>) {
         fun request(l: OnResultListener<O>) = ctx.request(l)
-    }
-
-    @FunctionalInterface
-    fun interface OnResultListener<O> {
-        fun onResult(result: O)
     }
 
     internal open class Ctx<I, O> internal constructor(

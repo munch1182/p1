@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.munch1182.lib.base.Any2StrFmt
+import com.munch1182.lib.base.OnResultListener
 import com.munch1182.lib.base.newLog
 
 
@@ -36,7 +37,7 @@ class ContractFragment<I, O>(private val contract: ActivityResultContract<I, O>)
     }
 
     private val log = ContractHelper.log.newLog("ContractFragment")
-    private var callback: ContractHelper.OnResultListener<O>? = null
+    private var callback: OnResultListener<O>? = null
     private lateinit var launcher: ActivityResultLauncher<I>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +51,7 @@ class ContractFragment<I, O>(private val contract: ActivityResultContract<I, O>)
         }
     }
 
-    fun launch(input: I?, callback: ContractHelper.OnResultListener<O>) {
+    fun launch(input: I?, callback: OnResultListener<O>) {
         log.logStr("$contract launch $input")
         this.callback = callback
         kotlin.runCatching { launcher.launch(input) }
@@ -70,13 +71,13 @@ class PermissionIntentFragment : Fragment() {
 
 
     private val log = ContractHelper.log.newLog("PermissionIntentFragment")
-    private var permissionCallback: ContractHelper.OnResultListener<Map<String, Boolean>>? = null
+    private var permissionCallback: OnResultListener<Map<String, Boolean>>? = null
     private val permission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         log.logStr("result($it)")
         permissionCallback?.onResult(it)
         permissionCallback = null
     }
-    private var resultCallback: ContractHelper.OnResultListener<ActivityResult>? = null
+    private var resultCallback: OnResultListener<ActivityResult>? = null
     private val result = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         log.logStr("result($it)")
         resultCallback?.onResult(it)
@@ -87,13 +88,13 @@ class PermissionIntentFragment : Fragment() {
         log.logStr("registerFroPermission registerFroIntent")
     }
 
-    fun launch(intent: Intent, callback: ContractHelper.OnResultListener<ActivityResult>) {
+    fun launch(intent: Intent, callback: OnResultListener<ActivityResult>) {
         log.logStr("launch $intent")
         resultCallback = callback
         result.launch(intent)
     }
 
-    fun launch(permissions: Array<String>, callback: ContractHelper.OnResultListener<Map<String, Boolean>>) {
+    fun launch(permissions: Array<String>, callback: OnResultListener<Map<String, Boolean>>) {
         log.logStr("launch ${Any2StrFmt.any2Str(permissions)}")
         permissionCallback = callback
         permission.launch(permissions)

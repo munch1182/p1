@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.munch1182.lib.base.Logger
+import com.munch1182.lib.base.OnResultListener
 
 class JudgeHelper internal constructor(private val act: FragmentActivity, private val fm: FragmentManager) {
 
@@ -25,13 +26,13 @@ class JudgeHelper internal constructor(private val act: FragmentActivity, privat
     }
 
     class Request internal constructor(private val ctx: Ctx) {
-        fun request(l: ContractHelper.OnResultListener<Boolean>) = ctx.requestIntent(l)
+        fun request(l: OnResultListener<Boolean>) = ctx.requestIntent(l)
     }
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager, internal var judge: OnJudge
     ) : ContractHelper.Ctx<Intent, ActivityResult>(act, fm, ActivityResultContracts.StartActivityForResult()) {
-        fun requestIntent(l: ContractHelper.OnResultListener<Boolean>) {
+        fun requestIntent(l: OnResultListener<Boolean>) {
             if (judge.onJudge(act).apply { log.logStr("first judge: $this") }) return l.onResult(true)
             PermissionIntentFragment.get(fm).launch(input!!) {
                 l.onResult(judge.onJudge(act).apply { log.logStr("second judge: $this") })
