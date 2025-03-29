@@ -15,7 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.munch1182.lib.base.appSetting
 import com.munch1182.lib.base.wPName
-import com.munch1182.lib.helper.result.AllDenyDialogProvider
+import com.munch1182.lib.helper.result.AllowDenyDialogContainer
 import com.munch1182.lib.helper.result.ContractHelper
 import com.munch1182.lib.helper.result.IntentHelper
 import com.munch1182.lib.helper.result.JudgeHelper
@@ -65,20 +65,26 @@ class ResultActivity : BaseActivity() {
             JudgeHelper.init(currFM)
                 .judge { Settings.canDrawOverlays(it) }
                 .intent(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).wPName())
+                .dialogWhen { _, state ->
+                    intentDialog(
+                        when (state) {
+                            JudgeHelper.State.Before -> "请在接下来的页面中选择本应用，并选择允许，以便使用跨应用相关功能。"
+                            JudgeHelper.State.After -> "请在接下来的页面中选择本应用，并选择允许，否则无法使用跨应用相关功能。"
+                        }
+                    )
+                }
                 .request(callback)
         }
 
         Text(result)
     }
 
-    private fun intentDialog(title: String = "跳转", msg: String, sure: String = "前往"): AllDenyDialogProvider {
-        return AllDenyDialogProvider { ctx ->
-            AlertDialog.Builder(ctx).setTitle(title)
-                .setMessage(msg)
-                .setPositiveButton(sure) { _, _ -> }
-                .setNegativeButton("拒绝") { _, _ -> }
-                .create().asAllowDenyDialog()
-        }
+    private fun intentDialog(msg: String, title: String = "跳转", sure: String = "前往"): AllowDenyDialogContainer {
+        return AlertDialog.Builder(curr).setTitle(title)
+            .setMessage(msg)
+            .setPositiveButton(sure) { _, _ -> }
+            .setNegativeButton("拒绝") { _, _ -> }
+            .create().asAllowDenyDialog()
     }
 
     private fun permissionDialog(name: String): PermissionCanRequestDialogProvider {

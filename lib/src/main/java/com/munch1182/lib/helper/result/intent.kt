@@ -38,11 +38,11 @@ class IntentHelper internal constructor(private val act: FragmentActivity, priva
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager,
-        var dp: AllDenyDialogProvider? = null
+        internal var dp: AllDenyDialogProvider? = null
     ) : ContractHelper.Ctx<Intent, ActivityResult>(act, fm, ActivityResultContracts.StartActivityForResult()) {
         override fun request(l: OnResultListener<ActivityResult>) = PermissionIntentFragment.get(fm).launch(input!!, l)
 
-        fun requestIntent(l: OnResultListener<ActivityResult>) {
+        internal fun requestIntent(l: OnResultListener<ActivityResult>) {
             act.lifecycleScope.launch {
                 val dialog = dialogCollapse()
                 if (!dialog) return@launch l.onResult(ActivityResult(Activity.RESULT_CANCELED, null)).apply { log.logStr("return after dialog manual cancel") }

@@ -34,7 +34,7 @@ class ContractHelper internal constructor(private val act: FragmentActivity, pri
         internal var input: I? = null,
     ) {
 
-        open fun request(l: OnResultListener<O>) = ContractFragment.get(fm, contract).launch(input, l)
+        internal open fun request(l: OnResultListener<O>) = ContractFragment.get(fm, contract).launch(input, l)
         override fun toString() = "$contract <- ($input)"
     }
 }

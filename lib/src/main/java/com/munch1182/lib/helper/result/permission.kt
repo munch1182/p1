@@ -49,7 +49,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
 
         override fun request(l: OnResultListener<Map<String, Boolean>>) = PermissionIntentFragment.get(fm).launch(input!!, l)
 
-        fun requestPermission(l: OnResultListener<Map<String, Result>>) {
+        internal fun requestPermission(l: OnResultListener<Map<String, Result>>) {
             act.lifecycleScope.launch(Dispatchers.IO) {
                 var res = requestCircle(State.Before)
                 res = needToIntent(res)
