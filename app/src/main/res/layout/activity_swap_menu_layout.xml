@@ -9,9 +9,9 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:padding="16dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_height="wrap_content">
+        android:padding="16dp">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/asml_toggle"
@@ -21,19 +21,24 @@
 
         <com.munch1182.lib.widget.SwapMenuLayout
             android:id="@+id/asml_sml"
-            android:layout_marginTop="16dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
 
-            <TextView
-                android:id="@+id/asml_content1"
-                android:layout_width="80dp"
-                android:layout_height="match_parent"
-                android:background="@color/white"
-                android:gravity="center"
-                android:padding="16dp"
-                android:text="内容"
-                android:textColor="@color/black" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/white">
+
+                <TextView
+                    android:id="@+id/asml_content1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="start"
+                    android:padding="16dp"
+                    android:text="内容"
+                    android:textColor="@color/black" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/asml_del"
@@ -50,12 +55,13 @@
             android:id="@+id/asml_toggle_rv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:text="随机展开" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/asml_rv"
             android:layout_width="match_parent"
-            tools:listitem="@layout/item_swap_menu_layout"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            tools:listitem="@layout/item_swap_menu_layout" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

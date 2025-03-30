@@ -34,6 +34,7 @@ import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
 import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.TaskActivity
+import com.munch1182.p1.views.libview.SwapMenuLayoutActivity
 import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
@@ -42,7 +43,7 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
-        startActivity<ViewActivity>()
+        startActivity<SwapMenuLayoutActivity>()
     }
 
     @Composable
