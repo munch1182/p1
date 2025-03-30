@@ -2,12 +2,14 @@ package com.munch1182.lib.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.PointF
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import androidx.customview.widget.ViewDragHelper
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -24,7 +26,7 @@ class SwapMenuLayout @JvmOverloads constructor(context: Context, attrs: Attribut
 
         override fun onViewDragStateChanged(state: Int) {
             super.onViewDragStateChanged(state)
-            onStateChange?.onStateChange(state)
+            onStateChange?.onStateChange(this@SwapMenuLayout, state)
         }
 
         // 是否可以处理该view的滑动
@@ -56,10 +58,29 @@ class SwapMenuLayout @JvmOverloads constructor(context: Context, attrs: Attribut
         override fun onViewPositionChanged(changedView: View, left: Int, top: Int, dx: Int, dy: Int) {
             menuView.translationX = left.toFloat()
         }
+
+        override fun getViewHorizontalDragRange(child: View): Int {
+            return dragHelper.touchSlop
+        }
     }
+    private var down = PointF()
 
     init {
         dragHelper = ViewDragHelper.create(this, 1f, dragCallback)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.action) {
+            MotionEvent.ACTION_DOWN -> down.set(ev.x, ev.y)
+            MotionEvent.ACTION_MOVE -> {
+                val xSlop = abs(ev.x - down.x)
+                val ySlop = abs(ev.y - down.y)
+                if (xSlop > dragHelper.touchSlop && xSlop > ySlop) {
+                    parent.requestDisallowInterceptTouchEvent(true)
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
@@ -122,6 +143,6 @@ class SwapMenuLayout @JvmOverloads constructor(context: Context, attrs: Attribut
 
     @FunctionalInterface
     fun interface OnStateChangeListener {
-        fun onStateChange(state: Int)
+        fun onStateChange(view: SwapMenuLayout, state: Int)
     }
 }

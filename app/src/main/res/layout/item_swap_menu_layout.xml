@@ -4,17 +4,18 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:fitsSystemWindows="true"
+    android:id="@+id/isml_sml"
     android:orientation="vertical"
     tools:context=".views.libview.SwapMenuLayoutActivity"
     tools:ignore="HardcodedText">
 
     <FrameLayout
         android:layout_width="match_parent"
+        android:id="@+id/isml_content1"
         android:layout_height="wrap_content"
         android:background="@color/white">
 
         <TextView
-            android:id="@+id/isml_content1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="16dp"
