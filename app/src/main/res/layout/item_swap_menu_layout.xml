@@ -16,6 +16,7 @@
         android:background="@color/white">
 
         <TextView
+            android:id="@+id/isml_content_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="16dp"
