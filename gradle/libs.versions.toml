@@ -13,6 +13,9 @@ jetbrainsKotlinJvm = "1.9.24"
 appcompat = "1.6.1"
 material = "1.10.0"
 activity = "1.8.0"
+constraintlayout = "2.1.4"
+navigationFragmentKtx = "2.6.0"
+navigationUiKtx = "2.6.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -43,6 +46,9 @@ androidx-core-splash = { group = "androidx.core", name = "core-splashscreen", ve
 # https://developer.android.google.cn/topic/libraries/app-startup?hl=zh-cn
 # https://developer.android.google.cn/jetpack/androidx/releases/startup?hl=zh-cn
 androidx-startup = { group = "androidx.startup", name = "startup-runtime", version = "1.1.1" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
+androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

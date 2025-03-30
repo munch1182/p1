@@ -4,13 +4,9 @@
 
     <uses-feature
         android:name="android.hardware.camera"
-        android:required="false" />
-
-    <!--  ResultActivity  -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <!--  webActivity  -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!--  ResultActivity  -->
+        android:required="false" /> <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.CAMERA" /> <!-- webActivity -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- ResultActivity -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
@@ -26,6 +22,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
+        <activity
+            android:name=".views.libview.SwapMenuLayoutActivity"
+            android:exported="false"
+            android:theme="@style/Theme.P1.AppCompat" />
+        <activity
+            android:name=".views.libview.ViewActivity"
+            android:exported="false" />
         <activity
             android:name=".views.WebContentActivity"
             android:exported="false" />

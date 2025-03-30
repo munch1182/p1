@@ -34,6 +34,7 @@ import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
 import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.TaskActivity
+import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
 
@@ -41,14 +42,15 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
-        startActivity<ResultActivity>()
+        startActivity<ViewActivity>()
     }
 
     @Composable
-    fun Click() {
+    private fun Click() {
         JumpButton("权限相关", clazz = ResultActivity::class)
         JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
+        JumpButton("View相关", clazz = ViewActivity::class)
         JumpButton("语言切换", clazz = LanguageActivity::class)
         ClickButton("开发者选项") { toDeveloperSettings() }
         JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))

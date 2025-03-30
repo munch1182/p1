@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    tools:context=".views.libview.SwapMenuLayoutActivity"
+    tools:ignore="HardcodedText">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:padding="16dp"
+        android:orientation="vertical"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/asml_toggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="展开" />
+
+        <com.munch1182.lib.widget.SwapMenuLayout
+            android:id="@+id/asml_sml"
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/asml_content1"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:background="@color/white"
+                android:gravity="center"
+                android:padding="16dp"
+                android:text="内容"
+                android:textColor="@color/black" />
+
+            <TextView
+                android:id="@+id/asml_del"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:background="#FF0000"
+                android:gravity="center"
+                android:text="删除"
+                android:textColor="@color/white" />
+
+        </com.munch1182.lib.widget.SwapMenuLayout>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/asml_toggle_rv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="随机展开" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/asml_rv"
+            android:layout_width="match_parent"
+            tools:listitem="@layout/item_swap_menu_layout"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

@@ -10,7 +10,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import com.munch1182.lib.base.Loglog
 import com.munch1182.lib.base.findActivity
 import com.munch1182.p1.R
 import com.munch1182.p1.base.BaseActivity
@@ -27,14 +26,10 @@ class LanguageActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentWithNoScroll { View() }
-
-        Locale.TRADITIONAL_CHINESE.let {
-            Loglog.log("${it.language} ${it.country}  ${it.displayLanguage}  ${it.displayName}  ${it.toLanguageTag()}")
-        }
     }
 
     @Composable
-    fun View() {
+    private fun View() {
         val locs by remember { mutableStateOf(arrayOf(LanguageHelper.currLocale(), Locale.CHINA, Locale.TRADITIONAL_CHINESE, Locale.ENGLISH, Locale("ar"))) }
         var selectIndex by remember { mutableIntStateOf(locs.indexOfLast { it.toLanguageTag() == LanguageHelper.currLocale().toLanguageTag() }) }
         val curr = LocalContext.current

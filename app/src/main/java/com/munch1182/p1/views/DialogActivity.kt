@@ -29,7 +29,7 @@ class DialogActivity : BaseActivity() {
     }
 
     @Composable
-    fun View() {
+    private fun View() {
         val show = remember { mutableStateOf(false) }
         ClickButton("DialogFragment") { showDialogFragment() }
         ClickButton("ComposeDialog") { show.value = true }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.munch1182.lib.widget.SwapMenuLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    tools:context=".views.libview.SwapMenuLayoutActivity"
+    tools:ignore="HardcodedText">
+
+    <TextView
+        android:id="@+id/isml_content1"
+        android:layout_width="80dp"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="内容"
+        android:textColor="@color/black" />
+
+    <TextView
+        android:id="@+id/isml_del"
+        android:layout_width="80dp"
+        android:layout_height="match_parent"
+        android:background="#FF0000"
+        android:gravity="center"
+        android:text="删除"
+        android:textColor="@color/white" />
+
+</com.munch1182.lib.widget.SwapMenuLayout>

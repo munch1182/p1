@@ -10,12 +10,19 @@ android {
 
     buildFeatures {
         compose = true
+        viewBinding = true
     }
     setAPkRename()
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
-    implementation(projects.lib)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -29,6 +36,13 @@ dependencies {
     implementation(libs.androidx.activity)
 
     implementation(libs.androidx.core.splash)
+
+    implementation(projects.lib)
+    implementation(projects.libwidget)
+
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

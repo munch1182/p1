@@ -47,7 +47,7 @@ class WebContentActivity : AppCompatActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     @Composable
-    fun View(pd: PaddingValues) {
+    private fun View(pd: PaddingValues) {
         var url by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(Unit) {
             launch(Dispatchers.IO) {
@@ -58,9 +58,11 @@ class WebContentActivity : AppCompatActivity() {
             }
         }
         if (url == null) {
-            Text("loading...", modifier = Modifier
-                .padding(pd)
-                .padding(PagePadding))
+            Text(
+                "loading...", modifier = Modifier
+                    .padding(pd)
+                    .padding(PagePadding)
+            )
         } else {
             AndroidView(factory = { context ->
                 WebView(context).apply {
