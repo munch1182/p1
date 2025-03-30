@@ -96,7 +96,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
                 val dialog = dp?.onCreateDialog(act, state, permission)
                     ?: return@withContext state.isBefore.apply { log.logStr("dialog result $this as state is $state") }
                 suspendCoroutine { c ->
-                    dialog.owner.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
+                    dialog.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
                     log.logStr("request dialog for ${permission.joinToString()} when $state")
                     dialog.show()
                 }

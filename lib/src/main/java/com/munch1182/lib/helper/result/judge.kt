@@ -70,7 +70,7 @@ class JudgeHelper internal constructor(private val act: FragmentActivity, privat
             return withContext(Dispatchers.Main) {
                 val dialog = dp?.onCreateDialog(act, state) ?: return@withContext state.isBefore.apply { PermissionHelper.log.logStr("dialog result $this as state is $state") }
                 suspendCoroutine { c ->
-                    dialog.owner.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
+                    dialog.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
                     PermissionHelper.log.logStr("request dialog when $state")
                     dialog.show()
                 }

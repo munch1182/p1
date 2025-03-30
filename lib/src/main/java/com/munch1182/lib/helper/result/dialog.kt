@@ -3,7 +3,7 @@ package com.munch1182.lib.helper.result
 import android.annotation.SuppressLint
 import android.view.MotionEvent
 import androidx.appcompat.app.AlertDialog
-import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Lifecycle
 import com.munch1182.lib.helper.dialog.DialogProvider
 import com.munch1182.lib.helper.dialog.ResultDialog
 
@@ -24,7 +24,7 @@ fun interface AllDenyDialogProvider : DialogProvider<AllowDenyDialog, AllowDenyD
 class AllowDenyDialogContainer(private val dialog: AlertDialog) : AllowDenyDialog {
     private var _result: AllowDenyDialog.Result = AllowDenyDialog.Result.Deny
     override val result: AllowDenyDialog.Result get() = _result
-    override val owner: LifecycleOwner = dialog
+    override val lifecycle: Lifecycle get() = dialog.lifecycle
 
     @SuppressLint("ClickableViewAccessibility")
     override fun show() {

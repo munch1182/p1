@@ -3,9 +3,8 @@ package com.munch1182.lib.helper.dialog
 import android.content.Context
 import androidx.lifecycle.LifecycleOwner
 
-interface ResultDialog<RESULT> {
+interface ResultDialog<RESULT> : LifecycleOwner {
     val result: RESULT?
-    val owner: LifecycleOwner
     fun show()
 }
 
