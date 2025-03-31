@@ -33,8 +33,8 @@ import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
 import com.munch1182.p1.views.ResultActivity
+import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
-import com.munch1182.p1.views.libview.SwapMenuLayoutActivity
 import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
@@ -43,12 +43,13 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
-        startActivity<SwapMenuLayoutActivity>()
+        startActivity<ServerActivity>()
     }
 
     @Composable
     private fun Click() {
         JumpButton("权限相关", clazz = ResultActivity::class)
+        JumpButton("服务相关", clazz = ServerActivity::class)
         JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
         JumpButton("View相关", clazz = ViewActivity::class)
