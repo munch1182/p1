@@ -10,7 +10,7 @@ import com.munch1182.lib.base.OnResultListener
 import com.munch1182.lib.base.appSetting
 import com.munch1182.lib.base.asPermissionCheck
 import com.munch1182.lib.base.asPermissionCheckRationale
-import com.munch1182.lib.base.log
+import com.munch1182.lib.base.newLog
 import com.munch1182.lib.base.onDestroyed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,7 +23,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
     companion object {
         fun init(act: FragmentActivity) = PermissionHelper(act, act.supportFragmentManager)
         fun init(frag: Fragment) = PermissionHelper(frag.requireActivity(), frag.childFragmentManager)
-        internal val log = this.log()
+        internal val log = ContractHelper.log.newLog("permission")
     }
 
     fun permission(permission: Array<String>) = Dialog(Ctx(act, fm).apply { input = permission })

@@ -1,5 +1,7 @@
 package com.munch1182.p1.views
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
@@ -9,8 +11,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import com.munch1182.lib.base.findActivity
+import com.munch1182.lib.helper.curr
 import com.munch1182.p1.R
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.LanguageHelper
@@ -23,6 +24,20 @@ import java.util.Locale
 
 // https://developer.android.google.cn/guide/topics/resources/app-languages.html?hl=zh-cn#impl-overview
 class LanguageActivity : BaseActivity() {
+
+    companion object {
+        private const val KEY_UPDATE_LANG = "LanguageActivity_KEY_UPDATE_LANG"
+
+        fun isNeedRecreate(act: Activity, intent: Intent? = act.intent): Boolean {
+            return intent?.getBooleanExtra(KEY_UPDATE_LANG, false) ?: false
+        }
+
+        fun dispatchRecreate2UpdateLang(act: Activity) {
+            act.setResult(Activity.RESULT_OK, Intent().putExtra(KEY_UPDATE_LANG, true))
+            act.finish()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentWithNoScroll { View() }
@@ -31,10 +46,10 @@ class LanguageActivity : BaseActivity() {
     @Composable
     private fun View() {
         val locs by remember { mutableStateOf(arrayOf(LanguageHelper.currLocale(), Locale.CHINA, Locale.TRADITIONAL_CHINESE, Locale.ENGLISH, Locale("ar"))) }
-        var selectIndex by remember { mutableIntStateOf(locs.indexOfLast { it.toLanguageTag() == LanguageHelper.currLocale().toLanguageTag() }) }
-        val curr = LocalContext.current
+        var selectIndex by remember { mutableIntStateOf(locs.indexOfLast { it.toLanguageTag() == LanguageHelper.curr.toLanguageTag() }) }
 
         Text("${str(R.string.curr_lang)}: ${LanguageHelper.currLocale()}")
+
         Split()
 
         LazyColumn {
@@ -46,7 +61,7 @@ class LanguageActivity : BaseActivity() {
             }
         }
         ClickButton("切换语言") {
-            curr.findActivity()?.finish()
+            curr.apply { dispatchRecreate2UpdateLang(this) }
             LanguageHelper.updateLocale(locs[selectIndex].toLanguageTag())
         }
     }

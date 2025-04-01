@@ -13,6 +13,7 @@ import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.bind
 import com.munch1182.p1.databinding.ActivitySwapMenuLayoutBinding
 import com.munch1182.p1.databinding.ItemSwapMenuLayoutBinding
+import kotlin.random.Random
 
 class SwapMenuLayoutActivity : BaseActivity() {
 
@@ -30,12 +31,12 @@ class SwapMenuLayoutActivity : BaseActivity() {
         bind.asmlRv.adapter = adapter
 
         bind.asmlToggleRv.setOnClickListener {
-            //val index = Random.nextInt(0, 12)
-            //adapter.open(index)
+            val index = Random.nextInt(0, 12)
+            adapter.open(index)
         }
 
         bind.asmlUpdateRv.setOnClickListener {
-            //adapter.update("更新内容")
+            adapter.update("更新内容 ${Random.nextInt(100, 999)}")
         }
     }
 
@@ -45,15 +46,21 @@ class SwapMenuLayoutActivity : BaseActivity() {
 
     private class SMLAAdapter(private val rv: RecyclerView) : RecyclerView.Adapter<SMLAVH>() {
 
-        private var currOpen: SwapMenuLayout? = null
         private val conteClick = View.OnClickListener { toast("content click") }
         private val delClick = View.OnClickListener { toast("del click") }
         private val list = MutableList(35) { "item $it" }
-        private val stateChange = SwapMenuLayout.OnStateChangeListener { view, state ->
-            if (state == ViewDragHelper.STATE_IDLE) {
-                if (view.isOpen) currOpen = view
-            } else if (currOpen != view) {
-                currOpen?.close()
+        private val limitHelper = SwapMenuLayout.LimitHelper()
+
+        fun open(index: Int) {
+            (rv.findViewHolderForAdapterPosition(index) as? SMLAVH?)?.apply {
+                bind.ismlSml.open()
+            }
+        }
+
+        fun update(content: String) {
+            limitHelper.currPos?.let {
+                list[it] = content
+                notifyItemChanged(it, true)
             }
         }
 
@@ -62,14 +69,27 @@ class SwapMenuLayoutActivity : BaseActivity() {
         }
 
         override fun getItemCount() = list.size
-
         override fun onBindViewHolder(holder: SMLAVH, position: Int) {
-            val item = list[position]
-            holder.bind.ismlContentTv.text = item
+            updateViews(holder, position)
             holder.bind.ismlContent1.setOnClickListener(conteClick)
             holder.bind.ismlDel.setOnClickListener(delClick)
-            holder.bind.ismlSml.tag = position
-            holder.bind.ismlSml.setOnStateChangeListener(stateChange)
+            limitHelper.bind(holder.bind.ismlSml, position)
+        }
+
+        private fun updateViews(holder: SMLAVH, position: Int) {
+            val item = list[position]
+            holder.bind.ismlContentTv.text = item
+        }
+
+        override fun onBindViewHolder(holder: SMLAVH, position: Int, payloads: MutableList<Any>) {
+            if (payloads.isEmpty()) {
+                super.onBindViewHolder(holder, position, payloads)
+            } else {
+                updateViews(holder, position)
+                if (holder.bind.ismlSml.isOpen) {
+                    holder.bind.ismlSml.close()
+                }
+            }
         }
     }
 

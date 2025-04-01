@@ -55,13 +55,11 @@
             android:id="@+id/asml_toggle_rv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="invisible"
             android:layout_marginTop="16dp"
             android:text="随机展开" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/asml_update_rv"
-            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"

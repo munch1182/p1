@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.munch1182.lib.base.isInDeveloperMode
+import com.munch1182.lib.base.log
 import com.munch1182.lib.base.navigationHeight
 import com.munch1182.lib.base.screen
 import com.munch1182.lib.base.screenDisplay
@@ -22,6 +23,7 @@ import com.munch1182.lib.base.toast
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
 import com.munch1182.lib.helper.curr
+import com.munch1182.lib.helper.result.intent
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.LanguageHelper
 import com.munch1182.p1.base.str
@@ -35,15 +37,23 @@ import com.munch1182.p1.views.LanguageActivity
 import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
+import com.munch1182.p1.views.libview.SwapMenuLayoutActivity
 import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
+
+    private val log = log()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
-        startActivity<ServerActivity>()
+        startActivity<SwapMenuLayoutActivity>()
+    }
+
+    override fun recreate() {
+        super.recreate()
+        log.logStr("recreate()")
     }
 
     @Composable
@@ -53,7 +63,9 @@ class MainActivity : BaseActivity() {
         JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
         JumpButton("View相关", clazz = ViewActivity::class)
-        JumpButton("语言切换", clazz = LanguageActivity::class)
+        ClickButton("语言切换") {
+            intent(Intent(this, LanguageActivity::class.java)).request { recreateIfLangNeed(it.data) }
+        }
         ClickButton("开发者选项") { toDeveloperSettings() }
         JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))
         JumpButton("关于节目", intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
@@ -65,6 +77,13 @@ class MainActivity : BaseActivity() {
             Text(screenStr())
             Text("CURR SDK: ${Build.VERSION.SDK_INT}")
             Text("${str(R.string.curr_lang)}: ${LanguageHelper.currLocale()}")
+        }
+    }
+
+    private fun recreateIfLangNeed(data: Intent?) {
+        if (LanguageActivity.isNeedRecreate(this, data)) {
+            log.logStr("lang update, need recreate")
+            recreate()
         }
     }
 

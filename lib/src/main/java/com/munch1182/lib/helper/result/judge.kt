@@ -9,11 +9,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
-import com.munch1182.lib.base.Logger
 import com.munch1182.lib.base.OnResultListener
+import com.munch1182.lib.base.newLog
 import com.munch1182.lib.base.onDestroyed
-import com.munch1182.lib.helper.result.IntentHelper.Ctx
-import com.munch1182.lib.helper.result.PermissionHelper.State
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -25,7 +23,7 @@ class JudgeHelper internal constructor(private val act: FragmentActivity, privat
     companion object {
         fun init(act: FragmentActivity) = JudgeHelper(act, act.supportFragmentManager)
         fun init(frag: Fragment) = JudgeHelper(frag.requireActivity(), frag.childFragmentManager)
-        internal val log = Logger("judge: ")
+        internal val log = ContractHelper.log.newLog("judge")
     }
 
     fun judge(judge: OnJudge) = Input(Ctx(act, fm, judge))

@@ -9,7 +9,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.base.OnResultListener
-import com.munch1182.lib.base.log
+import com.munch1182.lib.base.newLog
 import com.munch1182.lib.base.onDestroyed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,7 +22,7 @@ class IntentHelper internal constructor(private val act: FragmentActivity, priva
     companion object {
         fun init(act: FragmentActivity) = IntentHelper(act, act.supportFragmentManager)
         fun init(frag: Fragment) = IntentHelper(frag.requireActivity(), frag.childFragmentManager)
-        internal val log = this.log()
+        internal val log = ContractHelper.log.newLog("intent")
     }
 
     fun intent(i: Intent) = Dialog(Ctx(act, fm).apply { input = i })

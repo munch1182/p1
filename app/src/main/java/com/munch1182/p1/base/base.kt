@@ -1,6 +1,7 @@
 package com.munch1182.p1.base
 
 import android.app.Activity
+import android.content.Context
 import android.view.LayoutInflater
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -12,7 +13,12 @@ import com.munch1182.lib.helper.dialog.DialogContainer
 @Composable
 fun str(id: Int) = stringResource(id)
 
-abstract class BaseActivity : FragmentActivity()
+abstract class BaseActivity : FragmentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LanguageHelper.attachBaseContext(newBase))
+    }
+}
 
 fun DialogContainer.show() = show(currFM.supportFragmentManager)
 

@@ -14,7 +14,7 @@ class ContractHelper internal constructor(private val act: FragmentActivity, pri
         fun init(act: FragmentActivity) = ContractHelper(act, act.supportFragmentManager)
         fun init(frag: Fragment) = ContractHelper(frag.requireActivity(), frag.childFragmentManager)
 
-        internal val log = Logger("result")
+        internal val log = Logger("result", false)
     }
 
     fun <I, O> contract(contract: ActivityResultContract<I, O>) = Input(Ctx(act, fm, contract))

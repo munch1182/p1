@@ -2,6 +2,7 @@ package com.munch1182.lib.helper
 
 import android.app.Activity
 import android.app.Application
+import android.content.Intent
 import androidx.fragment.app.FragmentActivity
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.DefaultActivityLifecycleCallbacks
@@ -50,3 +51,9 @@ object ActivityCurrHelper {
 
 val curr: Activity get() = ActivityCurrHelper.curr ?: throw IllegalStateException("should call ActivityCurrHelper#register")
 val currFM: FragmentActivity get() = ActivityCurrHelper.curr as? FragmentActivity ?: throw IllegalStateException("should call ActivityCurrHelper#register and curr should be FragmentActivity")
+
+fun restartApp(act: Activity = curr, restartTo: Class<out Activity>) {
+    act.startActivity(
+        Intent(act, restartTo).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    )
+}

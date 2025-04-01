@@ -7,8 +7,8 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
-import androidx.core.view.ViewCompat
 import androidx.customview.widget.ViewDragHelper
+import com.munch1182.lib.widget.SwapMenuLayout.OnStateChangeListener
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -102,10 +102,11 @@ class SwapMenuLayout @JvmOverloads constructor(context: Context, attrs: Attribut
         menuView = getChildAt(1)
     }
 
-    val isOpen: Boolean get() = (menuView.translationX < 0f)
+    // 应该在OnStateChangeListener中获取
+    val isOpen: Boolean get() = if (isR2L) (menuView.translationX == menuView.width.toFloat()) else (menuView.translationX < 0f)
 
     fun open() {
-        dragHelper.smoothSlideViewTo(contentView, -menuView.width, contentView.top)
+        dragHelper.smoothSlideViewTo(contentView, if (isR2L) menuView.width else -menuView.width, contentView.top)
         invalidate()
     }
 
@@ -137,12 +138,35 @@ class SwapMenuLayout @JvmOverloads constructor(context: Context, attrs: Attribut
         super.computeScroll()
         // 触发dragHelper.settleCapturedViewAt的移动
         if (dragHelper.continueSettling(true)) {
-            ViewCompat.postInvalidateOnAnimation(this)
+            invalidate()
         }
     }
 
     @FunctionalInterface
     fun interface OnStateChangeListener {
         fun onStateChange(view: SwapMenuLayout, state: Int)
+    }
+
+    class LimitHelper {
+        private var _currOpen: SwapMenuLayout? = null
+        private var _currPos: Int? = null
+        private val stateChange = OnStateChangeListener { view, state ->
+            if (state == ViewDragHelper.STATE_IDLE) {
+                if (view.isOpen) {
+                    _currOpen = view
+                    _currPos = view.tag as? Int
+                }
+            } else if (_currOpen != view) {
+                _currOpen?.close()
+            }
+        }
+
+        fun bind(swap: SwapMenuLayout, pos: Int) {
+            swap.tag = pos
+            swap.setOnStateChangeListener(stateChange)
+        }
+
+        val currPos: Int? get() = _currPos
+        val currOpen: SwapMenuLayout? get() = _currOpen
     }
 }
