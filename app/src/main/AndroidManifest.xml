@@ -4,10 +4,19 @@
 
     <uses-feature
         android:name="android.hardware.camera"
-        android:required="false" /> <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.CAMERA" /> <!-- webActivity -->
-    <uses-permission android:name="android.permission.INTERNET" /> <!-- ResultActivity -->
+        android:required="false" />
+
+    <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- webActivity -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- ResultActivity -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!--RecordActivity-->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".App"
@@ -22,6 +31,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
+        <activity
+            android:name=".views.RecordActivity"
+            android:exported="false" />
         <activity
             android:name=".views.ServerActivity"
             android:exported="false" />
@@ -50,14 +62,27 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.P1.Splash">
+            android:theme="@style/Theme.P1.AppCompat.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
         <service android:name=".views.BindServer" />
+
+        <!--分享文件， RecordActivity-->
+        <!--https://developer.android.google.cn/training/secure-file-sharing/setup-sharing?hl=zh-cn-->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:grantUriPermissions="true"
+            android:exported="false">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/share_file" />
+        </provider>
     </application>
 
 </manifest>

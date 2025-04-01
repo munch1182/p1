@@ -3,6 +3,7 @@ package com.munch1182.lib.helper
 import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.view.ContextThemeWrapper
@@ -44,15 +45,15 @@ interface LanguageHelperImpl {
      *     }
      * }
      */
-    fun attachBaseContext(newBase: Context): LocaleCtxWrapper {
+    fun attachBaseContext(newBase: Context, theme: Resources.Theme? = null): LocaleCtxWrapper {
         val conf = newBase.resources.configuration
         conf.setLocales(LocaleList(curr))
         val newCtx = newBase.createConfigurationContext(conf)
-        return LocaleCtxWrapper(newCtx, conf)
+        return LocaleCtxWrapper(newCtx, conf, theme ?: newCtx.theme)
     }
 }
 
-class LocaleCtxWrapper(ctx: Context, private val conf: Configuration) : ContextThemeWrapper(ctx, ctx.theme) {
+class LocaleCtxWrapper(ctx: Context, private val conf: Configuration, theme: Resources.Theme?) : ContextThemeWrapper(ctx, theme) {
     override fun applyOverrideConfiguration(overrideConfiguration: Configuration?) {
         overrideConfiguration?.setTo(conf)
         super.applyOverrideConfiguration(overrideConfiguration)

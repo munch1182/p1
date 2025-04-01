@@ -28,3 +28,13 @@ fun interface ViewInflaterProvider {
 fun interface ViewCtxProvider {
     fun onCreateView(ctx: Context): View?
 }
+
+@FunctionalInterface
+fun interface OnStateChangeListener<T> {
+    fun onStateChange(state: T)
+}
+
+@FunctionalInterface
+fun interface OnStateValueChangeListener<STATE, VALUE> {
+    fun onStateChange(state: STATE, value: VALUE)
+}

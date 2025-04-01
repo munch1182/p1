@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -19,11 +20,12 @@ import com.munch1182.lib.base.screen
 import com.munch1182.lib.base.screenDisplay
 import com.munch1182.lib.base.startActivity
 import com.munch1182.lib.base.statusHeight
-import com.munch1182.lib.base.toast
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
-import com.munch1182.lib.helper.curr
+import com.munch1182.lib.helper.result.JudgeHelper.IntentCanLaunchDialogProvider
+import com.munch1182.lib.helper.result.asAllowDenyDialog
 import com.munch1182.lib.helper.result.intent
+import com.munch1182.lib.helper.result.judge
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.LanguageHelper
 import com.munch1182.p1.base.str
@@ -34,10 +36,10 @@ import com.munch1182.p1.ui.theme.P1Theme
 import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
+import com.munch1182.p1.views.RecordActivity
 import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
-import com.munch1182.p1.views.libview.SwapMenuLayoutActivity
 import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
@@ -48,7 +50,7 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
-        startActivity<SwapMenuLayoutActivity>()
+        startActivity<RecordActivity>()
     }
 
     override fun recreate() {
@@ -59,6 +61,7 @@ class MainActivity : BaseActivity() {
     @Composable
     private fun Click() {
         JumpButton("权限相关", clazz = ResultActivity::class)
+        JumpButton("录音相关", clazz = RecordActivity::class)
         JumpButton("服务相关", clazz = ServerActivity::class)
         JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
@@ -68,7 +71,7 @@ class MainActivity : BaseActivity() {
         }
         ClickButton("开发者选项") { toDeveloperSettings() }
         JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))
-        JumpButton("关于节目", intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
+        JumpButton("关于界面", intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
         Column(
             modifier = Modifier.padding(top = PagePadding),
             horizontalAlignment = Alignment.Start
@@ -96,10 +99,28 @@ class MainActivity : BaseActivity() {
     }
 
     private fun toDeveloperSettings() {
-        if (isInDeveloperMode()) {
-            curr.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
-        } else {
-            toast("开发者模式未开启")
+        val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (isInDeveloperMode()) intent(devIntent).request {}
+        judge { isInDeveloperMode() }
+            .intent(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
+            .dialogWhen(developerDialog())
+            .request {
+                if (it) intent(devIntent).request {}
+            }
+    }
+
+    private fun developerDialog(): IntentCanLaunchDialogProvider {
+        return IntentCanLaunchDialogProvider { ctx, state ->
+            if (state.isAfter) {
+                null
+            } else {
+                AlertDialog.Builder(ctx)
+                    .setTitle("打开开发者选项")
+                    .setMessage("请连续点击版本号直到系统提示开发者模式已打开")
+                    .setPositiveButton("前往") { _, _ -> }
+                    .setNegativeButton("取消") { _, _ -> }
+                    .create().asAllowDenyDialog()
+            }
         }
     }
 
