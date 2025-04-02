@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.media.AudioFormat
 import android.os.Bundle
+import android.text.format.Formatter
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.Text
@@ -72,20 +73,19 @@ class RecordActivity : AppCompatActivity() {
         Value()
         if (!isRecording && path.msg.isNotBlank()) {
             Text(path.msg)
-            if (path.path != null) {
-                ClickButton("播放") { vm.play(path.path!!) }
-                ClickButton("分享") {
-                    // Cache路径下的文件不能分享
-                    val uri = FileProvider.getUriForFile(curr, "${AppHelper.packageName}.fileprovider", File(path.path!!))
-                    val shareIntent = Intent(Intent.ACTION_SEND, uri)
-                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        .setDataAndType(uri, "audio/wav")
-                        .putExtra(Intent.EXTRA_STREAM, uri)
-
-                    intent(Intent.createChooser(shareIntent, "分享录音")).request {}
-                }
+            path.path?.apply {
+                ClickButton("播放") { vm.play(this) }
+                ClickButton("分享") { share(this) }
             }
         }
+    }
+
+    private fun share(path: String) {
+        // Cache路径下的文件不能分享
+        val uri = FileProvider.getUriForFile(curr, "${AppHelper.packageName}.fileprovider", File(path))
+        val shareIntent = Intent(Intent.ACTION_SEND, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).setDataAndType(uri, "audio/*").putExtra(Intent.EXTRA_STREAM, uri)
+
+        intent(Intent.createChooser(shareIntent, "分享录音")).request {}
     }
 
     @Composable
@@ -135,12 +135,13 @@ class RecordVM : ViewModel() {
     private fun runLoop() {
         if (loopJob?.isActive == true) return
         viewModelScope.launch(Job().apply { loopJob = this } + Dispatchers.IO) {
+            val buffer = recordHelper.newBuffer
             while (coroutineContext.isActive) {
                 delay(40L)
-                val (s, i) = recordHelper.readWithReadValue() ?: continue
-                val db = s.calculateDB(i)
+                val size = recordHelper.record(buffer) ?: continue
+                fileHelper.write(buffer, size)
+                val db = buffer.calculateDB(size)
                 if (db <= 0) continue
-                fileHelper.write(s, i)
                 _db.emit(db)
             }
         }
@@ -152,19 +153,21 @@ class RecordVM : ViewModel() {
         recordHelper.stop()
         _isRecording.postValue(recordHelper.isRecording)
 
-        fileHelper.stopIfOver()
+        fileHelper.writeOver()
         fileHelper.collect { it, path ->
             val str = when (it) {
                 RecordWriteHelper.GenerateFile -> "正在生成文件"
                 RecordWriteHelper.Prepare -> "正在准备"
                 RecordWriteHelper.Translate -> "正在转换格式"
                 RecordWriteHelper.Write -> "正在写入数据"
-                RecordWriteHelper.Complete -> "录音文件已保存：$path"
+                RecordWriteHelper.Complete -> "录音文件已保存：$path(${path?.len})"
                 RecordWriteHelper.Exeception -> "发生错误"
             }
             _file.postValue(WriteState(str, path))
         }
     }
+
+    private val String.len: String get() = Formatter.formatFileSize(AppHelper, File(this).length())
 
     private fun stopLoop() {
         loopJob?.cancel()
@@ -190,6 +193,8 @@ class RecordVM : ViewModel() {
                 audioPlayer.write(buff, 0, len)
                 len = fos.read(buff, 0, buffer)
             }
+
+            audioPlayer.writeOver()
 
             runCatching { fos.close() }
         }
@@ -269,6 +274,7 @@ class RecordVM : ViewModel() {
 
             try {
                 val wavHeader = translate(record, dataSize)
+                log.log(wavHeader)
                 generateFile(wavHeader)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -299,20 +305,21 @@ class RecordVM : ViewModel() {
                 wavFos.write(wavHeader)
                 pcm.copyTo(wavFos)
 
+                log.log(wavHeader)
+
+                kotlin.runCatching { wavFos.flush() }
                 kotlin.runCatching { wavFos.close() }
                 kotlin.runCatching { pcm.close() }
-
-                log.logStr("pac: ${f.length()}, wav: ${wav.length()}")
             }
             //check(f, wav, wavHeader)
             log.logStr("write wav over")
-            //currFile = wav
-            currFile = f
+            currFile = wav
+            //currFile = f
             state = Complete
             stateChange = null
         }
 
-        fun stopIfOver() {
+        fun writeOver() {
             channel?.trySend(Data.end())
         }
 

@@ -16,13 +16,14 @@ import kotlin.math.sqrt
  */
 @SuppressLint("MissingPermission")
 class RecordHelper(
-    val sampleRate: Int = 44100,
-    val channel: Int = AudioFormat.CHANNEL_IN_STEREO
+    val sampleRate: Int = 44100, val channel: Int = AudioFormat.CHANNEL_IN_MONO, val format: Int = AudioFormat.ENCODING_PCM_16BIT
 ) {
 
-    val buffSize = AudioRecord.getMinBufferSize(sampleRate, channel, AudioFormat.ENCODING_PCM_16BIT)
+    val buffSize = AudioRecord.getMinBufferSize(sampleRate, channel, AudioFormat.ENCODING_PCM_16BIT) * 2
 
-    constructor(owner: LifecycleOwner, sampleRate: Int = 44100, channel: Int = AudioFormat.CHANNEL_IN_STEREO) : this(sampleRate, channel) {
+    constructor(
+        owner: LifecycleOwner, sampleRate: Int = 44100, channel: Int = AudioFormat.CHANNEL_IN_MONO, format: Int = AudioFormat.ENCODING_PCM_16BIT
+    ) : this(sampleRate, channel, format) {
         owner.lifecycle.onDestroyed { release() }
     }
 
@@ -31,7 +32,7 @@ class RecordHelper(
             MediaRecorder.AudioSource.MIC, //手机麦克风输入音源
             sampleRate, // 采样率，目前44100Hz是唯一可以保证兼容所有Android手机的采样率
             channel, // 单声道双声道
-            AudioFormat.ENCODING_PCM_16BIT, // 数据位宽，16BIT兼容所有Android手机
+            format, // 数据位宽，16BIT兼容所有Android手机
             buffSize // 音频缓冲区的大小, 调用方法算，否则缓冲区可能不够用会报错
         )
     }
@@ -55,27 +56,16 @@ class RecordHelper(
         }
     }
 
-    fun read(): ByteArray? {
+    val newBuffer: ByteArray get() = ByteArray(buffSize)
+
+    fun record(buffer: ByteArray): Int? {
         if (!isRecording) return null
-        val buffer = ByteArray(buffSize)
         // read实时读取
         val read = ar.read(buffer, 0, buffSize)
         if (read == AudioRecord.ERROR_INVALID_OPERATION || read == AudioRecord.ERROR_BAD_VALUE) {
             return null
         }
-        return buffer
-    }
-
-
-    fun readWithReadValue(): Pair<ByteArray, Int>? {
-        if (!isRecording) return null
-        val buffer = ByteArray(buffSize)
-        // read实时读取
-        val read = ar.read(buffer, 0, buffSize)
-        if (read == AudioRecord.ERROR_INVALID_OPERATION || read == AudioRecord.ERROR_BAD_VALUE) {
-            return null
-        }
-        return buffer to read
+        return read
     }
 
     fun release() {
@@ -103,10 +93,10 @@ fun ShortArray.calculateDB(read: Int): Double {
     // return 10 * log10(rms)
 }
 
-fun wavHeader(record: RecordHelper, dataSize: Long) = wavHeader(record.sampleRate, record.channel, AudioFormat.ENCODING_PCM_16BIT, dataSize)
+fun wavHeader(record: RecordHelper, dataSize: Long) = wavHeader(record.sampleRate, record.channel, record.format, dataSize)
 
 fun wavHeader(sampleRate: Int, channelCount: Int, bitDepth: Int, dataSize: Long): ByteArray {
-    val byteRate = sampleRate * channelCount * (bitDepth / 8)
+    val byteRate = sampleRate * channelCount * 2
     val totalDataSize = 36L + dataSize
 
     val header = ByteArray(44)
@@ -146,7 +136,7 @@ fun wavHeader(sampleRate: Int, channelCount: Int, bitDepth: Int, dataSize: Long)
     header[29] = ((byteRate shr 8) and 0xff).toByte()
     header[30] = ((byteRate shr 16) and 0xff).toByte()
     header[31] = ((byteRate shr 24) and 0xff).toByte()
-    header[32] = (2 * channelCount).toByte()
+    header[32] = (2 * 16 / 8).toByte()
     header[33] = 0
     header[34] = 16
     header[35] = 0
