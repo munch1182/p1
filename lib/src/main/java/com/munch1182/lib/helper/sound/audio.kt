@@ -90,7 +90,7 @@ class AudioPlayer(
             isOver = true
         }
         log.logStr("loop over")
-        //job = null
+        job = null
     }
 
     fun stopNow() {

@@ -114,7 +114,7 @@ class RecordVM : ViewModel() {
 
     private val recordHelper = RecordHelper(16000, AudioFormat.CHANNEL_IN_MONO)
     private val audioPlayer by lazy { AudioPlayer(recordHelper.sampleRate) }
-    private val fileHelper = RecordWriteHelper(viewModelScope, log)
+    private val fileHelper = RecordWriteHelper(viewModelScope, recordHelper, log)
 
     val isRecording = _isRecording.asLive()
     val db = _db.asStateFlow()
@@ -202,7 +202,7 @@ class RecordVM : ViewModel() {
 
     class WriteState(val msg: String = "", val path: String? = null)
 
-    private class RecordWriteHelper(private val scope: CoroutineScope, log: Logger) {
+    private class RecordWriteHelper(private val scope: CoroutineScope, private val record: RecordHelper, log: Logger) {
 
         private val log = log.newLog("write")
 
@@ -311,6 +311,9 @@ class RecordVM : ViewModel() {
                 kotlin.runCatching { wavFos.close() }
                 kotlin.runCatching { pcm.close() }
             }
+            //val bitRate = record.sampleRate * record.channel * 16 / 8
+            //log.logStr("bitRate: $bitRate")
+            //PCMDecoder.encodeToMp3(f.path, record.channel, bitRate, record.sampleRate, wav.path)
             //check(f, wav, wavHeader)
             log.logStr("write wav over")
             currFile = wav

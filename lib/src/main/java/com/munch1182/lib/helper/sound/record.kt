@@ -5,6 +5,7 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import androidx.lifecycle.LifecycleOwner
+import com.munch1182.lib.base.Loglog
 import com.munch1182.lib.base.onDestroyed
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -93,11 +94,17 @@ fun ShortArray.calculateDB(read: Int): Double {
     // return 10 * log10(rms)
 }
 
-fun wavHeader(record: RecordHelper, dataSize: Long) = wavHeader(record.sampleRate, record.channel, record.format, dataSize)
+fun wavHeader(record: RecordHelper, dataSize: Long) = wavHeader(
+    record.sampleRate, if (record.channel == AudioFormat.CHANNEL_IN_MONO) 1 else 2,
+    if (record.format == AudioFormat.ENCODING_PCM_16BIT) 16 else 8, dataSize
+)
 
-fun wavHeader(sampleRate: Int, channelCount: Int, bitDepth: Int, dataSize: Long): ByteArray {
-    val byteRate = sampleRate * channelCount * 2
+fun wavHeader(sampleRate: Int, channel: Int, bitsPerSample: Int, dataSize: Long): ByteArray {
+    val byteRate = sampleRate * channel * bitsPerSample / 8
+    val byteCount = channel * bitsPerSample / 8
     val totalDataSize = 36L + dataSize
+
+    Loglog.log(sampleRate, channel, bitsPerSample, dataSize, byteRate, byteCount, totalDataSize)
 
     val header = ByteArray(44)
     header[0] = 'R'.code.toByte()
@@ -118,7 +125,7 @@ fun wavHeader(sampleRate: Int, channelCount: Int, bitDepth: Int, dataSize: Long)
     header[13] = 'm'.code.toByte()
     header[14] = 't'.code.toByte()
     header[15] = ' '.code.toByte()
-    // size of fmt ' chunk
+    // SubChunk
     header[16] = 16
     header[17] = 0
     header[18] = 0
@@ -126,8 +133,9 @@ fun wavHeader(sampleRate: Int, channelCount: Int, bitDepth: Int, dataSize: Long)
     // format = 1
     header[20] = 1
     header[21] = 0
-    header[22] = channelCount.toByte()
-    header[23] = 0
+    header[22] = (channel and 0xFF).toByte()
+    header[23] = (channel shr 8 and 0xFF).toByte()
+
     header[24] = (sampleRate and 0xff).toByte()
     header[25] = ((sampleRate shr 8) and 0xff).toByte()
     header[26] = ((sampleRate shr 16) and 0xff).toByte()
@@ -136,10 +144,10 @@ fun wavHeader(sampleRate: Int, channelCount: Int, bitDepth: Int, dataSize: Long)
     header[29] = ((byteRate shr 8) and 0xff).toByte()
     header[30] = ((byteRate shr 16) and 0xff).toByte()
     header[31] = ((byteRate shr 24) and 0xff).toByte()
-    header[32] = (2 * 16 / 8).toByte()
-    header[33] = 0
-    header[34] = 16
-    header[35] = 0
+    header[32] = (byteCount and 0xFF).toByte()
+    header[33] = (byteCount shr 8 and 0xFF).toByte()
+    header[34] = (bitsPerSample and 0xFF).toByte()
+    header[35] = (bitsPerSample shr 8 and 0xFF).toByte()
     // data sub-chunk
     header[36] = 'd'.code.toByte()
     header[37] = 'a'.code.toByte()
