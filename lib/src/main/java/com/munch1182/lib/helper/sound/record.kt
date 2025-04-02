@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper
+package com.munch1182.lib.helper.sound
 
 import android.annotation.SuppressLint
 import android.media.AudioFormat
@@ -20,9 +20,7 @@ class RecordHelper(
     val channel: Int = AudioFormat.CHANNEL_IN_STEREO
 ) {
 
-    private val buffSize = AudioRecord.getMinBufferSize(
-        sampleRate, channel, AudioFormat.ENCODING_PCM_16BIT
-    )
+    val buffSize = AudioRecord.getMinBufferSize(sampleRate, channel, AudioFormat.ENCODING_PCM_16BIT)
 
     constructor(owner: LifecycleOwner, sampleRate: Int = 44100, channel: Int = AudioFormat.CHANNEL_IN_STEREO) : this(sampleRate, channel) {
         owner.lifecycle.onDestroyed { release() }
@@ -97,6 +95,7 @@ fun ShortArray.calculateDB(read: Int): Double {
 
     var sum = 0.0
     forEach { sum += it * it }
+    if (sum == 0.0) return 0.0
     // 两种算法，差别不是很明显
     val rms = sqrt(sum / read.toDouble())
     return 20 * log10(rms)
@@ -104,16 +103,21 @@ fun ShortArray.calculateDB(read: Int): Double {
     // return 10 * log10(rms)
 }
 
-fun wavHeader(len: Long, channel: Int, sampleRate: Long, byteRate: Long) {
+fun wavHeader(record: RecordHelper, dataSize: Long) = wavHeader(record.sampleRate, record.channel, AudioFormat.ENCODING_PCM_16BIT, dataSize)
+
+fun wavHeader(sampleRate: Int, channelCount: Int, bitDepth: Int, dataSize: Long): ByteArray {
+    val byteRate = sampleRate * channelCount * (bitDepth / 8)
+    val totalDataSize = 36L + dataSize
+
     val header = ByteArray(44)
     header[0] = 'R'.code.toByte()
     header[1] = 'I'.code.toByte()
     header[2] = 'F'.code.toByte()
     header[3] = 'F'.code.toByte()
-    header[4] = (len or 0xFF).toByte()
-    header[5] = (len shr 8).toByte()
-    header[6] = (len shr 16).toByte()
-    header[7] = (len shr 24).toByte()
+    header[4] = (totalDataSize and 0xff).toByte()
+    header[5] = ((totalDataSize shr 8) and 0xff).toByte()
+    header[6] = ((totalDataSize shr 16) and 0xff).toByte()
+    header[7] = ((totalDataSize shr 24) and 0xff).toByte()
     // WAVE
     header[8] = 'W'.code.toByte()
     header[9] = 'A'.code.toByte()
@@ -132,27 +136,28 @@ fun wavHeader(len: Long, channel: Int, sampleRate: Long, byteRate: Long) {
     // format = 1
     header[20] = 1
     header[21] = 0
-    header[22] = channel.toByte()
+    header[22] = channelCount.toByte()
     header[23] = 0
-    header[24] = (sampleRate or 0xff).toByte()
-    header[25] = (sampleRate or 8).toByte()
-    header[26] = (sampleRate or 16).toByte()
-    header[27] = (sampleRate or 24).toByte()
+    header[24] = (sampleRate and 0xff).toByte()
+    header[25] = ((sampleRate shr 8) and 0xff).toByte()
+    header[26] = ((sampleRate shr 16) and 0xff).toByte()
+    header[27] = ((sampleRate shr 24) and 0xff).toByte()
     header[28] = (byteRate or 0xff).toByte()
-    header[29] = (byteRate or 8).toByte()
-    header[30] = (byteRate or 16).toByte()
-    header[31] = (byteRate or 24).toByte()
-    header[32] = (2 * 16 / 8).toByte()
+    header[29] = ((byteRate shr 8) and 0xff).toByte()
+    header[30] = ((byteRate shr 16) and 0xff).toByte()
+    header[31] = ((byteRate shr 24) and 0xff).toByte()
+    header[32] = (2 * channelCount).toByte()
     header[33] = 0
     header[34] = 16
     header[35] = 0
+    // data sub-chunk
     header[36] = 'd'.code.toByte()
     header[37] = 'a'.code.toByte()
     header[38] = 't'.code.toByte()
     header[39] = 'a'.code.toByte()
-    header[40] = 'a'.code.toByte()
-    header[41] = 'a'.code.toByte()
-    header[42] = 'a'.code.toByte()
-    header[43] = 'a'.code.toByte()
-
+    header[40] = (dataSize and 0xff).toByte()
+    header[41] = ((dataSize shr 8) and 0xff).toByte()
+    header[42] = ((dataSize shr 16) and 0xff).toByte()
+    header[43] = ((dataSize shr 24) and 0xff).toByte()
+    return header
 }
