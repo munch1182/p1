@@ -26,3 +26,37 @@ fun Lifecycle.onCreated(onCreate: (LifecycleOwner) -> Unit) {
         }
     })
 }
+
+/**
+ * onCreate: true/onDestroy: false
+ */
+fun Lifecycle.onLife(isCreateOrDestroy: (Boolean) -> Unit) {
+    addObserver(object : DefaultLifecycleObserver {
+        override fun onCreate(owner: LifecycleOwner) {
+            super.onCreate(owner)
+            isCreateOrDestroy.invoke(true)
+        }
+
+        override fun onDestroy(owner: LifecycleOwner) {
+            super.onDestroy(owner)
+            isCreateOrDestroy.invoke(false)
+        }
+    })
+}
+
+/**
+ * onResume: true/onPause: false
+ */
+fun Lifecycle.onShow(isShowOrHidden: (Boolean) -> Unit) {
+    addObserver(object : DefaultLifecycleObserver {
+        override fun onResume(owner: LifecycleOwner) {
+            super.onResume(owner)
+            isShowOrHidden.invoke(true)
+        }
+
+        override fun onPause(owner: LifecycleOwner) {
+            super.onPause(owner)
+            isShowOrHidden.invoke(false)
+        }
+    })
+}

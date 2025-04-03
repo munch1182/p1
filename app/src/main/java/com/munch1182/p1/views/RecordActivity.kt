@@ -64,19 +64,23 @@ class RecordActivity : AppCompatActivity() {
     @Composable
     private fun Views() {
         val isRecording by vm.isRecording.observeAsState(false)
-        val path by vm.file.observeAsState(RecordVM.WriteState())
 
         ClickButton(if (!isRecording) "开始录音" else "停止录音") {
             permission(Manifest.permission.RECORD_AUDIO).dialogWhen(dialogPermission()).manualIntent().request { vm.toggle() }
         }
         Split()
         Value()
-        if (!isRecording && path.msg.isNotBlank()) {
-            Text(path.msg)
-            path.path?.apply {
-                ClickButton("播放") { vm.play(this) }
-                ClickButton("分享") { share(this) }
-            }
+        if (!isRecording) Files()
+
+    }
+
+    @Composable
+    private fun Files() {
+        val path by vm.file.observeAsState(RecordVM.WriteState())
+        Text(path.msg)
+        path.path?.apply {
+            ClickButton("播放") { vm.play(this) }
+            ClickButton("分享") { share(this) }
         }
     }
 
@@ -161,7 +165,7 @@ class RecordVM : ViewModel() {
                 RecordWriteHelper.Translate -> "正在转换格式"
                 RecordWriteHelper.Write -> "正在写入数据"
                 RecordWriteHelper.Complete -> "录音文件已保存：$path(${path?.len})"
-                RecordWriteHelper.Exeception -> "发生错误"
+                RecordWriteHelper.Exception -> "发生错误"
             }
             _file.postValue(WriteState(str, path))
         }
@@ -276,9 +280,9 @@ class RecordVM : ViewModel() {
                 val wavHeader = translate(record, dataSize)
                 log.log(wavHeader)
                 generateFile(wavHeader)
-            } catch (e: Exception) {
+            } catch (e: java.lang.Exception) {
                 e.printStackTrace()
-                state = Exeception
+                state = Exception
             } finally {
                 loopJob?.cancel()
                 loopJob = null
@@ -362,7 +366,7 @@ class RecordVM : ViewModel() {
         data object Translate : State()
         data object GenerateFile : State()
         data object Complete : State()
-        data object Exeception : State()
+        data object Exception : State()
 
         class Data(val byte: ByteArray, val size: Int = byte.size, val isEnd: Boolean = false) {
             companion object {

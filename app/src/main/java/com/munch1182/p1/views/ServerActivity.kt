@@ -8,7 +8,13 @@ import android.content.ServiceConnection
 import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.munch1182.lib.base.Logger
 import com.munch1182.lib.helper.curr
 import com.munch1182.p1.base.BaseActivity
@@ -41,11 +47,22 @@ class ServerActivity : BaseActivity() {
 
     @Composable
     private fun Views() {
-        ClickButton("绑定服务") {
-            curr.bindService(Intent(curr, BindServer::class.java), conn, Context.BIND_AUTO_CREATE)
+        var isBind by remember { mutableStateOf(false) }
+        var getValue by remember { mutableIntStateOf(-1) }
+        ClickButton(if (!isBind) "绑定服务" else "解绑服务") {
+            isBind = !isBind
+            if (isBind) {
+                runCatching { curr.bindService(Intent(curr, BindServer::class.java), conn, Context.BIND_AUTO_CREATE) }
+            } else {
+                getValue = -1
+                runCatching { curr.unbindService(conn) }
+            }
         }
-        ClickButton("取消绑定") { curr.unbindService(conn) }
-        ClickButton("获取值") { log.logStr("get: ${server?.rand}") }
+        if (isBind) ClickButton("获取值") {
+            getValue = server?.rand ?: -1
+            log.logStr("getValue: $getValue")
+        }
+        if (getValue != -1) Text("getValue: $getValue")
     }
 }
 
@@ -67,7 +84,7 @@ class BindServer : Service() {
         log.logStr("onCreate")
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
+    override fun onBind(intent: Intent?): IBinder {
         log.logStr("onBind")
         return binder
     }

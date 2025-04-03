@@ -125,6 +125,8 @@ class SwapMenuLayout @JvmOverloads constructor(context: Context, attrs: Attribut
     private val isR2L: Boolean get() = resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        menuView.translationX = 0f
+        dragHelper.abort()
         if (!isR2L) {
             contentView.layout(0, 0, measuredWidth, contentView.measuredHeight)
             menuView.layout(measuredWidth, 0, measuredWidth + menuView.measuredWidth, contentView.measuredHeight)

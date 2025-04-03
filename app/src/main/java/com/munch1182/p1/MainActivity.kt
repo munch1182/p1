@@ -18,7 +18,6 @@ import com.munch1182.lib.base.log
 import com.munch1182.lib.base.navigationHeight
 import com.munch1182.lib.base.screen
 import com.munch1182.lib.base.screenDisplay
-import com.munch1182.lib.base.startActivity
 import com.munch1182.lib.base.statusHeight
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
@@ -50,7 +49,7 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithBase { Click() }
-        startActivity<RecordActivity>()
+        //startActivity<RecordActivity>()
     }
 
     override fun recreate() {

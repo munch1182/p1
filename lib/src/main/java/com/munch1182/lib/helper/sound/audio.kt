@@ -46,6 +46,7 @@ class AudioPlayer(
         }
     }
 
+    // todo write应该处理回调，而不是循环
     fun write(data: ByteArray, start: Int = 0, len: Int = data.size) {
         //log.logStr("write: ${queue.size}")
         val byte = ByteArray(len)
