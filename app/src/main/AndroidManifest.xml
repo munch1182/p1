@@ -4,29 +4,15 @@
 
     <uses-feature
         android:name="android.hardware.camera"
-        android:required="false" />
-
-    <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.CAMERA" />
-
-    <!-- webActivity -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
-    <!-- RecordActivity -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
-    <!-- BluetoothActivity -->
+        android:required="false" /> <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.CAMERA" /> <!-- webActivity -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" /> <!-- RecordActivity -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" /> <!-- BluetoothActivity -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    <!--<uses-permission
-        android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation"
-        tools:targetApi="s" />-->
 
     <application
         android:name=".App"
@@ -41,6 +27,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
+        <activity
+            android:name=".views.MediaActivity"
+            android:exported="false" />
         <activity
             android:name=".views.BluetoothActivity"
             android:exported="false" />
@@ -94,6 +83,14 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/share_file" />
         </provider>
+
+        <service
+            android:name=".views.MediaService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

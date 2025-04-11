@@ -40,6 +40,7 @@ import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.views.BluetoothActivity
 import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
+import com.munch1182.p1.views.MediaActivity
 import com.munch1182.p1.views.RecordActivity
 import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.ServerActivity
@@ -65,6 +66,7 @@ class MainActivity : BaseActivity() {
         JumpButton("服务相关", clazz = ServerActivity::class)
         JumpButton("Dialog相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
+        JumpButton("Media相关", clazz = MediaActivity::class)
         JumpButton("View相关", clazz = ViewActivity::class)
         ClickButton("语言切换") {
             intent(Intent(this, LanguageActivity::class.java)).onData { recreateIfLangNeed(it) }
