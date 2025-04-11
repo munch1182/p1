@@ -4,19 +4,15 @@ import android.Manifest
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import androidx.annotation.RequiresPermission
-import com.munch1182.lib.base.newLog
-import com.munch1182.lib.helper.blue.BluetoothHelper
-import com.munch1182.lib.helper.blue.IBluetoothAdapter
 
-class LeScanner(private val l: BluetoothScanListener? = null) : IBluetoothScan, IBluetoothAdapter by BluetoothHelper {
+class LeScanner : BaseScanner() {
 
-    private val log = BluetoothHelper.log.newLog("LeScanner")
     private val callback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
             val dev = result?.device ?: return
             log.logStr("Scan Result: ${dev.address}")
-            l?.onScanned(dev)
+            scanDispatchCallback.onScanned(dev)
         }
 
         override fun onScanFailed(errorCode: Int) {
@@ -28,16 +24,16 @@ class LeScanner(private val l: BluetoothScanListener? = null) : IBluetoothScan, 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun startScan() {
         log.logStr("Start Scan")
-        l?.preScanStart()
+        scanDispatchCallback.onPreScanStart()
         adapter?.bluetoothLeScanner?.startScan(callback)
-        l?.onScanStart()
+        scanDispatchCallback.onScanStart()
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun stopScan() {
         log.logStr("Stop Scan")
-        l?.preScanStop()
+        scanDispatchCallback.onPreScanStop()
         adapter?.bluetoothLeScanner?.stopScan(callback)
-        l?.onScanStop()
+        scanDispatchCallback.onScanStop()
     }
 }

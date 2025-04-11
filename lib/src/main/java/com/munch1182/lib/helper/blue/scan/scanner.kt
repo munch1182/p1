@@ -3,6 +3,13 @@ package com.munch1182.lib.helper.blue.scan
 import android.Manifest
 import android.bluetooth.BluetoothDevice
 import androidx.annotation.RequiresPermission
+import com.munch1182.lib.base.newLog
+import com.munch1182.lib.helper.ARSDefaultSyncManager
+import com.munch1182.lib.helper.ARSManager
+import com.munch1182.lib.helper.blue.BluetoothHelper
+import com.munch1182.lib.helper.blue.IBluetoothAdapter
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 interface IBluetoothScan {
     /**
@@ -18,27 +25,71 @@ interface IBluetoothScan {
 
 interface BluetoothScanListener {
     /**
-     * 调用扫描设备，但还未实际返回执行开始扫描
+     * 调用扫描设备，但还未实际执行开始扫描
      */
-    fun preScanStart() {}
+    fun onPreScanStart() {}
 
     /**
      * 调用扫描设备成功
      */
-    fun onScanStart()
+    fun onScanStart() {}
 
     /**
      * 调用停止扫描，但还未实际执行停止扫描
      */
-    fun preScanStop() {}
+    fun onPreScanStop() {}
 
     /**
      * 调用停止扫描成功
      */
-    fun onScanStop()
+    fun onScanStop() {}
 
     /**
      * 扫描到该设备
      */
     fun onScanned(result: BluetoothDevice)
+}
+
+abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothHelper, ARSManager<BluetoothScanListener> by ARSDefaultSyncManager() {
+    protected val log = BluetoothHelper.log.newLog(this::class.java.simpleName)
+    private val lock = ReentrantLock()
+    private var _isScanning = false
+        get() = lock.withLock { field }
+        set(value) = lock.withLock {
+            log.logStr("isScanning: $field -> $value")
+            field = value
+        }
+
+    protected val scanDispatchCallback = object : BluetoothScanListener {
+        override fun onScanned(result: BluetoothDevice) {
+            log.logStr("onScanned: ${result.address}")
+            forEach { it.onScanned(result) }
+        }
+
+        override fun onPreScanStart() {
+            super.onPreScanStart()
+            log.logStr("onPreScanStart")
+            _isScanning = true
+            forEach { it.onPreScanStart() }
+        }
+
+        override fun onPreScanStop() {
+            super.onPreScanStop()
+            log.logStr("onPreScanStop")
+            forEach { it.onPreScanStop() }
+        }
+
+        override fun onScanStart() {
+            super.onScanStart()
+            log.logStr("onScanStart")
+            forEach { it.onScanStart() }
+        }
+
+        override fun onScanStop() {
+            super.onScanStop()
+            log.logStr("onScanStop")
+            _isScanning = false
+            forEach { it.onScanStop() }
+        }
+    }
 }

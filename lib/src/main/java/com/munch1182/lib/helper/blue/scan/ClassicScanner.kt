@@ -10,18 +10,15 @@ import android.os.Build
 import androidx.annotation.RequiresPermission
 import com.munch1182.lib.base.newLog
 import com.munch1182.lib.helper.blue.BluetoothHelper
-import com.munch1182.lib.helper.blue.IBluetoothAdapter
 
-class ClassicScanner(private val l: BluetoothScanListener? = null) : IBluetoothScan, IBluetoothAdapter by BluetoothHelper {
+class ClassicScanner : BaseScanner() {
 
-    private val log = BluetoothHelper.log.newLog("ClassicScanner")
-
-    private val receiver = BluetoothFoundReceiver(l)
+    private val receiver = BluetoothFoundReceiver(scanDispatchCallback)
 
     @RequiresPermission(android.Manifest.permission.BLUETOOTH_SCAN)
     override fun startScan() {
         log.logStr("Start Scan")
-        l?.preScanStart()
+        scanDispatchCallback.onPreScanStart()
         receiver.register(BluetoothHelper.ctx)
         adapter?.startDiscovery()
     }
@@ -29,7 +26,7 @@ class ClassicScanner(private val l: BluetoothScanListener? = null) : IBluetoothS
     @RequiresPermission(android.Manifest.permission.BLUETOOTH_SCAN)
     override fun stopScan() {
         log.logStr("Stop Scan")
-        l?.preScanStop()
+        scanDispatchCallback.onPreScanStop()
         receiver.unregister(BluetoothHelper.ctx)
         adapter?.cancelDiscovery()
     }
