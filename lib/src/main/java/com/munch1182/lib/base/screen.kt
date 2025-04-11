@@ -1,4 +1,4 @@
-package com.munch1182.lib
+package com.munch1182.lib.base
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -33,6 +33,7 @@ fun screen(): Rect {
         wm.currentWindowMetrics.bounds
     } else {
         DisplayMetrics().apply {
+            @Suppress("DEPRECATION")
             (wm.defaultDisplay).getRealMetrics(this)
         }.let {
             Rect(0, 0, it.widthPixels, it.heightPixels)
@@ -45,6 +46,7 @@ fun Activity.statusHeight(): Int {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             it.getInsets(WindowInsetsCompat.Type.statusBars()).top
         } else {
+            @Suppress("DEPRECATION")
             it.systemWindowInsetTop
         }
     } ?: 0
@@ -59,15 +61,9 @@ fun statusHeight(): Int {
     return 0
 }
 
-//fun Activity.isNavigationBarShow(): Boolean {
-//    return false
-//}
-//
-//fun Activity.navigationHeightIfShow() = if (isNavigationBarShow()) navigationHeight() else 0
 
 /**
  * 当使用全面屏手势更改底部导航栏显示后，获取的值会随之更改
- * 但是不显示仍返回有值
  */
 @SuppressLint("InternalInsetResource", "DiscouragedApi")
 fun navigationHeight(): Int {

@@ -10,13 +10,27 @@ android {
 
     buildFeatures {
         compose = true
+        viewBinding = true
     }
-
     setAPkRename()
+
+    flavorDimensions += "version"
+
+    productFlavors {
+        // View/Tool Windows/Build Variants
+        create("dev") {
+            versionNameSuffix = "_dev"
+            applicationIdSuffix = ".dev"
+            dimension = "version"
+        }
+
+        create("publish") {
+            dimension = "version"
+        }
+    }
 }
 
 dependencies {
-    implementation(projects.lib)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -31,6 +45,14 @@ dependencies {
 
     implementation(libs.androidx.core.splash)
 
+    implementation(projects.lib)
+    implementation(projects.libwidget)
+
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.compose.runtime.livedata)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -38,4 +60,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    implementation("com.github.lincollincol:PCM-Decoder:1.0")
 }

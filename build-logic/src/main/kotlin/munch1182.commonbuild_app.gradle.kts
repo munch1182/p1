@@ -20,7 +20,7 @@ android {
     // 配置文件名需要对齐
     val path = "gradle/key.properties"
     if (signingConfigs.findByName(signName) == null) {
-        val file = rootProject.file(path);
+        val file = rootProject.file(path)
         if (file.exists()) {
             signingConfigs.maybeCreate(signName).apply { sign(file, this) }
         }
@@ -34,9 +34,13 @@ android {
             }
             isMinifyEnabled = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
+        }
+        debug {
+            if (signingConfig == null) {
+                signingConfig = signingConfigs.findByName(signName)
+            }
         }
     }
 

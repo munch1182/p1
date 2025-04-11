@@ -1,122 +1,127 @@
 package com.munch1182.p1
 
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.munch1182.lib.clearScreenOn
-import com.munch1182.lib.findActivity
-import com.munch1182.lib.isDeveloperMode
-import com.munch1182.lib.keepScreenOn
-import com.munch1182.lib.navigationHeight
-import com.munch1182.lib.screen
-import com.munch1182.lib.screenDisplay
-import com.munch1182.lib.statusHeight
-import com.munch1182.lib.toast
-import com.munch1182.lib.versionCodeCompat
-import com.munch1182.lib.versionName
-import com.munch1182.p1.ui.theme.P1Theme
+import com.munch1182.lib.base.isInDeveloperMode
+import com.munch1182.lib.base.log
+import com.munch1182.lib.base.navigationHeight
+import com.munch1182.lib.base.screen
+import com.munch1182.lib.base.screenDisplay
+import com.munch1182.lib.base.statusHeight
+import com.munch1182.lib.base.versionCodeCompat
+import com.munch1182.lib.base.versionName
+import com.munch1182.lib.helper.result.JudgeHelper.IntentCanLaunchDialogProvider
+import com.munch1182.lib.helper.result.asAllowDenyDialog
+import com.munch1182.lib.helper.result.intent
+import com.munch1182.lib.helper.result.judge
+import com.munch1182.lib.helper.result.onData
+import com.munch1182.lib.helper.result.onTrue
+import com.munch1182.p1.base.BaseActivity
+import com.munch1182.p1.base.LanguageHelper
+import com.munch1182.p1.base.str
+import com.munch1182.p1.ui.ClickButton
+import com.munch1182.p1.ui.JumpButton
+import com.munch1182.p1.ui.PageTheme
+import com.munch1182.p1.ui.RvPage
+import com.munch1182.p1.ui.setContentWithRv
+import com.munch1182.p1.ui.theme.PagePadding
+import com.munch1182.p1.views.BluetoothActivity
+import com.munch1182.p1.views.DialogActivity
+import com.munch1182.p1.views.LanguageActivity
+import com.munch1182.p1.views.RecordActivity
+import com.munch1182.p1.views.ResultActivity
+import com.munch1182.p1.views.ServerActivity
+import com.munch1182.p1.views.TaskActivity
+import com.munch1182.p1.views.libview.ViewActivity
 
-class MainActivity : ComponentActivity() {
+class MainActivity : BaseActivity() {
+
+    private val log = log()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        keepScreenOn()
-        setContent {
-            P1Theme {
-                Scaffold(modifier = Modifier.fillMaxWidth()) { innerPadding ->
-                    Click(Modifier.padding(innerPadding))
-                }
+        setContentWithRv { Click() }
+        //startActivity<RecordActivity>()
+    }
+
+    @Composable
+    private fun Click() {
+        JumpButton("权限相关", clazz = ResultActivity::class)
+        JumpButton("蓝牙相关", clazz = BluetoothActivity::class)
+        JumpButton("录音相关", clazz = RecordActivity::class)
+        JumpButton("服务相关", clazz = ServerActivity::class)
+        JumpButton("Dialog相关", clazz = DialogActivity::class)
+        JumpButton("任务队列", clazz = TaskActivity::class)
+        JumpButton("View相关", clazz = ViewActivity::class)
+        ClickButton("语言切换") {
+            intent(Intent(this, LanguageActivity::class.java)).onData { recreateIfLangNeed(it) }
+        }
+        ClickButton("开发者选项") { toDeveloperSettings() }
+        JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))
+        JumpButton("关于界面", intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
+        MainInfo()
+    }
+
+    @Composable
+    private fun MainInfo() {
+        Column(
+            modifier = Modifier.padding(top = PagePadding), horizontalAlignment = Alignment.Start
+        ) {
+            val isPreMode = LocalInspectionMode.current
+            Text(if (isPreMode) "0.1.0(1)" else "$versionName($versionCodeCompat)")
+            Text(if (isPreMode) "1080(1080) x 2400(80 + 2320)" else screenStr())
+            Text("CURR SDK: ${Build.VERSION.SDK_INT}")
+            Text(if (isPreMode) "当前语言：zh" else "${str(R.string.curr_lang)}: ${LanguageHelper.curr}")
+        }
+    }
+
+    private fun recreateIfLangNeed(data: Intent) {
+        if (LanguageActivity.isNeedRecreate(data)) {
+            log.logStr("lang update, need recreate")
+            recreate()
+        }
+    }
+
+    private fun screenStr(): String {
+        val sc = screen()
+        val sd = screenDisplay()
+        val equalsHeight = sc.height() == (sd.heightPixels + statusHeight())
+        val navHeight = if (equalsHeight) 0 else navigationHeight()
+        return "${sc.width()}(${sd.widthPixels}) x ${sc.height()}(${statusHeight()} + ${sd.heightPixels} + $navHeight)"
+    }
+
+    private fun toDeveloperSettings() {
+        val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        judge { isInDeveloperMode() }.intent(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS)).dialogWhen(developerDialog()).onTrue { intent(devIntent).request {} }
+    }
+
+    private fun developerDialog(): IntentCanLaunchDialogProvider {
+        return IntentCanLaunchDialogProvider { ctx, state ->
+            if (state.isAfter) {
+                null
+            } else {
+                AlertDialog.Builder(ctx).setTitle("打开开发者选项").setMessage("请连续点击版本号直到系统提示开发者模式已打开").setPositiveButton("前往") { _, _ -> }.setNegativeButton("取消") { _, _ -> }.create().asAllowDenyDialog()
             }
         }
     }
-}
 
-@Composable
-fun Click(modifier: Modifier = Modifier) {
-    val ctx = LocalContext.current
-    val act = ctx.findActivity()
-    var keepFlag by remember { mutableStateOf(false) }
-    Column(modifier = modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        ClickButton("开发者选项界面", toDeveloperSettings(ctx))
-        JumpButton("设置界面", Intent(Settings.ACTION_SETTINGS))
-        JumpButton("关于界面", Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
-        ClickButton(if (keepFlag) "关闭屏幕常亮" else "保持屏幕常亮", {
-            keepFlag = !keepFlag
-            if (keepFlag) act?.keepScreenOn() else act?.clearScreenOn()
-        })
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(screenStr())
-            Text("CURR SDK: ${Build.VERSION.SDK_INT}")
-            Text("${versionName}($versionCodeCompat)")
-        }
+    @Preview(showBackground = true)
+    @Composable
+    fun ClickPreview() {
+        PageTheme { RvPage { Click() } }
     }
 }
 
-private fun screenStr(): String {
-    val sc = screen()
-    val sd = screenDisplay()
-    val equalsHeight = sc.height() == (sd.heightPixels + statusHeight())
-    val navHeight = if (equalsHeight) 0 else navigationHeight()
-    return "${sc.width()}(${sd.widthPixels}) x ${sc.height()}(${statusHeight()} + ${sd.heightPixels} + $navHeight)"
-}
-
-
-fun toDeveloperSettings(ctx: Context): () -> Unit {
-    if (isDeveloperMode()) {
-        return { ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)) }
-    } else {
-        // todo 去请求关于界面打开开发者模式并返回跳转
-        return { toast("开发者模式未开启") }
-    }
-}
-
-
-@Composable
-fun ClickButton(text: String, onClick: () -> Unit) {
-    Button(onClick, modifier = Modifier.fillMaxWidth()) {
-        Text(text)
-    }
-}
-
-@Composable
-fun JumpButton(text: String, intent: Intent) {
-    val ctx = LocalContext.current
-    ClickButton(text) { ctx.startActivity(intent) }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    P1Theme {
-        Click()
-    }
-}

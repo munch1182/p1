@@ -25,7 +25,7 @@ private fun find(file: File): Properties? {
 
 fun Project.sign(file: File, sc: SigningConfig) {
     kotlin.runCatching {
-        val prop = find(file) ?: return;
+        val prop = find(file) ?: return
         sc.storeFile(file(prop.getProperty("keyFile") ?: return))
         sc.storePassword(prop.getProperty("storePassword"))
         sc.keyAlias(prop.getProperty("keyAlias"))

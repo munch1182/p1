@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">p1</string>
+    <string name="app_name" translatable="false">p1</string>
+    <string name="curr_lang">当前语言</string>
 </resources>
