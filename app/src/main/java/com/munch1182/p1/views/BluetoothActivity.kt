@@ -2,6 +2,7 @@ package com.munch1182.p1.views
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothDevice
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -11,8 +12,12 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.munch1182.lib.base.asLive
+import com.munch1182.lib.base.log
+import com.munch1182.lib.base.toast
 import com.munch1182.lib.helper.blue.BluetoothHelper
-import com.munch1182.lib.helper.result.onGranted
+import com.munch1182.lib.helper.blue.scan
+import com.munch1182.lib.helper.blue.scan.BluetoothScanningListener
+import com.munch1182.lib.helper.result.isAllGranted
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.ui.ClickButton
@@ -40,23 +45,44 @@ class BluetoothActivity : BaseActivity() {
             } else {
                 arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
             }
-        }.onGranted { canScan.invoke() }
+        }.request {
+            if (it.isAllGranted) {
+                canScan()
+            } else {
+                toast("扫描失败")
+            }
+        }
     }
 }
 
 class BluetoothVM : ViewModel() {
-    private var _scanning = MutableLiveData(BluetoothHelper.isScanning)
+    private val log = log()
+    private var _scanning = MutableLiveData(false)
 
     val scanning = _scanning.asLive()
+    private val scanningListener = BluetoothScanningListener { _scanning.postValue(it) }
+    private val devs = HashMap<String, BluetoothDevice>()
+
+    init {
+        BluetoothHelper.addScanningListener(scanningListener)
+    }
 
     @SuppressLint("MissingPermission")
     fun toggleScan() {
-        if (BluetoothHelper.isScanning) BluetoothHelper.LE.stopScan() else BluetoothHelper.LE.startScan()
+        log.logStr("toggleScan")
+        if (scanning.value == true) {
+            BluetoothHelper.stopScan()
+        } else {
+            devs.clear()
+            BluetoothHelper.scan {
+                devs[it.address] = it
+            }
+        }
     }
 
     @SuppressLint("MissingPermission")
     override fun onCleared() {
         super.onCleared()
-        BluetoothHelper.LE.stopScan()
+        BluetoothHelper.removeScanningListener(scanningListener)
     }
 }

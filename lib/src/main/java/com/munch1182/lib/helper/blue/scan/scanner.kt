@@ -4,8 +4,8 @@ import android.Manifest
 import android.bluetooth.BluetoothDevice
 import androidx.annotation.RequiresPermission
 import com.munch1182.lib.base.newLog
-import com.munch1182.lib.helper.ARSDefaultSyncManager
-import com.munch1182.lib.helper.ARSManager
+import com.munch1182.lib.helper.ARDefaultSyncManager
+import com.munch1182.lib.helper.ARManager
 import com.munch1182.lib.helper.blue.BluetoothHelper
 import com.munch1182.lib.helper.blue.IBluetoothAdapter
 import java.util.concurrent.locks.ReentrantLock
@@ -23,7 +23,20 @@ interface IBluetoothScan {
     fun stopScan()
 }
 
-interface BluetoothScanListener {
+@FunctionalInterface
+fun interface BluetoothScannedListener {
+    /**
+     * 扫描到该设备
+     */
+    fun onScanned(result: BluetoothDevice)
+}
+
+@FunctionalInterface
+fun interface BluetoothScanningListener {
+    fun onScanning(isScanning: Boolean)
+}
+
+interface BluetoothScanListener : BluetoothScannedListener, BluetoothScanningListener {
     /**
      * 调用扫描设备，但还未实际执行开始扫描
      */
@@ -43,27 +56,32 @@ interface BluetoothScanListener {
      * 调用停止扫描成功
      */
     fun onScanStop() {}
-
-    /**
-     * 扫描到该设备
-     */
-    fun onScanned(result: BluetoothDevice)
 }
 
-abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothHelper, ARSManager<BluetoothScanListener> by ARSDefaultSyncManager() {
+abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothHelper, ARManager<BluetoothScanListener> by ARDefaultSyncManager() {
     protected val log = BluetoothHelper.log.newLog(this::class.java.simpleName)
+
     private val lock = ReentrantLock()
+    private val scannedManager = ARDefaultSyncManager<BluetoothScannedListener>()
+    private val scanningManager = ARDefaultSyncManager<BluetoothScanningListener>()
     private var _isScanning = false
         get() = lock.withLock { field }
         set(value) = lock.withLock {
             log.logStr("isScanning: $field -> $value")
             field = value
+            scanDispatchCallback.onScanning(value)
         }
 
     protected val scanDispatchCallback = object : BluetoothScanListener {
         override fun onScanned(result: BluetoothDevice) {
             log.logStr("onScanned: ${result.address}")
+            scannedManager.forEach { it.onScanned(result) }
             forEach { it.onScanned(result) }
+        }
+
+        override fun onScanning(isScanning: Boolean) {
+            scanningManager.forEach { it.onScanning(isScanning) }
+            forEach { it.onScanning(isScanning) }
         }
 
         override fun onPreScanStart() {
@@ -90,6 +108,11 @@ abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothHelpe
             log.logStr("onScanStop")
             _isScanning = false
             forEach { it.onScanStop() }
+            scannedManager.clear()
         }
     }
+
+    fun setScannedListener(l: BluetoothScannedListener) = scannedManager.add(l)
+    fun addScanningListener(l: BluetoothScanningListener) = scanningManager.add(l)
+    fun removeScanningListener(l: BluetoothScanningListener) = scanningManager.remove(l)
 }
