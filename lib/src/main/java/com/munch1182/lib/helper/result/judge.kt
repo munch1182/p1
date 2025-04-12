@@ -10,6 +10,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.base.OnResultListener
+import com.munch1182.lib.base.UnSupportImpl
 import com.munch1182.lib.base.newLog
 import com.munch1182.lib.base.onDestroyed
 import kotlinx.coroutines.Dispatchers
@@ -18,37 +19,38 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class JudgeHelper internal constructor(private val act: FragmentActivity, private val fm: FragmentManager) {
+class JudgeHelper internal constructor(internal val ctx: Ctx) {
 
     companion object {
-        fun init(act: FragmentActivity) = JudgeHelper(act, act.supportFragmentManager)
-        fun init(frag: Fragment) = JudgeHelper(frag.requireActivity(), frag.childFragmentManager)
+        fun init(act: FragmentActivity) = JudgeHelper(Ctx(act, act.supportFragmentManager))
+        fun init(frag: Fragment) = JudgeHelper(Ctx(frag.requireActivity(), frag.childFragmentManager))
         internal val log = ContractHelper.log.newLog("judge")
     }
 
-    fun judge(judge: OnJudge) = Input(Ctx(act, fm, judge))
+    fun judge(judge: OnJudge) = Input(ctx.apply { ctx.judge = judge })
 
     class Input internal constructor(private val ctx: Ctx) {
         fun intent(i: Intent) = Dialog(ctx.apply { input = i })
     }
 
-    class Dialog internal constructor(private val ctx: Ctx) : Req by Request(ctx) {
+    class Dialog internal constructor(ctx: Ctx) : Request(ctx) {
         fun dialogWhen(dp: IntentCanLaunchDialogProvider) = Request(ctx.apply { ctx.dp = dp })
     }
 
-    interface Req {
-        fun request(l: OnResultListener<Boolean>)
-    }
-
-    class Request internal constructor(private val ctx: Ctx) : Req {
-        override fun request(l: OnResultListener<Boolean>) = ctx.requestIntent(l)
+    open class Request internal constructor(internal val ctx: Ctx) {
+        fun request(l: OnResultListener<Boolean>) = ctx.requestIntent(l)
     }
 
     internal open class Ctx internal constructor(
-        act: FragmentActivity, fm: FragmentManager, internal var judge: OnJudge, internal var dp: IntentCanLaunchDialogProvider? = null
+        act: FragmentActivity, fm: FragmentManager, internal var judge: OnJudge? = null, internal var dp: IntentCanLaunchDialogProvider? = null
     ) : ContractHelper.Ctx<Intent, ActivityResult>(act, fm, ActivityResultContracts.StartActivityForResult()) {
+
+        constructor(ctx: Ctx) : this(ctx.act, ctx.fm, ctx.judge, ctx.dp) {
+            this.input = ctx.input
+        }
+
         override fun request(l: OnResultListener<ActivityResult>) = PermissionIntentFragment.get(fm).launch(input!!, l)
-        internal fun requestIntent(l: OnResultListener<Boolean>) {
+        internal open fun requestIntent(l: OnResultListener<Boolean>) {
             act.lifecycleScope.launch(Dispatchers.IO) {
                 val result = judgeCircle(State.Before)
                 log.logStr("complete: judge: $result")
@@ -57,6 +59,7 @@ class JudgeHelper internal constructor(private val act: FragmentActivity, privat
         }
 
         private suspend fun judgeCircle(state: State): Boolean {
+            val judge = judge ?: throw UnSupportImpl()
             if (judge.onJudge(act).apply { log.logStr("state:$state: judge: $this") }) return true
             val dialogAllow = dialogCollapse(state)
             log.logStr("state:$state: dialogResult: $dialogAllow")

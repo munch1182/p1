@@ -2,6 +2,7 @@ package com.munch1182.p1.views
 
 import android.Manifest
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.result.PickVisualMediaRequest
@@ -23,7 +24,9 @@ import com.munch1182.lib.helper.result.PermissionHelper
 import com.munch1182.lib.helper.result.PermissionHelper.PermissionCanRequestDialogProvider
 import com.munch1182.lib.helper.result.asAllowDenyDialog
 import com.munch1182.lib.helper.result.contract
+import com.munch1182.lib.helper.result.ifOk
 import com.munch1182.lib.helper.result.intent
+import com.munch1182.lib.helper.result.isAllGranted
 import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.p1.base.BaseActivity
@@ -64,6 +67,20 @@ class ResultActivity : BaseActivity() {
                 .intent(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).wPName())
                 .dialogWhen(intentDialog("请在接下来的页面中选择本应用，并选择允许，以便使用跨应用相关功能。", "请在接下来的页面中选择本应用，并选择允许，否则无法使用跨应用相关功能。"))
                 .request(callback)
+        }
+
+        Split()
+
+        ClickButton("蓝牙权限") {
+            permission {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+                } else {
+                    arrayOf(Manifest.permission.BLUETOOTH)
+                }
+            }.ifOk { it.isAllGranted }
+                .permission(Manifest.permission.ACCESS_FINE_LOCATION)
+
         }
 
         Text(result)

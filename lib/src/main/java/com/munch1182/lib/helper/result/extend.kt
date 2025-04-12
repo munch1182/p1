@@ -34,12 +34,12 @@ fun judge(judge: OnJudge) = JudgeHelper.init(currAsFM).judge(judge)
 
 val Map<String, PermissionHelper.Result>.isAllGranted get() = values.all { it.isGranted }
 
-fun PermissionHelper.Req.onGranted(granted: (() -> Unit)? = null) = request { if (it.isAllGranted) granted?.invoke() }
-fun JudgeHelper.Req.onTrue(onTrue: (() -> Unit)? = null) = request { if (it) onTrue?.invoke() }
-fun JudgeHelper.Req.onFalse(onFalse: (() -> Unit)? = null) = request { if (!it) onFalse?.invoke() }
-fun IntentHelper.Req.onData(onIntent: ((Intent) -> Unit)? = null) = request { it.data?.let { i -> onIntent?.invoke(i) } }
+fun PermissionHelper.Request.onGranted(granted: (() -> Unit)? = null) = request { if (it.isAllGranted) granted?.invoke() }
+fun JudgeHelper.Request.onTrue(onTrue: (() -> Unit)? = null) = request { if (it) onTrue?.invoke() }
+fun JudgeHelper.Request.onFalse(onFalse: (() -> Unit)? = null) = request { if (!it) onFalse?.invoke() }
+fun IntentHelper.Request.onData(onIntent: ((Intent) -> Unit)? = null) = request { it.data?.let { i -> onIntent?.invoke(i) } }
 
 
 suspend fun <I, O> ContractHelper.Request<I, O>.requestNow() = request(resCollapse())
-suspend fun PermissionHelper.Req.requestNow() = request(resCollapse())
-suspend fun JudgeHelper.Req.requestNow() = request(resCollapse())
+suspend fun PermissionHelper.Request.requestNow() = request(resCollapse())
+suspend fun JudgeHelper.Request.requestNow() = request(resCollapse())

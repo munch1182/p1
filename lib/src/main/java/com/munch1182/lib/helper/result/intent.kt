@@ -17,35 +17,36 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class IntentHelper internal constructor(private val act: FragmentActivity, private val fm: FragmentManager) {
+class IntentHelper internal constructor(internal val ctx: Ctx) {
 
     companion object {
-        fun init(act: FragmentActivity) = IntentHelper(act, act.supportFragmentManager)
-        fun init(frag: Fragment) = IntentHelper(frag.requireActivity(), frag.childFragmentManager)
+        fun init(act: FragmentActivity) = IntentHelper(Ctx(act, act.supportFragmentManager))
+        fun init(frag: Fragment) = IntentHelper(Ctx(frag.requireActivity(), frag.childFragmentManager))
         internal val log = ContractHelper.log.newLog("intent")
     }
 
-    fun intent(i: Intent) = Dialog(Ctx(act, fm).apply { input = i })
+    fun intent(i: Intent) = Dialog(ctx.apply { input = i })
 
-    class Dialog internal constructor(private val ctx: Ctx) : Req by Request(ctx) {
+    class Dialog internal constructor(ctx: Ctx) : Request(ctx) {
         fun dialogBefore(dp: AllDenyDialogProvider) = Request(ctx.apply { ctx.dp = dp })
     }
 
-    interface Req {
-        fun request(l: OnResultListener<ActivityResult>)
-    }
-
-    class Request internal constructor(private val ctx: Ctx) : Req {
-        override fun request(l: OnResultListener<ActivityResult>) = ctx.requestIntent(l)
+    open class Request internal constructor(internal val ctx: Ctx) {
+        open fun request(l: OnResultListener<ActivityResult>) = ctx.requestIntent(l)
     }
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager,
         internal var dp: AllDenyDialogProvider? = null
     ) : ContractHelper.Ctx<Intent, ActivityResult>(act, fm, ActivityResultContracts.StartActivityForResult()) {
+
+        constructor(ctx: Ctx) : this(ctx.act, ctx.fm, ctx.dp) {
+            this.input = ctx.input
+        }
+
         override fun request(l: OnResultListener<ActivityResult>) = PermissionIntentFragment.get(fm).launch(input!!, l)
 
-        internal fun requestIntent(l: OnResultListener<ActivityResult>) {
+        internal open fun requestIntent(l: OnResultListener<ActivityResult>) {
             act.lifecycleScope.launch {
                 val dialog = dialogCollapse()
                 if (!dialog) return@launch l.onResult(ActivityResult(Activity.RESULT_CANCELED, null)).apply { log.logStr("return after dialog manual cancel") }
