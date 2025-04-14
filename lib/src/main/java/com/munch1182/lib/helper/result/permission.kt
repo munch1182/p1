@@ -38,21 +38,21 @@ class PermissionHelper internal constructor(internal val ctx: Ctx) {
     }
 
     open class Request internal constructor(internal val ctx: Ctx) {
-        open fun request(l: OnResultListener<Map<String, Result>>) = ctx.requestPermission(l)
+        open fun request(l: OnResultListener<Map<String, Result>>) = ctx.request(l)
     }
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager,
         var dp: PermissionCanRequestDialogProvider? = null, var intent: android.content.Intent? = null
-    ) : ContractHelper.Ctx<Array<String>, Map<String, Boolean>>(act, fm, ActivityResultContracts.RequestMultiplePermissions()) {
+    ) : ContractHelper.Ctx<Array<String>, Map<String, Boolean>, Map<String, Result>>(act, fm, ActivityResultContracts.RequestMultiplePermissions()) {
 
         constructor(ctx: Ctx) : this(ctx.act, ctx.fm, ctx.dp, ctx.intent) {
             this.input = ctx.input
         }
 
-        override fun request(l: OnResultListener<Map<String, Boolean>>) = PermissionIntentFragment.get(fm).launch(input!!, l)
+        override fun requestLaunch(l: OnResultListener<Map<String, Boolean>>) = PermissionIntentFragment.get(fm).launch(input!!, l)
 
-        internal open fun requestPermission(l: OnResultListener<Map<String, Result>>) {
+        override fun request(l: OnResultListener<Map<String, Result>>) {
             act.lifecycleScope.launch(Dispatchers.IO) {
                 var res = requestCircle(State.Before)
                 res = needToIntent(res)
@@ -106,7 +106,7 @@ class PermissionHelper internal constructor(internal val ctx: Ctx) {
         }
 
         private suspend fun requestCollapse(): Map<String, Boolean> {
-            return withContext(Dispatchers.Main) { suspendCoroutine { c -> request { c.resume(it) } } }
+            return withContext(Dispatchers.Main) { suspendCoroutine { c -> requestLaunch { c.resume(it) } } }
         }
 
         private fun dispatchPermissionResult(state: State): Pair<MutableList<String>, HashMap<String, Result>> {

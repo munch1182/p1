@@ -32,26 +32,26 @@ class IntentHelper internal constructor(internal val ctx: Ctx) {
     }
 
     open class Request internal constructor(internal val ctx: Ctx) {
-        open fun request(l: OnResultListener<ActivityResult>) = ctx.requestIntent(l)
+        open fun request(l: OnResultListener<ActivityResult>) = ctx.request(l)
     }
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager,
         internal var dp: AllDenyDialogProvider? = null
-    ) : ContractHelper.Ctx<Intent, ActivityResult>(act, fm, ActivityResultContracts.StartActivityForResult()) {
+    ) : ContractHelper.Ctx<Intent, ActivityResult, ActivityResult>(act, fm, ActivityResultContracts.StartActivityForResult()) {
 
         constructor(ctx: Ctx) : this(ctx.act, ctx.fm, ctx.dp) {
             this.input = ctx.input
         }
 
-        override fun request(l: OnResultListener<ActivityResult>) = PermissionIntentFragment.get(fm).launch(input!!, l)
+        override fun requestLaunch(l: OnResultListener<ActivityResult>) = PermissionIntentFragment.get(fm).launch(input!!, l)
 
-        internal open fun requestIntent(l: OnResultListener<ActivityResult>) {
+        override fun request(l: OnResultListener<ActivityResult>) {
             act.lifecycleScope.launch {
                 val dialog = dialogCollapse()
                 if (!dialog) return@launch l.onResult(ActivityResult(Activity.RESULT_CANCELED, null)).apply { log.logStr("return after dialog manual cancel") }
                 log.logStr("dialog result: true")
-                return@launch request(l)
+                return@launch requestLaunch(l)
             }
         }
 

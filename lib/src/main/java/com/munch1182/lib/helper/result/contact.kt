@@ -52,8 +52,8 @@ class ContactHelper internal constructor(private val ctx: CtxWrapper) {
     internal class PCtxWrapper internal constructor(
         ctx: PermissionHelper.Ctx, internal var ifOk: IfOk<Map<String, PermissionHelper.Result>>? = null,
     ) : PermissionHelper.Ctx(ctx), CtxWrapper, CtxWrapperLink by CtxWrapperLinkImpl() {
-        override fun requestPermission(l: OnResultListener<Map<String, PermissionHelper.Result>>) {
-            /*super.requestPermission(l)*/
+        override fun request(l: OnResultListener<Map<String, PermissionHelper.Result>>) {
+            /*super.request(l)*/
             runFromFirst()
         }
     }
@@ -61,8 +61,8 @@ class ContactHelper internal constructor(private val ctx: CtxWrapper) {
     internal class ICtxWrapper internal constructor(
         ctx: IntentHelper.Ctx, internal var ifOk: IfOk<ActivityResult>? = null,
     ) : IntentHelper.Ctx(ctx), CtxWrapper, CtxWrapperLink by CtxWrapperLinkImpl() {
-        override fun requestIntent(l: OnResultListener<ActivityResult>) {
-            /*super.requestIntent(l)*/
+        override fun request(l: OnResultListener<ActivityResult>) {
+            /*super.request(l)*/
             runFromFirst()
         }
     }
@@ -70,7 +70,7 @@ class ContactHelper internal constructor(private val ctx: CtxWrapper) {
     internal class JCtxWrapper internal constructor(
         ctx: JudgeHelper.Ctx, internal var ifOk: IfOk<Boolean>? = null,
     ) : JudgeHelper.Ctx(ctx), CtxWrapper, CtxWrapperLink by CtxWrapperLinkImpl() {
-        override fun request(l: OnResultListener<ActivityResult>) {
+        override fun request(l: OnResultListener<Boolean>) {
             /*super.request(l)*/
             runFromFirst()
         }
@@ -82,7 +82,7 @@ class ContactHelper internal constructor(private val ctx: CtxWrapper) {
         fun newIntent() = IntentHelper(newICtxWrapper.apply { this@CtxWrapper.contactNext(this) })
         fun newJudge() = JudgeHelper(newJCtxWrapper.apply { this@CtxWrapper.contactNext(this) })
 
-        val contractCtx: ContractHelper.Ctx<*, *> get() = if (this is ContractHelper.Ctx<*, *>) this else throw UnSupportImpl()
+        val contractCtx: ContractHelper.Ctx<*, *, *> get() = if (this is ContractHelper.Ctx<*, *, *>) this else throw UnSupportImpl()
         val newPCtxWrapper get() = PCtxWrapper(PermissionHelper.Ctx(contractCtx.act, contractCtx.fm))
         val newICtxWrapper get() = ICtxWrapper(IntentHelper.Ctx(contractCtx.act, contractCtx.fm))
         val newJCtxWrapper get() = JCtxWrapper(JudgeHelper.Ctx(contractCtx.act, contractCtx.fm))

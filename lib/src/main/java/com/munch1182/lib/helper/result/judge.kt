@@ -1,6 +1,5 @@
 package com.munch1182.lib.helper.result
 
-
 import android.content.Context
 import android.content.Intent
 import androidx.activity.result.ActivityResult
@@ -38,19 +37,20 @@ class JudgeHelper internal constructor(internal val ctx: Ctx) {
     }
 
     open class Request internal constructor(internal val ctx: Ctx) {
-        fun request(l: OnResultListener<Boolean>) = ctx.requestIntent(l)
+        fun request(l: OnResultListener<Boolean>) = ctx.request(l)
     }
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager, internal var judge: OnJudge? = null, internal var dp: IntentCanLaunchDialogProvider? = null
-    ) : ContractHelper.Ctx<Intent, ActivityResult>(act, fm, ActivityResultContracts.StartActivityForResult()) {
+    ) : ContractHelper.Ctx<Intent, ActivityResult, Boolean>(act, fm, ActivityResultContracts.StartActivityForResult()) {
 
         constructor(ctx: Ctx) : this(ctx.act, ctx.fm, ctx.judge, ctx.dp) {
             this.input = ctx.input
         }
 
-        override fun request(l: OnResultListener<ActivityResult>) = PermissionIntentFragment.get(fm).launch(input!!, l)
-        internal open fun requestIntent(l: OnResultListener<Boolean>) {
+        override fun requestLaunch(l: OnResultListener<ActivityResult>) = PermissionIntentFragment.get(fm).launch(input!!, l)
+
+        override fun request(l: OnResultListener<Boolean>) {
             act.lifecycleScope.launch(Dispatchers.IO) {
                 val result = judgeCircle(State.Before)
                 log.logStr("complete: judge: $result")
@@ -65,17 +65,17 @@ class JudgeHelper internal constructor(internal val ctx: Ctx) {
             log.logStr("state:$state: dialogResult: $dialogAllow")
             if (!dialogAllow) return false
             log.logStr("start intent request")
-            withContext(Dispatchers.Main) { suspendCoroutine { c -> request { c.resume(it) } } }
+            withContext(Dispatchers.Main) { suspendCoroutine { c -> requestLaunch { c.resume(it) } } }
             log.logStr("start intent request back")
             return judgeCircle(state.nextState)
         }
 
         private suspend fun dialogCollapse(state: State): Boolean {
             return withContext(Dispatchers.Main) {
-                val dialog = dp?.onCreateDialog(act, state) ?: return@withContext state.isBefore.apply { PermissionHelper.log.logStr("dialog result $this as state is $state") }
+                val dialog = dp?.onCreateDialog(act, state) ?: return@withContext state.isBefore.apply { log.logStr("dialog result $this as state is $state") }
                 suspendCoroutine { c ->
                     dialog.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
-                    PermissionHelper.log.logStr("request dialog when $state")
+                    log.logStr("request dialog when $state")
                     dialog.show()
                 }
             }

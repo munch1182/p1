@@ -101,7 +101,7 @@ class ResultActivity : BaseActivity() {
             val (msg, ok) = when (state) {
                 PermissionHelper.State.Before -> if (noBefore) return@PermissionCanRequestDialogProvider null else "正在申请${name}相关权限, 用于拍摄照片。" to "允许"
                 PermissionHelper.State.Denied -> if (noDenied) return@PermissionCanRequestDialogProvider null else "正在申请${name}相关权限, 用于拍摄照片。" to "允许"
-                PermissionHelper.State.DeniedForever -> "该权限已被永久拒绝, 需要前往设置页面手动开启${name}权限, 否则该功能无法使用。" to "去开启"
+                PermissionHelper.State.DeniedForever -> "该权限已被拒绝, 需要前往设置页面手动开启${name}权限, 否则该功能无法使用。" to "去开启"
             }
             allowDenyDialog(msg, "权限申请", ok)
         }
