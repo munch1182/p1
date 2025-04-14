@@ -13,4 +13,5 @@ val PagePaddingHalf = PagePadding / 2
 val PagePaddingModifier = Modifier.padding(PagePadding)
 
 val FontSize = TextUnit.Unspecified
+val FontTitleSize = 16.sp
 val FontManySize = 12.sp
