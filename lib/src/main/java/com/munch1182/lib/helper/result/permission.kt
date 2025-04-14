@@ -37,9 +37,7 @@ class PermissionHelper internal constructor(internal val ctx: Ctx) {
         fun manualIntent(intent: android.content.Intent = appSetting()) = Request(ctx.apply { this.intent = intent })
     }
 
-    open class Request internal constructor(internal val ctx: Ctx) {
-        open fun request(l: OnResultListener<Map<String, Result>>) = ctx.request(l)
-    }
+    open class Request internal constructor(internal val ctx: Ctx) : ContractHelper.Request<Array<String>, Map<String, Boolean>, Map<String, Result>>(ctx)
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager,
@@ -125,6 +123,8 @@ class PermissionHelper internal constructor(internal val ctx: Ctx) {
             }
             return request to result
         }
+
+        override fun toString() = "$contract <- (${this.input?.joinToString()})"
     }
 
     @FunctionalInterface

@@ -2,9 +2,10 @@ package com.munch1182.lib.helper.result
 
 import android.content.Intent
 import androidx.activity.result.contract.ActivityResultContract
-import com.munch1182.lib.base.resCollapse
 import com.munch1182.lib.helper.currAsFM
 import com.munch1182.lib.helper.result.JudgeHelper.OnJudge
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * @see com.munch1182.lib.helper.ActivityCurrHelper.register
@@ -14,7 +15,12 @@ fun <I, O> contract(contract: ActivityResultContract<I, O>) = ContractHelper.ini
 /**
  * @see com.munch1182.lib.helper.ActivityCurrHelper.register
  */
-fun permission(vararg permission: String) = PermissionHelper.init(currAsFM).permission(permission.copyInto(Array(permission.size) { "" }))
+fun permissions(permission: Array<String>) = PermissionHelper.init(currAsFM).permission(permission)
+
+/**
+ * @see com.munch1182.lib.helper.ActivityCurrHelper.register
+ */
+fun permission(vararg permission: String) = permissions(permission.copyInto(Array(permission.size) { "" }))
 
 /**
  * @see com.munch1182.lib.helper.ActivityCurrHelper.register
@@ -40,6 +46,7 @@ fun JudgeHelper.Request.onFalse(onFalse: (() -> Unit)? = null) = request { if (!
 fun IntentHelper.Request.onData(onIntent: ((Intent) -> Unit)? = null) = request { it.data?.let { i -> onIntent?.invoke(i) } }
 
 
-suspend fun <I, O> ContractHelper.Request<I, O>.requestNow() = request(resCollapse())
-suspend fun PermissionHelper.Request.requestNow() = request(resCollapse())
-suspend fun JudgeHelper.Request.requestNow() = request(resCollapse())
+suspend fun <I, O> ContractHelper.Request<I, O, O>.requestNow() = suspendCoroutine { c -> request { c.resume(it) } }
+suspend fun PermissionHelper.Request.requestNow() = suspendCoroutine { c -> request { c.resume(it) } }
+suspend fun JudgeHelper.Request.requestNow() = suspendCoroutine { c -> request { c.resume(it) } }
+suspend fun IntentHelper.Request.requestNow() = suspendCoroutine { c -> request { c.resume(it) } }

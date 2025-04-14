@@ -31,9 +31,7 @@ class IntentHelper internal constructor(internal val ctx: Ctx) {
         fun dialogBefore(dp: AllDenyDialogProvider) = Request(ctx.apply { ctx.dp = dp })
     }
 
-    open class Request internal constructor(internal val ctx: Ctx) {
-        open fun request(l: OnResultListener<ActivityResult>) = ctx.request(l)
-    }
+    open class Request internal constructor(internal val ctx: Ctx) : ContractHelper.Request<Intent, ActivityResult, ActivityResult>(ctx)
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager,

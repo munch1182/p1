@@ -36,9 +36,7 @@ class JudgeHelper internal constructor(internal val ctx: Ctx) {
         fun dialogWhen(dp: IntentCanLaunchDialogProvider) = Request(ctx.apply { ctx.dp = dp })
     }
 
-    open class Request internal constructor(internal val ctx: Ctx) {
-        fun request(l: OnResultListener<Boolean>) = ctx.request(l)
-    }
+    open class Request internal constructor(internal val ctx: Ctx) : ContractHelper.Request<Intent, ActivityResult, Boolean>(ctx)
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager, internal var judge: OnJudge? = null, internal var dp: IntentCanLaunchDialogProvider? = null

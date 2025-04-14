@@ -24,14 +24,14 @@ class ContractHelper internal constructor(private val act: FragmentActivity, pri
         fun input(input: I?) = Request(ctx.apply { ctx.input = input })
     }
 
-    class Request<I, O> internal constructor(private val ctx: Ctx<I, O, O>) {
-        fun request(l: OnResultListener<O>) = ctx.request(l)
+    open class Request<I, O, O2> internal constructor(private val ctx: Ctx<I, O, O2>) {
+        fun request(l: OnResultListener<O2>) = ctx.request(l)
     }
 
     internal open class Ctx<INPUT, OUTPUT, LISTENER> internal constructor(
         internal val act: FragmentActivity,
         internal val fm: FragmentManager,
-        private val contract: ActivityResultContract<INPUT, OUTPUT>,
+        internal val contract: ActivityResultContract<INPUT, OUTPUT>,
         internal var input: INPUT? = null,
     ) {
 

@@ -4,15 +4,11 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import androidx.activity.ComponentDialog
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @FunctionalInterface
 fun interface OnResultListener<T> {
     fun onResult(result: T)
 }
-
-suspend fun <T> resCollapse() = suspendCoroutine { c -> OnResultListener<T> { c.resume(it) } }
 
 @FunctionalInterface
 fun interface DialogProvider {
