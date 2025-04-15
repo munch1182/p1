@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.log
+import com.munch1182.lib.helper.blue.scan.BluetoothScanResultListener
 import com.munch1182.lib.helper.blue.scan.BluetoothScannedListener
 import com.munch1182.lib.helper.blue.scan.BluetoothScanningListener
 import com.munch1182.lib.helper.blue.scan.ClassicScanner
@@ -19,7 +20,7 @@ object BluetoothHelper : IBluetoothEnv by BluetoothEnv, IBluetoothScan {
     internal val ctx: Context get() = AppHelper
 
     private val LE = LeScanner()
-    private val CLASSIC = ClassicScanner()
+    val CLASSIC = ClassicScanner()
 
     override fun startScan() = LE.startScan()
     override fun stopScan() = LE.stopScan()
@@ -29,6 +30,11 @@ object BluetoothHelper : IBluetoothEnv by BluetoothEnv, IBluetoothScan {
      */
     fun setScannedListener(l: BluetoothScannedListener): BluetoothHelper {
         LE.setScannedListener(l)
+        return this
+    }
+
+    fun setScannedListener(l: BluetoothScanResultListener): BluetoothHelper {
+        LE.setScanResultListener(l)
         return this
     }
 

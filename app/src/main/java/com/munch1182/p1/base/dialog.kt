@@ -39,7 +39,7 @@ object DialogHelper {
     }
 
     fun intentBlueScan(): IntentCanLaunchDialogProvider {
-        return IntentCanLaunchDialogProvider { _, _ -> allowDenyDialog("蓝牙扫描属于附近设备，所以需要定位功能及权限，请打开定位功能", "权限申请", "去打开") }
+        return IntentCanLaunchDialogProvider { _, _ -> allowDenyDialog("蓝牙扫描附近设备，需要定位功能及权限，请打开定位功能", "权限申请", "去打开") }
     }
 
     fun permissionBlueScan(): PermissionCanRequestDialogProvider {

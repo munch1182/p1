@@ -27,7 +27,6 @@ class ClassicScanner : BaseScanner() {
     override fun stopScan() {
         log.logStr("Stop Scan")
         scanDispatchCallback.onPreScanStop()
-        receiver.unregister(BluetoothHelper.ctx)
         adapter?.cancelDiscovery()
     }
 
@@ -44,7 +43,8 @@ class ClassicScanner : BaseScanner() {
             })
         }
 
-        fun unregister(context: Context) {
+        // 由stopScan的广播自动取消注册
+        private fun unregister(context: Context) {
             log.logStr("Unregister")
             context.unregisterReceiver(this)
         }
@@ -61,6 +61,7 @@ class ClassicScanner : BaseScanner() {
                 BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
                     log.logStr("Found: action: $action")
                     l?.onScanStop()
+                    unregister(BluetoothHelper.ctx)
                 }
 
                 BluetoothDevice.ACTION_FOUND -> {

@@ -11,8 +11,10 @@ class LeScanner : BaseScanner() {
     private val callback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
-            log.logStr("Scan Result:  ${result?.device?.address}")
-            val dev = result?.device ?: return
+            /*log.logStr("Scan Result: $callbackType,  ${result?.device?.address}")*/
+            val scanResult = result ?: return
+            val dev = scanResult.device ?: return
+            scanDispatchCallback.onScanned(scanResult)
             scanDispatchCallback.onScanned(dev)
         }
 

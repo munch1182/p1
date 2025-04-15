@@ -41,32 +41,20 @@ fun PageTheme(content: @Composable (PaddingValues) -> Unit) {
 
 @Composable
 fun RvPage(modifier: Modifier = Modifier, content: @Composable LazyItemScope.() -> Unit) {
-    LazyColumn(
-        modifier = modifier
-            .padding(PagePadding)
-            .fillMaxWidth()
-    ) {
-        item { content(this) }
-    }
+    LazyColumn(modifier = modifier.fillMaxWidth()) { item { content(this) } }
 }
 
 @Composable
 fun ScrollPage(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = modifier
-            .padding(PagePadding)
-            .fillMaxWidth()
-    ) {
-        content(this)
-    }
+    Column(modifier = modifier.fillMaxWidth()) { content(this) }
 }
 
-fun ComponentActivity.setContentWithRv(content: @Composable LazyItemScope.() -> Unit) {
-    setContentWithTheme { ip -> RvPage(Modifier.padding(ip)) { content(this) } }
+fun ComponentActivity.setContentWithRv(modifier: Modifier = Modifier.padding(PagePadding), content: @Composable LazyItemScope.() -> Unit) {
+    setContentWithTheme { ip -> RvPage(modifier.padding(ip)) { content(this) } }
 }
 
-fun ComponentActivity.setContentWithScroll(content: @Composable ColumnScope.() -> Unit) {
-    setContentWithTheme { ip -> ScrollPage(Modifier.padding(ip)) { content(this) } }
+fun ComponentActivity.setContentWithScroll(modifier: Modifier = Modifier.padding(PagePadding), content: @Composable ColumnScope.() -> Unit) {
+    setContentWithTheme { ip -> ScrollPage(modifier.padding(ip)) { content(this) } }
 }
 
 @Composable
