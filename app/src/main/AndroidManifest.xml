@@ -4,21 +4,11 @@
 
     <uses-feature
         android:name="android.hardware.camera"
-        android:required="false" />
-
-    <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.CAMERA" />
-
-    <!-- webActivity -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
-    <!-- RecordActivity -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
-    <!-- BluetoothActivity, ResultActivity -->
+        android:required="false" /> <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.CAMERA" /> <!-- webActivity -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" /> <!-- RecordActivity -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" /> <!-- BluetoothActivity, ResultActivity -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -38,6 +28,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
+        <activity
+            android:name=".views.libview.RecyclerviewActivity"
+            android:exported="false" />
         <activity
             android:name=".views.MediaActivity"
             android:exported="false" />

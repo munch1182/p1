@@ -15,5 +15,6 @@ class ViewActivity : BaseActivity() {
     @Composable
     private fun Click() {
         JumpButton("SwapMenuLayout", clazz = SwapMenuLayoutActivity::class)
+        JumpButton("RecyclerView", clazz = RecyclerviewActivity::class)
     }
 }
