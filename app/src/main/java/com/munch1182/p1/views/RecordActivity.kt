@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.Logger
 import com.munch1182.lib.base.asLive
 import com.munch1182.lib.base.asStateFlow
@@ -32,7 +33,6 @@ import com.munch1182.lib.base.nowStr
 import com.munch1182.lib.helper.FileHelper
 import com.munch1182.lib.helper.FileHelper.sureExists
 import com.munch1182.lib.helper.closeQuietly
-import com.munch1182.lib.helper.currAct
 import com.munch1182.lib.helper.result.PermissionHelper.PermissionCanRequestDialogProvider
 import com.munch1182.lib.helper.result.asAllowDenyDialog
 import com.munch1182.lib.helper.result.intent
@@ -51,7 +51,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -60,7 +59,12 @@ import java.io.FileOutputStream
 
 class RecordActivity : AppCompatActivity() {
 
-    private val vm by viewModels<RecordVM>()
+    companion object {
+        const val SAMPLE = 16000
+    }
+
+    private val recordVM by viewModels<RecordVM>()
+    private val playVM by viewModels<PlayVM>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,10 +73,10 @@ class RecordActivity : AppCompatActivity() {
 
     @Composable
     private fun Views() {
-        val isRecording by vm.isRecording.observeAsState(false)
+        val isRecording by recordVM.isRecording.observeAsState(false)
 
         ClickButton(if (!isRecording) "开始录音" else "停止录音") {
-            permission(Manifest.permission.RECORD_AUDIO).dialogWhen(dialogPermission()).manualIntent().request { vm.recordToggle() }
+            permission(Manifest.permission.RECORD_AUDIO).dialogWhen(dialogPermission()).manualIntent().request { recordVM.recordToggle() }
         }
         Split()
         Value()
@@ -81,13 +85,14 @@ class RecordActivity : AppCompatActivity() {
 
     @Composable
     private fun Files() {
-        val state by vm.file.observeAsState(RecordVM.WriteState())
+        val state by recordVM.file.observeAsState(RecordVM.WriteState())
         val list = state.toList()
         LazyColumn { items(list.size) { index -> Item(list[index]) } }
     }
 
     @Composable
     private fun Item(item: RecordVM.WriteState) {
+        val isPlay by playVM.isPlay.observeAsState(false)
         Text(item.msg)
         item.path?.let { p ->
             Row(
@@ -96,19 +101,24 @@ class RecordActivity : AppCompatActivity() {
                     .padding(top = PagePaddingHalf, bottom = PagePaddingHalf),
                 horizontalArrangement = Arrangement.spacedBy(PagePaddingHalf)
             ) {
-                ClickButton("播放") { vm.playByAudioTrack(p) }
-                if (item.isPcm) ClickButton("转换") { vm.trans(p) }
-                if (item.isWav) ClickButton("播放") { vm.playByMedia(p) }
+                ClickButton(if (isPlay) "停止" else "播放") { if (isPlay) playVM.stopPlay() else playVM.playByAudioTrack(p) }
+                if (item.isPcm) ClickButton("转换") { recordVM.trans(p) }
+                if (item.isWav) ClickButton("播放") { playVM.playByMedia(p) }
                 ClickButton("分享") { share(p) }
             }
-            if (item.isWav) ProgressPlay()
+            if (item.isWav && isPlay) ProgressPlay()
         }
     }
 
     @Composable
     private fun ProgressPlay() {
-        val progress by vm.progressPlay.collectAsState(0f)
-        Slider(value = progress, onValueChange = { vm.seekPlayTo(it) }, onValueChangeFinished = { vm.seekPlayTo() }, valueRange = 0f..100f)
+        val progress by playVM.progressPlay.collectAsState(PlayVM.Progress(0, 1))
+        Slider(
+            value = progress.progress.toFloat(),
+            onValueChange = { playVM.seekPlayTo(it.toInt()) },
+            onValueChangeFinished = { playVM.seekPlayTo(-1) },
+            valueRange = 0f..progress.max.toFloat()
+        )
     }
 
     private fun share(path: String) {
@@ -121,7 +131,7 @@ class RecordActivity : AppCompatActivity() {
 
     @Composable
     private fun Value() {
-        val db by vm.db.collectAsState()
+        val db by recordVM.db.collectAsState()
         Text("DB: $db")
     }
 
@@ -141,24 +151,20 @@ class RecordVM : ViewModel() {
     private val log = log()
 
     // RecordHelper必须在有权限之后创建，所以对其的所有访问都应在有权限之后
-    private val recordHelper by lazy { RecordHelper(16000, AudioFormat.CHANNEL_IN_MONO) }
+    private val recordHelper by lazy { RecordHelper(RecordActivity.SAMPLE, AudioFormat.CHANNEL_IN_MONO) }
     private val writeHelper by lazy { RecordWriteHelper(log) }
-    private val audioPlayer by lazy { AudioPlayer(recordHelper.sampleRate) }
 
     private val _isRecording = MutableLiveData(false)
     private val _db = MutableStateFlow(0.0)
     private val _file = MutableLiveData(WriteState())
-    private val _progressPlay = MutableStateFlow(0f)
 
     val isRecording = _isRecording.asLive()
     val db = _db.asStateFlow()
     val file = _file.asLive()
-    val progressPlay = _progressPlay.asStateFlow()
 
     private val _isRecordingImpl get() = recordHelper.isRecording
     private var recordJob: Job? = null
     private var tranJob: Job? = null
-    private var media: MediaPlayer? = null
 
     fun recordToggle() = if (_isRecordingImpl) stopRecord() else startRecord()
 
@@ -203,24 +209,8 @@ class RecordVM : ViewModel() {
         _isRecording.postValue(recordHelper.isRecording)
     }
 
-    fun playByAudioTrack(path: String) {
-        audioPlayer.prepare()
-        viewModelScope.launch(Dispatchers.IO) {
-            val f = FileInputStream(File(path))
-            val buffer = audioPlayer.newBuffer
-            var read = f.read(buffer)
-            while (read != -1) {
-                audioPlayer.write(buffer, 0, read)
-                read = f.read(buffer)
-            }
-            audioPlayer.writeOver()
-            f.closeQuietly()
-        }
-    }
-
     fun trans(path: String) {
         viewModelScope.launchIO {
-            stopMedia()
             writeHelper.prepareWav(path)
             _file.postValue(WriteState.pcmComplete(path).wavPrepare())
 
@@ -261,32 +251,8 @@ class RecordVM : ViewModel() {
         tranJob = null
     }
 
-    private fun stopMedia() {
-        media?.release()
-        media = null
-    }
-
-    fun playByMedia(path: String) {
-        if (media == null) {
-            media = MediaPlayer.create(currAct, FileHelper.uri(path))
-        }
-        media?.start()
-    }
-
-    fun pauseMedia() {
-        media?.pause()
-    }
-
-    fun seekPlayTo(it: Float? = null) {
-        if (it != null) {
-            runBlocking { _progressPlay.emit(it) }
-        } else {
-            val media = media ?: return
-            val progress = _progressPlay.value
-            val seek = (progress * media.duration).toInt()
-            media.seekTo(seek)
-            log.logStr("seekTo $seek")
-        }
+    class ItemState(val isPlaying: Boolean = false, val writeState: WriteState = WriteState()) {
+        fun togglePlaying() = ItemState(!isPlaying, writeState)
     }
 
     class WriteState(private val type: Type = PCM, val msg: String = "", val path: String? = null, private val _writeState: HashMap<Type, WriteState> = hashMapOf()) {
@@ -327,7 +293,6 @@ class RecordVM : ViewModel() {
         stopRecord()
         stopTrans()
         writeHelper.clear()
-        stopMedia()
     }
 
     class RecordWriteHelper(from: Logger) {
@@ -337,7 +302,6 @@ class RecordVM : ViewModel() {
         private val dir = FileHelper.newFile("record")
         private var fos: FileOutputStream? = null
         private var file: File? = null
-
 
         fun write(byte: ByteArray, read: Int = byte.size) {
             fos?.write(byte, 0, read)
@@ -377,5 +341,97 @@ class RecordVM : ViewModel() {
             dir.deleteRecursively()
         }
     }
+}
+
+class PlayVM : ViewModel() {
+
+
+    private val _isPlay = MutableLiveData(false)
+    private val _progressPlay = MutableStateFlow(Progress(0, 0))
+
+    val isPlay = _isPlay.asLive()
+    val progressPlay = _progressPlay.asStateFlow()
+
+    private val audioPlayer by lazy { AudioPlayer(RecordActivity.SAMPLE) }
+    private val log = log()
+    private var stopPlay = false
+
+    private var media: MediaPlayer? = null
+
+    fun stopPlay() {
+        log.logStr("stopPlay")
+        stopPlay = true
+        audioPlayer.stop()
+
+        if (media?.isPlaying == true) {
+            media?.stop()
+        }
+    }
+
+    fun playByAudioTrack(path: String) {
+        log.logStr("playByAudioTrack $path")
+        audioPlayer.prepare()
+        _isPlay.postValue(true)
+        viewModelScope.launchIO {
+            val f = FileInputStream(File(path))
+            val buffer = audioPlayer.newBuffer
+            var read = f.read(buffer)
+            log.logStr("loop write start")
+            while (read != -1 && !stopPlay) {
+                audioPlayer.write(buffer, 0, read)
+                read = f.read(buffer)
+            }
+            log.logStr("loop write over")
+            if (!stopPlay) {
+                audioPlayer.writeOver {
+                    log.logStr("writeOver callback")
+                    _isPlay.postValue(false)
+                }
+            } else {
+                _isPlay.postValue(false)
+            }
+            stopPlay = false
+            f.closeQuietly()
+        }
+    }
+
+    fun seekPlayTo(it: Int) {
+        if (it == -1) {
+            media?.seekTo(_progressPlay.value.progress)
+        } else {
+            runBlocking { _progressPlay.emit(Progress(it, _progressPlay.value.max)) }
+        }
+    }
+
+    fun playByMedia(path: String) {
+        val media = MediaPlayer.create(AppHelper, FileHelper.uri(path))
+        media.setOnCompletionListener { _isPlay.postValue(false) }
+        media.start()
+        viewModelScope.launchIO {
+            _progressPlay.emit(Progress(0, media.duration))
+            while (media.isPlaying) {
+                delay(1000L)
+                _progressPlay.emit(Progress(media.currentPosition, media.duration))
+            }
+        }
+        _isPlay.postValue(true)
+        this.media = media
+    }
+
+    private fun release() {
+        media?.let {
+            it.stop()
+            it.release()
+        }
+        media = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        release()
+        stopPlay()
+    }
+
+    class Progress(val progress: Int, val max: Int)
 }
 

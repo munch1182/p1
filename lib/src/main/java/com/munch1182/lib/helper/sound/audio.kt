@@ -23,34 +23,29 @@ class AudioPlayer(
 
     private val log = log()
     private val audioFormat = AudioFormat.Builder().setEncoding(format).setSampleRate(sampleRate).setChannelMask(channel).build()
+
+    /**
+     * @see newBuffer
+     */
     val buffSize = AudioTrack.getMinBufferSize(sampleRate, channel, format) * 2
+
     private val player = AudioTrack.Builder().setAudioAttributes(
         AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
-    ).setAudioFormat(audioFormat).setBufferSizeInBytes(buffSize).setTransferMode(AudioTrack.MODE_STREAM) // 边写边播
+    ).setAudioFormat(audioFormat).setBufferSizeInBytes(buffSize)
+        .setTransferMode(AudioTrack.MODE_STREAM) // 边写边播
         .build()
 
     val state get() = player.playState
 
     val newBuffer: ByteArray get() = ByteArray(player.bufferCapacityInFrames)
 
-    private val fsib by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            audioFormat.frameSizeInBytes
-        } else {
-            // see android.media.AudioFormat#getBytesPerSample
-            when (format) {
-                AudioFormat.ENCODING_PCM_8BIT -> 1
-                AudioFormat.ENCODING_PCM_16BIT -> 2
-                else -> 1
-            }
-        }
-    }
+    private val fsib by lazy { audioFormat.frameSizeInBytesCompat }
 
     private var writeListener: (() -> Unit)? = null
 
     private val callback = object : AudioTrack.OnPlaybackPositionUpdateListener {
         override fun onMarkerReached(track: AudioTrack?) {
-            log.logStr("onMarkerReached: ${track?.notificationMarkerPosition}, ${track?.bufferSizeInFrames}")
+            log.logStr("onMarkerReached: pos: ${track?.notificationMarkerPosition}, written: $written")
             writeListener?.invoke()
             writeListener = null
         }
@@ -60,22 +55,34 @@ class AudioPlayer(
     }
 
     fun prepare() {
-        if (state == AudioTrack.PLAYSTATE_PLAYING) return
         log.logStr("prepare")
+        written = 0
+        if (state == AudioTrack.PLAYSTATE_PLAYING) return
         player.play()
         player.setPlaybackPositionUpdateListener(callback)
     }
 
-    var writed = 0
+    private var written = 0
 
+    /**
+     * 需要保证线程安全，否则多线程同时写入可能会导致原生方法的缓存溢出而抛出崩溃
+     *
+     * @see prepare
+     * @see writeOver
+     * @see stop
+     */
     fun write(data: ByteArray, start: Int = 0, len: Int = data.size) {
         player.write(data, start, len)
-        writed += (len / fsib)
+        written += (len / fsib)
     }
 
-    fun writeOver() {
-        //suspendCoroutine { c -> write(data, start, len) { c.resume(Unit) } }
-        player.setNotificationMarkerPosition(writed / fsib)
+    /**
+     * 写完后调用，回调播放完成
+     */
+    fun writeOver(l: (() -> Unit)? = null) {
+        log.logStr("writeOver: written: $written")
+        this.writeListener = l
+        player.setNotificationMarkerPosition(written)
     }
 
     fun stop() {
@@ -85,8 +92,21 @@ class AudioPlayer(
 
     fun release() {
         log.logStr("release")
-        player.pause()
+        stop()
         player.release()
     }
-
 }
+
+val AudioFormat.frameSizeInBytesCompat
+    get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        frameSizeInBytes
+    } else {
+        // see android.media.AudioFormat#getBytesPerSample
+        when (encoding) {
+            AudioFormat.ENCODING_PCM_8BIT -> 1
+            AudioFormat.ENCODING_PCM_16BIT, AudioFormat.ENCODING_IEC61937, AudioFormat.ENCODING_DEFAULT -> 2
+            AudioFormat.ENCODING_PCM_24BIT_PACKED -> 3
+            AudioFormat.ENCODING_PCM_FLOAT, AudioFormat.ENCODING_PCM_32BIT -> 4
+            else -> 1
+        } * channelCount
+    }
