@@ -67,7 +67,17 @@ interface BluetoothScanListener : BluetoothScannedListener, BluetoothScanningLis
     fun onScanStop() {}
 }
 
-abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothHelper, ARManager<BluetoothScanListener> by ARDefaultSyncManager() {
+interface IBluetoothScanCallback {
+    fun setScannedListener(l: BluetoothScannedListener): IBluetoothScanCallback
+    fun addScanningListener(l: BluetoothScanningListener): IBluetoothScanCallback
+    fun removeScanningListener(l: BluetoothScanningListener): IBluetoothScanCallback
+}
+
+interface IBluetoothLEScanCallback : IBluetoothScanCallback {
+    fun setScanResultListener(l: BluetoothScanResultListener): IBluetoothScanCallback
+}
+
+abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothHelper, ARManager<BluetoothScanListener> by ARDefaultSyncManager(), IBluetoothLEScanCallback {
     protected val log = BluetoothHelper.log.newLog(this::class.java.simpleName)
 
     private val lock = ReentrantLock()
@@ -128,8 +138,23 @@ abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothHelpe
         }
     }
 
-    fun setScanResultListener(l: BluetoothScanResultListener) = scanResultManger.add(l)
-    fun setScannedListener(l: BluetoothScannedListener) = scannedManager.add(l)
-    fun addScanningListener(l: BluetoothScanningListener) = scanningManager.add(l)
-    fun removeScanningListener(l: BluetoothScanningListener) = scanningManager.remove(l)
+    override fun setScanResultListener(l: BluetoothScanResultListener): BaseScanner {
+        scanResultManger.add(l)
+        return this
+    }
+
+    override fun setScannedListener(l: BluetoothScannedListener): BaseScanner {
+        scannedManager.add(l)
+        return this
+    }
+
+    override fun addScanningListener(l: BluetoothScanningListener): BaseScanner {
+        scanningManager.add(l)
+        return this
+    }
+
+    override fun removeScanningListener(l: BluetoothScanningListener): BaseScanner {
+        scanningManager.remove(l)
+        return this
+    }
 }

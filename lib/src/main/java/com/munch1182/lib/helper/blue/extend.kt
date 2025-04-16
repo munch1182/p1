@@ -1,6 +1,7 @@
 package com.munch1182.lib.helper.blue
 
 import android.Manifest
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.LifecycleOwner
@@ -8,6 +9,11 @@ import com.munch1182.lib.base.onShow
 import com.munch1182.lib.helper.blue.scan.BluetoothScanResultListener
 import com.munch1182.lib.helper.blue.scan.BluetoothScannedListener
 import kotlinx.coroutines.withTimeout
+
+fun String.asBluetMac(): BluetoothDevice? {
+    if (!BluetoothAdapter.checkBluetoothAddress(this)) return null
+    return BluetoothHelper.adapter?.getRemoteDevice(this)
+}
 
 /**
  * 当[BluetoothHelper.stopScan]自动移除[l]
@@ -19,7 +25,7 @@ fun BluetoothHelper.scan(l: BluetoothScannedListener) {
 
 @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
 fun BluetoothHelper.scanResult(l: BluetoothScanResultListener) {
-    setScannedListener(l).startScan()
+    setScanResultListener(l).startScan()
 }
 
 @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)

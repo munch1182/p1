@@ -3,6 +3,7 @@ package com.munch1182.lib.helper.blue
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -45,6 +46,9 @@ interface IBluetoothEnv : IBluetoothAdapter {
      */
     @get:RequiresPermission(anyOf = [Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_CONNECT])
     val bondDevs get() = adapter?.bondedDevices ?: emptySet()
+
+    @get:RequiresPermission(anyOf = [Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_CONNECT])
+    val connectedDevs get() = bm.getConnectedDevices(BluetoothProfile.GATT) ?: emptyList()
 
     /**
      * 调用该intent即可通过系统提示用户打开蓝牙

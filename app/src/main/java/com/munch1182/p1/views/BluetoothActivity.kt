@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -56,7 +57,8 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.math.absoluteValue
 
 class BluetoothActivity : BaseActivity() {
-    private val vm by viewModels<BluetoothVM>()
+    private val scanVM by viewModels<BluetoothScanVM>()
+    private val connectVM by viewModels<BluetoothConnectVM>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,26 +74,28 @@ class BluetoothActivity : BaseActivity() {
 
     @Composable
     private fun Operate() {
-        val isScanning by vm.scanning.observeAsState(false)
-        val scanFilter by vm.scanFilter.observeAsState(BluetoothVM.ScanFilter())
+        val isScanning by scanVM.scanning.observeAsState(false)
+        val scanFilter by scanVM.scanFilter.observeAsState(BluetoothScanVM.ScanFilter())
 
         Column(PagePaddingModifier) {
-            CheckBoxWithLabel("经典蓝牙", scanFilter.isClassic) { vm.updateScanFilter(scanFilter.newClassic()) }
-            CheckBoxWithLabel("忽略没有名称的蓝牙", scanFilter.ignoreName) { vm.updateScanFilter(scanFilter.newIgnoreName()) }
-            ClickButton(if (!isScanning) "扫描" else "停止扫描") { withScanPermission { vm.toggleScan() } }
+            CheckBoxWithLabel("经典蓝牙", scanFilter.isClassic) { scanVM.updateScanFilter(scanFilter.newClassic()) }
+            CheckBoxWithLabel("忽略没有名称的蓝牙", scanFilter.ignoreName) { scanVM.updateScanFilter(scanFilter.newIgnoreName()) }
+            ClickButton(if (!isScanning) "扫描" else "停止扫描") { withScanPermission { scanVM.toggleScan() } }
         }
     }
 
     @SuppressLint("MissingPermission")
     @Composable
     private fun Devs() {
-        val devs by vm.devices.observeAsState(arrayOf())
+        val devs by scanVM.devices.observeAsState(arrayOf())
         LazyColumn {
             items(devs.size) {
                 val blue = devs[it]
                 Column {
                     Row(
-                        modifier = Modifier.fillMaxHeight(),
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .clickable { withConnectPermission { connectVM.connect(blue.dev) } },
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Column(ItemPadding) {
@@ -111,6 +115,17 @@ class BluetoothActivity : BaseActivity() {
         }
     }
 
+    private fun withConnectPermission(canConnect: () -> Unit) {
+        val p = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            arrayOf(Manifest.permission.BLUETOOTH)
+        }
+        permissions(p).dialogWhen(permissionDialog("蓝牙", "连接蓝牙"))
+            .manualIntent().ifAllGranted().judge { BluetoothHelper.isBlueOn }.intent(BluetoothHelper.enableBlueIntent()).ifTrue()
+            .requestAll { if (it) canConnect() else toast("没有权限去连接蓝牙！") }
+    }
+
     private fun withScanPermission(canScan: () -> Unit) {
         val p = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
@@ -119,11 +134,11 @@ class BluetoothActivity : BaseActivity() {
         }
         permissions(p).dialogWhen(permissionDialog("蓝牙", "扫描蓝牙")).manualIntent().ifAllGranted().judge { BluetoothHelper.isBlueOn }.intent(BluetoothHelper.enableBlueIntent()).ifTrue().judge { isLocationProvider }.intent(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
             .dialogWhen(intentBlueScan()).ifTrue().permission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION) // 定位打开此权限才会判断为true
-            .dialogWhen(permissionBlueScan()).ifAllGranted().requestAll { if (it) canScan() else toast("扫描失败！") }
+            .dialogWhen(permissionBlueScan()).ifAllGranted().requestAll { if (it) canScan() else toast("没有权限去扫描蓝牙！") }
     }
 }
 
-class BluetoothVM : ViewModel() {
+class BluetoothScanVM : ViewModel() {
     private val log = log()
     private var _scanning = MutableLiveData(false)
     private var _devs = MutableLiveData<Array<BlueDev>>(arrayOf())
@@ -202,7 +217,7 @@ class BluetoothVM : ViewModel() {
             val dev = blueDev.dev
             if (ignoreName && dev.name == null) return null
             if (find != null && dev.name?.contains(find) != true) return null
-            if (!isClassic && minSSID != 0 && minSSID.absoluteValue > blueDev.rssi) return null
+            if (!isClassic && minSSID != 0 && minSSID.absoluteValue > blueDev.rssi.absoluteValue) return null
             return blueDev
         }
 
@@ -215,12 +230,22 @@ class BluetoothVM : ViewModel() {
         }
 
         fun startScan(l: OnResultListener<BlueDev>) {
-            BluetoothHelper.bondDevs.forEach { l.onResult(BlueDev.from(it)) }
+            BluetoothHelper.connectedDevs.forEach { l.onResult(BlueDev.from(it)) }
             if (isClassic) {
                 BluetoothHelper.CLASSIC.apply { setScannedListener { filter(BlueDev.from(it))?.let { dev -> l.onResult(dev) } } }.startScan()
             } else {
                 BluetoothHelper.scanResult { filter(BlueDev.from(it))?.let { dev -> l.onResult(dev) } }
             }
         }
+    }
+}
+
+@SuppressLint("MissingPermission")
+class BluetoothConnectVM : ViewModel() {
+    private val log = log()
+    fun connect(dev: BluetoothDevice) {
+        val mac = dev.address
+        log.logStr("connect: $mac")
+        BluetoothHelper.startConnect(mac)
     }
 }
