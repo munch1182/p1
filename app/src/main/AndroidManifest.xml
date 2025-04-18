@@ -29,10 +29,10 @@
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
         <activity
-            android:name=".views.libview.RecyclerviewActivity"
+            android:name=".views.TestActivity"
             android:exported="false" />
         <activity
-            android:name=".views.MediaActivity"
+            android:name=".views.libview.RecyclerviewActivity"
             android:exported="false" />
         <activity
             android:name=".views.BluetoothActivity"
@@ -87,14 +87,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/share_file" />
         </provider>
-
-        <service
-            android:name=".views.MediaService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.media.browse.MediaBrowserService" />
-            </intent-filter>
-        </service>
     </application>
 
 </manifest>
