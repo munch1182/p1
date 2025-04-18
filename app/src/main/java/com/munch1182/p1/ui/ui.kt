@@ -22,8 +22,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
 import com.munch1182.lib.helper.currAct
+import com.munch1182.p1.ui.theme.FontManySize
 import com.munch1182.p1.ui.theme.P1Theme
 import com.munch1182.p1.ui.theme.PagePadding
 import kotlin.reflect.KClass
@@ -88,4 +90,9 @@ fun CheckBoxWithLabel(
 @Composable
 fun Split() {
     Spacer(Modifier.height(PagePadding))
+}
+
+@Composable
+fun DescText(text: String, modifier: Modifier = Modifier) {
+    Text(text, modifier, fontSize = FontManySize, color = Color.Gray)
 }

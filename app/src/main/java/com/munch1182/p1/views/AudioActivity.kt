@@ -2,15 +2,23 @@ package com.munch1182.p1.views
 
 import android.Manifest
 import android.content.Intent
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -35,15 +43,21 @@ import com.munch1182.lib.helper.FileHelper.sureExists
 import com.munch1182.lib.helper.closeQuietly
 import com.munch1182.lib.helper.result.intent
 import com.munch1182.lib.helper.result.permission
+import com.munch1182.lib.helper.sound.AudioHelper
 import com.munch1182.lib.helper.sound.AudioPlayer
 import com.munch1182.lib.helper.sound.RecordHelper
 import com.munch1182.lib.helper.sound.calculateDB
 import com.munch1182.lib.helper.sound.wavHeader
+import com.munch1182.p1.R
 import com.munch1182.p1.base.handlePermissionWithName
+import com.munch1182.p1.base.toast
 import com.munch1182.p1.ui.ClickButton
+import com.munch1182.p1.ui.DescText
 import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.setContentWithScroll
+import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.ui.theme.PagePaddingHalf
+import com.munch1182.p1.views.AudioVM.InputType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -54,6 +68,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.ArrayDeque
 
 class AudioActivity : AppCompatActivity() {
 
@@ -61,6 +76,7 @@ class AudioActivity : AppCompatActivity() {
         const val SAMPLE = 16000
     }
 
+    private val audioVM by viewModels<AudioVM>()
     private val recordVM by viewModels<RecordVM>()
     private val playVM by viewModels<PlayVM>()
 
@@ -71,20 +87,48 @@ class AudioActivity : AppCompatActivity() {
 
     @Composable
     private fun Views() {
+        Column {
+            Operate()
+            Split()
+            Record()
+        }
+    }
+
+    @Composable
+    private fun Operate() {
+        val focus by audioVM.focus.observeAsState(false)
+        val listen by audioVM.listen.observeAsState(false)
+        val input by audioVM.input.observeAsState(InputType.Phone)
+        val keys by audioVM.keys.collectAsState(arrayOf())
+        Row {
+            Column {
+                ClickButton(if (focus) "清除音频焦点" else "获取音频焦点") { audioVM.toggleFocus() }
+                ClickButton(if (listen) "清除按键监听" else "监听媒体按键") { audioVM.toggleMediaButtonListen() }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    ClickButton("当前输入：${if (input.isPhone) "手机" else "耳机"}") { audioVM.changeAudioInput() }
+                }
+            }
+            Spacer(Modifier.width(PagePadding * 2))
+            Column {
+                LazyColumn { items(keys.size) { DescText(keys[it]) } }
+            }
+        }
+    }
+
+    @Composable
+    private fun Record() {
         val isRecording by recordVM.isRecording.observeAsState(false)
 
         ClickButton(if (!isRecording) "开始录音" else "停止录音") {
-            permission(Manifest.permission.RECORD_AUDIO).handlePermissionWithName("录音").request { recordVM.recordToggle() }
+            permission(Manifest.permission.RECORD_AUDIO).handlePermissionWithName("录音").request {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) audioVM.sureInput()
+                recordVM.recordToggle()
+            }
         }
         Split()
         Value()
         Split()
         if (!isRecording) Files()
-    }
-
-    @Composable
-    private fun Operate() {
-
     }
 
     @Composable
@@ -102,8 +146,7 @@ class AudioActivity : AppCompatActivity() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = PagePaddingHalf, bottom = PagePaddingHalf),
-                horizontalArrangement = Arrangement.spacedBy(PagePaddingHalf)
+                    .padding(top = PagePaddingHalf, bottom = PagePaddingHalf), horizontalArrangement = Arrangement.spacedBy(PagePaddingHalf)
             ) {
                 ClickButton(if (isPlay) "停止" else "播放") { if (isPlay) playVM.stopPlay() else playVM.playByAudioTrack(p) }
                 if (item.isPcm) ClickButton("转换") { recordVM.trans(p) }
@@ -117,11 +160,7 @@ class AudioActivity : AppCompatActivity() {
     @Composable
     private fun ProgressPlay() {
         val progress by playVM.progressPlay.collectAsState(PlayVM.Progress(0, 1))
-        Slider(
-            value = progress.progress.toFloat(),
-            onValueChange = { playVM.seekPlayTo(it.toInt()) },
-            onValueChangeFinished = { playVM.seekPlayTo(-1) },
-            valueRange = 0f..progress.max.toFloat()
+        Slider(value = progress.progress.toFloat(), onValueChange = { playVM.seekPlayTo(it.toInt()) }, onValueChangeFinished = { playVM.seekPlayTo(-1) }, valueRange = 0f..progress.max.toFloat()
         )
     }
 
@@ -140,7 +179,164 @@ class AudioActivity : AppCompatActivity() {
     }
 }
 
-class AudioVM : ViewModel() {}
+class AudioVM : ViewModel() {
+    private val log = log()
+    private val keysList = ArrayDeque<String>(7)
+    private val focusHelper = AudioHelper.FocusHelper().setFocusGain(AudioManager.AUDIOFOCUS_GAIN)
+    private val listenHelper = AudioHelper.MediaButtonHelper().apply {
+        add {
+            if (keysList.size == 6) keysList.removeFirst()
+
+            val action = when (it.action) {
+                KeyEvent.ACTION_DOWN -> "按下"
+                KeyEvent.ACTION_UP -> "抬起"
+                else -> it.action.toString()
+            }
+            val name = when (it.keyCode) {
+                KeyEvent.KEYCODE_MEDIA_PLAY -> "播放"
+                KeyEvent.KEYCODE_MEDIA_PAUSE -> "暂停"
+                KeyEvent.KEYCODE_MEDIA_NEXT -> "下一首"
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS -> "上一首"
+                else -> it.keyCode.toString()
+            }
+            log.logStr("按键：$name, $action")
+            keysList.add("$name $action")
+            viewModelScope.launchIO { _keys.emit(keysList.toTypedArray()) }
+        }
+    }
+    private var currInput: InputType = InputType.Phone
+
+    private val _focus = MutableLiveData(false)
+    private val _listen = MutableLiveData(false)
+    private val _input = MutableLiveData(currInput)
+    private val _keys = MutableStateFlow(arrayOf<String>())
+
+    private var player: MediaPlayer? = null
+
+    val focus = _focus.asLive()
+    val listen = _listen.asLive()
+    val input = _input.asLive()
+    val keys = _keys.asStateFlow()
+
+    init {
+        focusHelper.add {
+            when (it) {
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    log.logStr("Audio Focus Gain")
+                    _focus.postValue(true)
+                }
+
+                AudioManager.AUDIOFOCUS_LOSS -> {
+                    log.logStr("Audio Focus Loss")
+                    _focus.postValue(false)
+                }
+
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    log.logStr("Audio Focus Loss Transient")
+                    _focus.postValue(false)
+                }
+            }
+        }
+    }
+
+    private fun gainAudioFocus() {
+        val res = focusHelper.requestAudioFocus()
+        log.logStr("gainAudioFocus: $res")
+        _focus.postValue(res)
+    }
+
+    private fun clearAudioFocus() {
+        val res = focusHelper.clearAudioFocus()
+        log.logStr("clearAudioFocus: $res")
+        _focus.postValue(!res)
+    }
+
+    fun toggleFocus() = if (_focus.value == true) clearAudioFocus() else gainAudioFocus()
+
+    fun toggleMediaButtonListen() = if (_listen.value == true) unListenMediaButton() else listenMediaButton()
+
+    private fun listenMediaButton() {
+        val player = player ?: fakePlay().apply { player = this }
+        player.start()
+        player.pause()
+        listenHelper.listen()
+        log.logStr("listenMediaButton")
+        _listen.postValue(true)
+    }
+
+    private fun fakePlay() = MediaPlayer.create(AppHelper, R.raw.lapple).apply { isLooping = true }
+
+    private fun unListenMediaButton() {
+        runBlocking { _keys.emit(arrayOf()) }
+        player?.release()
+        player = null
+        listenHelper.release()
+        log.logStr("unListenMediaButton")
+        _listen.postValue(false)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        focusHelper.clear()
+        listenHelper.release()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    fun sureInput() = setInput(currInput)
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun setInput(type: InputType) {
+        when (type) {
+            InputType.Blue -> {
+                val result = AudioHelper.setRecordFrom(AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
+                log.logStr("changeAudioInput: setRecordFrom: $result")
+                if (result != true) {
+                    toast("设置失败")
+                    return
+                }
+            }
+
+            InputType.Phone -> {
+                AudioHelper.resetRecordFrom()
+                log.logStr("changeAudioInput: resetRecordFrom")
+            }
+        }
+        currInput = type
+        _input.postValue(type)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    fun changeAudioInput() {
+        logAudioDeviceInfo()
+        setInput(currInput.next)
+        logAudioDeviceInfo()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun logAudioDeviceInfo() {
+        val ava = AudioHelper.am.availableCommunicationDevices
+        val curr = AudioHelper.am.communicationDevice
+        log.logStr("available: ${ava.map { it.toStr() }}")
+        log.logStr("curr: ${curr?.toStr()}")
+    }
+
+    private fun AudioDeviceInfo.toStr() = "${productName}(id:${id}, type:${type})"
+
+    sealed class InputType {
+        data object Phone : InputType()
+        data object Blue : InputType()
+
+        val isPhone get() = this is Phone
+        val isBlue get() = this is Blue
+
+        val next
+            get() = when (this) {
+                is Phone -> Blue
+                is Blue -> Phone
+            }
+    }
+
+}
 
 class RecordVM : ViewModel() {
 
@@ -340,7 +536,6 @@ class RecordVM : ViewModel() {
 }
 
 class PlayVM : ViewModel() {
-
 
     private val _isPlay = MutableLiveData(false)
     private val _progressPlay = MutableStateFlow(Progress(0, 0))

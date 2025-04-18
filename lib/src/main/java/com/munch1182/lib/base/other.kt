@@ -1,5 +1,7 @@
 package com.munch1182.lib.base
 
+import android.os.Build
+import android.os.Bundle
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -60,3 +62,6 @@ fun Lifecycle.onShow(isShowOrHidden: (Boolean) -> Unit) {
         }
     })
 }
+
+@Suppress("DEPRECATION")
+inline fun <reified T> Bundle.getParcelableCompat(key: String) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) getParcelable(key, T::class.java) else getParcelable(key)
