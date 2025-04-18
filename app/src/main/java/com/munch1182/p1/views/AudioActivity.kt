@@ -33,15 +33,13 @@ import com.munch1182.lib.base.nowStr
 import com.munch1182.lib.helper.FileHelper
 import com.munch1182.lib.helper.FileHelper.sureExists
 import com.munch1182.lib.helper.closeQuietly
-import com.munch1182.lib.helper.result.PermissionHelper.PermissionCanRequestDialogProvider
-import com.munch1182.lib.helper.result.asAllowDenyDialog
 import com.munch1182.lib.helper.result.intent
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.sound.AudioPlayer
 import com.munch1182.lib.helper.sound.RecordHelper
 import com.munch1182.lib.helper.sound.calculateDB
 import com.munch1182.lib.helper.sound.wavHeader
-import com.munch1182.p1.base.DialogHelper
+import com.munch1182.p1.base.handlePermissionWithName
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.setContentWithScroll
@@ -57,7 +55,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
-class RecordActivity : AppCompatActivity() {
+class AudioActivity : AppCompatActivity() {
 
     companion object {
         const val SAMPLE = 16000
@@ -76,11 +74,17 @@ class RecordActivity : AppCompatActivity() {
         val isRecording by recordVM.isRecording.observeAsState(false)
 
         ClickButton(if (!isRecording) "开始录音" else "停止录音") {
-            permission(Manifest.permission.RECORD_AUDIO).dialogWhen(dialogPermission()).manualIntent().request { recordVM.recordToggle() }
+            permission(Manifest.permission.RECORD_AUDIO).handlePermissionWithName("录音").request { recordVM.recordToggle() }
         }
         Split()
         Value()
+        Split()
         if (!isRecording) Files()
+    }
+
+    @Composable
+    private fun Operate() {
+
     }
 
     @Composable
@@ -121,6 +125,12 @@ class RecordActivity : AppCompatActivity() {
         )
     }
 
+    @Composable
+    private fun Value() {
+        val db by recordVM.db.collectAsState()
+        Text("DB: $db")
+    }
+
     private fun share(path: String) {
         // Cache路径下的文件不能分享
         val uri = FileHelper.uri(path)
@@ -128,30 +138,16 @@ class RecordActivity : AppCompatActivity() {
 
         intent(Intent.createChooser(shareIntent, "分享录音")).request {}
     }
-
-    @Composable
-    private fun Value() {
-        val db by recordVM.db.collectAsState()
-        Text("DB: $db")
-    }
-
-    private fun dialogPermission(): PermissionCanRequestDialogProvider {
-        return PermissionCanRequestDialogProvider { ctx, state, _ ->
-            if (state.isDeniedForever) {
-                DialogHelper.newPermissionIntent(ctx, "录音").asAllowDenyDialog()
-            } else {
-                null
-            }
-        }
-    }
 }
+
+class AudioVM : ViewModel() {}
 
 class RecordVM : ViewModel() {
 
     private val log = log()
 
     // RecordHelper必须在有权限之后创建，所以对其的所有访问都应在有权限之后
-    private val recordHelper by lazy { RecordHelper(RecordActivity.SAMPLE, AudioFormat.CHANNEL_IN_MONO) }
+    private val recordHelper by lazy { RecordHelper(AudioActivity.SAMPLE, AudioFormat.CHANNEL_IN_MONO) }
     private val writeHelper by lazy { RecordWriteHelper(log) }
 
     private val _isRecording = MutableLiveData(false)
@@ -352,7 +348,7 @@ class PlayVM : ViewModel() {
     val isPlay = _isPlay.asLive()
     val progressPlay = _progressPlay.asStateFlow()
 
-    private val audioPlayer by lazy { AudioPlayer(RecordActivity.SAMPLE) }
+    private val audioPlayer by lazy { AudioPlayer(AudioActivity.SAMPLE) }
     private val log = log()
     private var stopPlay = false
 

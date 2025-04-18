@@ -37,10 +37,10 @@ import com.munch1182.p1.ui.PageTheme
 import com.munch1182.p1.ui.RvPage
 import com.munch1182.p1.ui.setContentWithRv
 import com.munch1182.p1.ui.theme.PagePadding
+import com.munch1182.p1.views.AudioActivity
 import com.munch1182.p1.views.BluetoothActivity
 import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
-import com.munch1182.p1.views.RecordActivity
 import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
@@ -62,7 +62,7 @@ class MainActivity : BaseActivity() {
     private fun Click() {
         JumpButton("权限相关", clazz = ResultActivity::class)
         JumpButton("蓝牙相关", clazz = BluetoothActivity::class)
-        JumpButton("录音相关", clazz = RecordActivity::class)
+        JumpButton("音频相关", clazz = AudioActivity::class)
         JumpButton("服务相关", clazz = ServerActivity::class)
         JumpButton("Dialog相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)

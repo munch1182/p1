@@ -38,7 +38,7 @@
             android:name=".views.BluetoothActivity"
             android:exported="false" />
         <activity
-            android:name=".views.RecordActivity"
+            android:name=".views.AudioActivity"
             android:exported="false" />
         <activity
             android:name=".views.ServerActivity"
@@ -76,7 +76,9 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".views.BindServer" /> <!-- 分享文件， RecordActivity -->
+        <service android:name=".views.BindServer" />
+
+        <!-- 分享文件， RecordActivity -->
         <!-- https://developer.android.google.cn/training/secure-file-sharing/setup-sharing?hl=zh-cn -->
         <provider
             android:name="androidx.core.content.FileProvider"

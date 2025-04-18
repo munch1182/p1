@@ -8,7 +8,6 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.view.WindowManager
-import android.widget.Toast
 import com.munch1182.lib.AppHelper
 
 
@@ -21,10 +20,6 @@ fun Context.findAct(): Activity? {
         ctx = ctx.baseContext
     }
     return null
-}
-
-fun toast(msg: String) {
-    Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
 }
 
 inline fun <reified ACT : Activity> Context.startActivity() {

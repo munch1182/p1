@@ -7,10 +7,10 @@ import android.view.ViewGroup
 import androidx.customview.widget.ViewDragHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.munch1182.lib.base.toast
 import com.munch1182.lib.widget.SwapMenuLayout
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.bind
+import com.munch1182.p1.base.toast
 import com.munch1182.p1.databinding.ActivitySwapMenuLayoutBinding
 import com.munch1182.p1.databinding.ItemSwapMenuLayoutBinding
 import kotlin.random.Random

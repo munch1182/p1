@@ -10,6 +10,14 @@ import com.munch1182.lib.helper.result.PermissionHelper
 import com.munch1182.lib.helper.result.PermissionHelper.PermissionCanRequestDialogProvider
 import com.munch1182.lib.helper.result.asAllowDenyDialog
 
+fun PermissionHelper.Input.handlePermissionWithName(name: String) = dialogWhen(dialogPermission(name)).manualIntent()
+
+private fun dialogPermission(name: String): PermissionCanRequestDialogProvider {
+    return PermissionCanRequestDialogProvider { ctx, state, _ ->
+        if (state.isDeniedForever) DialogHelper.newPermissionIntent(ctx, name).asAllowDenyDialog() else null
+    }
+}
+
 object DialogHelper {
 
     fun newPermissionIntent(

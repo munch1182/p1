@@ -31,7 +31,6 @@ import com.munch1182.lib.base.OnResultListener
 import com.munch1182.lib.base.asLive
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
-import com.munch1182.lib.base.toast
 import com.munch1182.lib.helper.blue.BluetoothHelper
 import com.munch1182.lib.helper.blue.scan.BluetoothScanningListener
 import com.munch1182.lib.helper.blue.scanResult
@@ -44,6 +43,7 @@ import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.DialogHelper.intentBlueScan
 import com.munch1182.p1.base.DialogHelper.permissionBlueScan
 import com.munch1182.p1.base.DialogHelper.permissionDialog
+import com.munch1182.p1.base.toast
 import com.munch1182.p1.ui.CheckBoxWithLabel
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.Split

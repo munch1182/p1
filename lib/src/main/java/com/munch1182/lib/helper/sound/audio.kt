@@ -65,7 +65,8 @@ class AudioPlayer(
     private var written = 0
 
     /**
-     * 需要保证线程安全，否则多线程同时写入可能会导致原生方法的缓存溢出而抛出崩溃
+     * 需要保证线程安全，否则多线程同时写入会导致播放错误，也可能会导致原生方法的缓存溢出而抛出崩溃
+     * 因为要循环多次调用该方法，所以线程安全交由外部实现
      *
      * @see prepare
      * @see writeOver
@@ -81,8 +82,12 @@ class AudioPlayer(
      */
     fun writeOver(l: (() -> Unit)? = null) {
         log.logStr("writeOver: written: $written")
-        this.writeListener = l
-        player.setNotificationMarkerPosition(written)
+        if (written == player.notificationMarkerPosition) {
+            l?.invoke()
+        } else {
+            this.writeListener = l
+            player.setNotificationMarkerPosition(written)
+        }
     }
 
     fun stop() {
