@@ -6,6 +6,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
@@ -32,6 +33,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.Logger
+import com.munch1182.lib.base.ThreadHelper
 import com.munch1182.lib.base.asLive
 import com.munch1182.lib.base.asStateFlow
 import com.munch1182.lib.base.launchIO
@@ -50,7 +52,6 @@ import com.munch1182.lib.helper.sound.calculateDB
 import com.munch1182.lib.helper.sound.wavHeader
 import com.munch1182.p1.R
 import com.munch1182.p1.base.handlePermissionWithName
-import com.munch1182.p1.base.toast
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.DescText
 import com.munch1182.p1.ui.Split
@@ -204,6 +205,10 @@ class AudioVM : ViewModel() {
             viewModelScope.launchIO { _keys.emit(keysList.toTypedArray()) }
         }
     }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private val inputHelper = AudioHelper.InputHelper()
+
     private var currInput: InputType = InputType.Phone
 
     private val _focus = MutableLiveData(false)
@@ -212,6 +217,11 @@ class AudioVM : ViewModel() {
     private val _keys = MutableStateFlow(arrayOf<String>())
 
     private var player: MediaPlayer? = null
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private val inputListener = AudioManager.OnCommunicationDeviceChangedListener {
+        log.logStr("OnCommunicationDeviceChanged: curr: ${it?.toStr()}")
+    }
 
     val focus = _focus.asLive()
     val listen = _listen.asLive()
@@ -236,6 +246,9 @@ class AudioVM : ViewModel() {
                     _focus.postValue(false)
                 }
             }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            inputHelper.listenChanged(ThreadHelper.cacheExecutor, inputListener)
         }
     }
 
@@ -279,6 +292,9 @@ class AudioVM : ViewModel() {
         super.onCleared()
         focusHelper.clear()
         listenHelper.release()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            inputHelper.unListenChanged(inputListener)
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -286,21 +302,13 @@ class AudioVM : ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun setInput(type: InputType) {
-        when (type) {
-            InputType.Blue -> {
-                val result = AudioHelper.setRecordFrom(AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
-                log.logStr("changeAudioInput: setRecordFrom: $result")
-                if (result != true) {
-                    toast("设置失败")
-                    return
-                }
-            }
-
-            InputType.Phone -> {
-                AudioHelper.resetRecordFrom()
-                log.logStr("changeAudioInput: resetRecordFrom")
-            }
-        }
+        log.logStr("setInput: $currInput -> $type")
+        val sysType = type.type
+        if (inputHelper.currRecordFrom() == sysType) return
+        log.logStr("setInput: $type")
+        val result = inputHelper.setRecordFrom(sysType) ?: false
+        log.logStr("setInput: $type result: $result")
+        if (!result) return
         currInput = type
         _input.postValue(type)
     }
@@ -309,7 +317,6 @@ class AudioVM : ViewModel() {
     fun changeAudioInput() {
         logAudioDeviceInfo()
         setInput(currInput.next)
-        logAudioDeviceInfo()
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -334,6 +341,12 @@ class AudioVM : ViewModel() {
                 is Phone -> Blue
                 is Blue -> Phone
             }
+
+        val type: Int
+            get() = when (this) {
+                Blue -> AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                Phone -> AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+            }
     }
 
 }
@@ -343,7 +356,7 @@ class RecordVM : ViewModel() {
     private val log = log()
 
     // RecordHelper必须在有权限之后创建，所以对其的所有访问都应在有权限之后
-    private val recordHelper by lazy { RecordHelper(AudioActivity.SAMPLE, AudioFormat.CHANNEL_IN_MONO) }
+    private val recordHelper by lazy { RecordHelper(MediaRecorder.AudioSource.VOICE_COMMUNICATION, AudioActivity.SAMPLE, AudioFormat.CHANNEL_IN_MONO) }
     private val writeHelper by lazy { RecordWriteHelper(log) }
 
     private val _isRecording = MutableLiveData(false)

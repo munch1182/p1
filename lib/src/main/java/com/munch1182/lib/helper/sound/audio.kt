@@ -82,12 +82,9 @@ class AudioPlayer(
      */
     fun writeOver(l: (() -> Unit)? = null) {
         log.logStr("writeOver: written: $written")
-        if (written == player.notificationMarkerPosition) {
-            l?.invoke()
-        } else {
-            this.writeListener = l
-            player.setNotificationMarkerPosition(written)
-        }
+
+        this.writeListener = l
+        player.setNotificationMarkerPosition(written)
     }
 
     fun stop() {

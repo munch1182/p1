@@ -11,29 +11,16 @@ import android.view.KeyEvent
 import androidx.annotation.RequiresApi
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.OnUpdateListener
+import com.munch1182.lib.base.ThreadHelper
 import com.munch1182.lib.base.ctx
 import com.munch1182.lib.base.getParcelableCompat
 import com.munch1182.lib.base.log
 import com.munch1182.lib.helper.ARDefaultManager
 import com.munch1182.lib.helper.ARManager
+import java.util.concurrent.Executor
 
 object AudioHelper {
 
-    /**
-     * @see android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
-     */
-    @RequiresApi(Build.VERSION_CODES.S)
-    fun setRecordFrom(type: Int): Boolean? {
-        return am.availableCommunicationDevices.firstOrNull { it.type == type }?.let { am.setCommunicationDevice(it) }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.S)
-    fun resetRecordFrom() {
-        am.clearCommunicationDevice()
-    }
-
-    @RequiresApi(Build.VERSION_CODES.S)
-    fun currRecordFrom(): Int? = am.communicationDevice?.type
 
     val am get() = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -115,5 +102,31 @@ object AudioHelper {
             this.session = session
             return session
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    class InputHelper {
+
+        fun listenChanged(executor: Executor = ThreadHelper.cacheExecutor, listener: AudioManager.OnCommunicationDeviceChangedListener) {
+            am.addOnCommunicationDeviceChangedListener(executor, listener)
+        }
+
+        fun unListenChanged(listener: AudioManager.OnCommunicationDeviceChangedListener) {
+            am.removeOnCommunicationDeviceChangedListener(listener)
+        }
+
+        /**
+         * @see android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+         */
+        fun setRecordFrom(type: Int): Boolean? {
+            if (am.communicationDevice?.type == type) return true
+            return am.availableCommunicationDevices.firstOrNull { it.type == type }?.let { am.setCommunicationDevice(it) }
+        }
+
+        fun resetRecordFrom() {
+            am.clearCommunicationDevice()
+        }
+
+        fun currRecordFrom(): Int? = am.communicationDevice?.type
     }
 }
