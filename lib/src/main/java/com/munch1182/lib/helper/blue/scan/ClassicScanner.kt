@@ -9,7 +9,7 @@ import android.content.IntentFilter
 import android.os.Build
 import androidx.annotation.RequiresPermission
 import com.munch1182.lib.base.newLog
-import com.munch1182.lib.helper.blue.BluetoothHelper
+import com.munch1182.lib.helper.blue.BluetoothHelperHelper
 
 class ClassicScanner : BaseScanner() {
 
@@ -19,7 +19,7 @@ class ClassicScanner : BaseScanner() {
     override fun startScan() {
         log.logStr("Start Scan")
         scanDispatchCallback.onPreScanStart()
-        receiver.register(BluetoothHelper.ctx)
+        receiver.register(BluetoothHelperHelper.ctx)
         adapter?.startDiscovery()
     }
 
@@ -32,7 +32,7 @@ class ClassicScanner : BaseScanner() {
 
     class BluetoothFoundReceiver(private val l: BluetoothScanListener?) : BroadcastReceiver() {
 
-        private val log = BluetoothHelper.log.newLog("FondReceiver")
+        private val log = BluetoothHelperHelper.log.newLog("FondReceiver")
 
         fun register(context: Context) {
             log.logStr("Register")
@@ -61,7 +61,7 @@ class ClassicScanner : BaseScanner() {
                 BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
                     log.logStr("Found: action: $action")
                     l?.onScanStop()
-                    unregister(BluetoothHelper.ctx)
+                    unregister(BluetoothHelperHelper.ctx)
                 }
 
                 BluetoothDevice.ACTION_FOUND -> {

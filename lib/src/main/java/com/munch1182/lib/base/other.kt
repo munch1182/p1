@@ -1,5 +1,6 @@
 package com.munch1182.lib.base
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -33,6 +34,9 @@ fun Lifecycle.onCreated(onCreate: (LifecycleOwner) -> Unit) {
  * onCreate: true/onDestroy: false
  */
 fun Lifecycle.onLife(isCreateOrDestroy: (Boolean) -> Unit) {
+    if (currentState > Lifecycle.State.CREATED) {
+        isCreateOrDestroy.invoke(true)
+    }
     addObserver(object : DefaultLifecycleObserver {
         override fun onCreate(owner: LifecycleOwner) {
             super.onCreate(owner)
@@ -49,7 +53,10 @@ fun Lifecycle.onLife(isCreateOrDestroy: (Boolean) -> Unit) {
 /**
  * onResume: true/onPause: false
  */
-fun Lifecycle.onShow(isShowOrHidden: (Boolean) -> Unit) {
+fun Lifecycle.onResume(isShowOrHidden: (Boolean) -> Unit) {
+    if (currentState > Lifecycle.State.RESUMED) {
+        isShowOrHidden.invoke(true)
+    }
     addObserver(object : DefaultLifecycleObserver {
         override fun onResume(owner: LifecycleOwner) {
             super.onResume(owner)
@@ -65,3 +72,6 @@ fun Lifecycle.onShow(isShowOrHidden: (Boolean) -> Unit) {
 
 @Suppress("DEPRECATION")
 inline fun <reified T> Bundle.getParcelableCompat(key: String) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) getParcelable(key, T::class.java) else getParcelable(key)
+
+@Suppress("DEPRECATION")
+inline fun <reified T> Intent.getParcelableCompat(key: String) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) getParcelableExtra(key, T::class.java) else getParcelableExtra(key)

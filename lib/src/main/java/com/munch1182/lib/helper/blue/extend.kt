@@ -5,7 +5,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.LifecycleOwner
-import com.munch1182.lib.base.onShow
+import com.munch1182.lib.base.onResume
 import com.munch1182.lib.helper.blue.scan.BluetoothScanResultListener
 import com.munch1182.lib.helper.blue.scan.BluetoothScannedListener
 import kotlinx.coroutines.withTimeout
@@ -20,12 +20,14 @@ fun String.asBluetMac(): BluetoothDevice? {
  */
 @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
 fun BluetoothHelper.scan(l: BluetoothScannedListener) {
-    setScannedListener(l).startScan()
+    setScannedListener(l)
+    startScan()
 }
 
 @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
 fun BluetoothHelper.scanResult(l: BluetoothScanResultListener) {
-    setScanResultListener(l).startScan()
+    setScanResultListener(l)
+    startScan()
 }
 
 @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
@@ -42,5 +44,5 @@ suspend fun BluetoothHelper.find(mac: String, timeout: Long = 60L * 1000L, find:
 @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
 suspend fun BluetoothHelper.find(owner: LifecycleOwner, mac: String, timeout: Long = 60L * 1000L, find: (dev: BluetoothDevice?) -> Unit) {
     find(mac, timeout, find)
-    owner.lifecycle.onShow { if (!it) stopScan() }
+    owner.lifecycle.onResume { if (!it) stopScan() }
 }

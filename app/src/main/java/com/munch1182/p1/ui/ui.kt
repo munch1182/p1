@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -95,4 +96,14 @@ fun Split() {
 @Composable
 fun DescText(text: String, modifier: Modifier = Modifier) {
     Text(text, modifier, fontSize = FontManySize, color = Color.Gray)
+}
+
+@Composable
+fun <T> Rv(list: Array<T>, modifier: Modifier = Modifier, key: ((T) -> Any)? = null, item: @Composable LazyItemScope.(index: T) -> Unit) {
+    LazyColumn(modifier) {
+        items(list.size, key = { key?.invoke(list[it]) ?: it }) {
+            item(list[it])
+            HorizontalDivider()
+        }
+    }
 }

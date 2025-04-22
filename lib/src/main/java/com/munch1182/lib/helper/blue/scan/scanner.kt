@@ -7,7 +7,8 @@ import androidx.annotation.RequiresPermission
 import com.munch1182.lib.base.newLog
 import com.munch1182.lib.helper.ARDefaultSyncManager
 import com.munch1182.lib.helper.ARManager
-import com.munch1182.lib.helper.blue.BluetoothHelper
+import com.munch1182.lib.helper.blue.BluetoothEnv
+import com.munch1182.lib.helper.blue.BluetoothHelperHelper
 import com.munch1182.lib.helper.blue.IBluetoothAdapter
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -73,12 +74,12 @@ interface IBluetoothScanCallback {
     fun removeScanningListener(l: BluetoothScanningListener): IBluetoothScanCallback
 }
 
-interface IBluetoothLEScanCallback : IBluetoothScanCallback {
+interface IBluetoothLEScanCallback {
     fun setScanResultListener(l: BluetoothScanResultListener): IBluetoothScanCallback
 }
 
-abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothHelper, ARManager<BluetoothScanListener> by ARDefaultSyncManager(), IBluetoothLEScanCallback {
-    protected val log = BluetoothHelper.log.newLog(this::class.java.simpleName)
+abstract class BaseScanner : IBluetoothScan, IBluetoothAdapter by BluetoothEnv, ARManager<BluetoothScanListener> by ARDefaultSyncManager(), IBluetoothScanCallback, IBluetoothLEScanCallback {
+    protected val log = BluetoothHelperHelper.log.newLog("scanner")
 
     private val lock = ReentrantLock()
     private val scannedManager = ARDefaultSyncManager<BluetoothScannedListener>()

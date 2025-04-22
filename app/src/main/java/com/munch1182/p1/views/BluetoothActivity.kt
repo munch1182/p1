@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +30,7 @@ import com.munch1182.lib.base.asLive
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
 import com.munch1182.lib.helper.blue.BluetoothHelper
+import com.munch1182.lib.helper.blue.OnBluetoothStateChangeListener
 import com.munch1182.lib.helper.blue.scan.BluetoothScanningListener
 import com.munch1182.lib.helper.blue.scanResult
 import com.munch1182.lib.helper.isLocationProvider
@@ -46,6 +45,7 @@ import com.munch1182.p1.base.DialogHelper.permissionDialog
 import com.munch1182.p1.base.toast
 import com.munch1182.p1.ui.CheckBoxWithLabel
 import com.munch1182.p1.ui.ClickButton
+import com.munch1182.p1.ui.Rv
 import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.setContentWithScroll
 import com.munch1182.p1.ui.theme.FontManySize
@@ -57,6 +57,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.math.absoluteValue
 
 class BluetoothActivity : BaseActivity() {
+    private val envVM by viewModels<BluetoothEnvVM>()
     private val scanVM by viewModels<BluetoothScanVM>()
     private val connectVM by viewModels<BluetoothConnectVM>()
 
@@ -76,11 +77,18 @@ class BluetoothActivity : BaseActivity() {
     private fun Operate() {
         val isScanning by scanVM.scanning.observeAsState(false)
         val scanFilter by scanVM.scanFilter.observeAsState(BluetoothScanVM.ScanFilter())
+        val isBlueOn by envVM.isBlueOn.observeAsState(false)
+
+        if (!isBlueOn && isScanning) {
+            scanVM.stopScan()
+        }
 
         Column(PagePaddingModifier) {
             CheckBoxWithLabel("经典蓝牙", scanFilter.isClassic) { scanVM.updateScanFilter(scanFilter.newClassic()) }
-            CheckBoxWithLabel("忽略没有名称的蓝牙", scanFilter.ignoreName) { scanVM.updateScanFilter(scanFilter.newIgnoreName()) }
-            ClickButton(if (!isScanning) "扫描" else "停止扫描") { withScanPermission { scanVM.toggleScan() } }
+            CheckBoxWithLabel("忽略没有名称的蓝牙", scanFilter.noNoName) { scanVM.updateScanFilter(scanFilter.newIgnoreName()) }
+            ClickButton(if (!isScanning) "扫描" else "停止扫描") {
+                withScanPermission { scanVM.toggleScan() }
+            }
         }
     }
 
@@ -88,28 +96,26 @@ class BluetoothActivity : BaseActivity() {
     @Composable
     private fun Devs() {
         val devs by scanVM.devices.observeAsState(arrayOf())
-        LazyColumn {
-            items(devs.size) {
-                val blue = devs[it]
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .clickable { withConnectPermission { connectVM.connect(blue.dev) } },
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        Column(ItemPadding) {
-                            Text(blue.name ?: "N/A", color = Color.Blue, fontSize = FontTitleSize, fontWeight = FontWeight.Bold)
-                            Text("(${blue.address})", color = Color.Gray, fontSize = FontManySize)
+        Rv(devs, key = { it.address }) { blue ->
+            Row(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .clickable(blue.canConnect) {
+                        withConnectPermission {
+                            scanVM.stopScan()
+                            connectVM.connect(blue.dev)
                         }
-                        Spacer(Modifier.weight(1f))
-                        blue.rssiStr?.let { r ->
-                            Column(ItemPadding) {
-                                Text(r, color = Color.Gray, fontSize = FontManySize)
-                            }
-                        }
+                    }, verticalAlignment = Alignment.Bottom
+            ) {
+                Column(ItemPadding) {
+                    Text(blue.name ?: "N/A", color = Color.Blue, fontSize = FontTitleSize, fontWeight = FontWeight.Bold)
+                    Text("(${blue.address})", color = Color.Gray, fontSize = FontManySize)
+                }
+                Spacer(Modifier.weight(1f))
+                blue.rssiStr?.let { r ->
+                    Column(ItemPadding) {
+                        Text(r, color = Color.Gray, fontSize = FontManySize)
                     }
-                    HorizontalDivider()
                 }
             }
         }
@@ -121,9 +127,7 @@ class BluetoothActivity : BaseActivity() {
         } else {
             arrayOf(Manifest.permission.BLUETOOTH)
         }
-        permissions(p).dialogWhen(permissionDialog("蓝牙", "连接蓝牙"))
-            .manualIntent().ifAllGranted().judge { BluetoothHelper.isBlueOn }.intent(BluetoothHelper.enableBlueIntent()).ifTrue()
-            .requestAll { if (it) canConnect() else toast("没有权限去连接蓝牙！") }
+        permissions(p).dialogWhen(permissionDialog("蓝牙", "连接蓝牙")).manualIntent().ifAllGranted().judge { BluetoothHelper.isBlueOn }.intent(BluetoothHelper.enableBlueIntent()).ifTrue().requestAll { if (it) canConnect() else toast("没有权限去连接蓝牙！") }
     }
 
     private fun withScanPermission(canScan: () -> Unit) {
@@ -135,6 +139,29 @@ class BluetoothActivity : BaseActivity() {
         permissions(p).dialogWhen(permissionDialog("蓝牙", "扫描蓝牙")).manualIntent().ifAllGranted().judge { BluetoothHelper.isBlueOn }.intent(BluetoothHelper.enableBlueIntent()).ifTrue().judge { isLocationProvider }.intent(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
             .dialogWhen(intentBlueScan()).ifTrue().permission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION) // 定位打开此权限才会判断为true
             .dialogWhen(permissionBlueScan()).ifAllGranted().requestAll { if (it) canScan() else toast("没有权限去扫描蓝牙！") }
+    }
+}
+
+class BluetoothEnvVM : ViewModel() {
+    private val log = log()
+
+    private val _isBlueOn = MutableLiveData(false)
+
+    val isBlueOn = _isBlueOn.asLive()
+
+    private val state = OnBluetoothStateChangeListener { curr, prev ->
+        log.logStr("state: $curr => $prev")
+        _isBlueOn.postValue(curr?.isOn ?: BluetoothHelper.isBlueOn)
+    }
+
+    init {
+        _isBlueOn.postValue(BluetoothHelper.isBlueOn)
+        BluetoothHelper.addBluetoothStateListener(state)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        BluetoothHelper.removeBluetoothStateListener(state)
     }
 }
 
@@ -167,18 +194,25 @@ class BluetoothScanVM : ViewModel() {
     @SuppressLint("MissingPermission")
     fun toggleScan() {
         log.logStr("toggleScan")
-        val filter = _filter.value!!
         if (scanning.value == true) {
-            filter.stopScan()
+            stopScan()
         } else {
+            _scanning.postValue(true)
             devs.clear()
-            filter.startScan {
-                runner.put {
-                    devs[it.address] = it
-                    _devs.postValue(devs.values.toTypedArray())
+            viewModelScope.launchIO {
+                _filter.value!!.startScan {
+                    runner.put {
+                        devs[it.address] = it
+                        _devs.postValue(devs.values.toTypedArray())
+                    }
                 }
             }
         }
+    }
+
+    fun stopScan() {
+        if (_scanning.value != true) return
+        _filter.value?.stopScan()
     }
 
     override fun onCleared() {
@@ -196,26 +230,40 @@ class BluetoothScanVM : ViewModel() {
     }
 
     @SuppressLint("MissingPermission")
-    data class BlueDev(val dev: BluetoothDevice, val rssi: Int, val isClassic: Boolean = false) {
+    data class BlueDev(val dev: BluetoothDevice, val rssi: Int, val from: From = From.BLE) {
         val name: String? get() = dev.name
         val address: String get() = dev.address
-        val rssiStr: String? get() = if (isClassic) null else "$rssi dBm"
+        val rssiStr: String? get() = if (from.isBle) "$rssi dBm" else null
+
+        val canConnect get() = dev.isBle
 
         companion object {
-            fun from(dev: BluetoothDevice, rssi: Int = 0) = BlueDev(dev, rssi, true)
+            fun from(dev: BluetoothDevice, rssi: Int = 0) = BlueDev(dev, rssi, From.Classic)
             fun from(scan: ScanResult) = BlueDev(scan.device, scan.rssi)
+            fun fromSys(dev: BluetoothDevice, rssi: Int = 0) = BlueDev(dev, rssi, From.Sys)
+
+            private val BluetoothDevice.isBle get() = type == BluetoothDevice.DEVICE_TYPE_LE || type == BluetoothDevice.DEVICE_TYPE_DUAL
         }
     }
 
+    sealed class From {
+        data object Classic : From()
+        data object BLE : From()
+        data object Sys : From()
+
+        val isBle get() = this is BLE
+    }
+
     @SuppressLint("MissingPermission")
-    data class ScanFilter(val ignoreName: Boolean = true, val find: String? = null, val minSSID: Int = 0, val isClassic: Boolean = false) {
+    data class ScanFilter(val noNoName: Boolean = true, val find: String? = null, val minSSID: Int = 0, val isClassic: Boolean = false) {
 
-        fun newIgnoreName() = ScanFilter(ignoreName = !ignoreName, find = find, minSSID = minSSID)
-        fun newClassic() = ScanFilter(ignoreName = ignoreName, find = find, minSSID = minSSID, isClassic = !isClassic)
+        fun newIgnoreName() = ScanFilter(noNoName = !noNoName, find = find, minSSID = minSSID)
+        fun newClassic() = ScanFilter(noNoName = noNoName, find = find, minSSID = minSSID, isClassic = !isClassic)
 
-        fun filter(blueDev: BlueDev): BlueDev? {
+        private fun filter(blueDev: BlueDev, ignore: Boolean = false): BlueDev? {
+            if (ignore) return blueDev
             val dev = blueDev.dev
-            if (ignoreName && dev.name == null) return null
+            if (noNoName && dev.name == null) return null
             if (find != null && dev.name?.contains(find) != true) return null
             if (!isClassic && minSSID != 0 && minSSID.absoluteValue > blueDev.rssi.absoluteValue) return null
             return blueDev
@@ -230,11 +278,13 @@ class BluetoothScanVM : ViewModel() {
         }
 
         fun startScan(l: OnResultListener<BlueDev>) {
-            BluetoothHelper.connectedDevs.forEach { l.onResult(BlueDev.from(it)) }
-            if (isClassic) {
-                BluetoothHelper.CLASSIC.apply { setScannedListener { filter(BlueDev.from(it))?.let { dev -> l.onResult(dev) } } }.startScan()
-            } else {
-                BluetoothHelper.scanResult { filter(BlueDev.from(it))?.let { dev -> l.onResult(dev) } }
+            BluetoothHelper.allConnectedDevs {
+                it.forEach { dev -> filter(BlueDev.fromSys(dev))?.let { dev2 -> l.onResult(dev2) } }
+                if (isClassic) {
+                    BluetoothHelper.CLASSIC.apply { setScannedListener { dev -> filter(BlueDev.from(dev))?.let { dev2 -> l.onResult(dev2) } } }.startScan()
+                } else {
+                    BluetoothHelper.scanResult { dev -> filter(BlueDev.from(dev))?.let { dev2 -> l.onResult(dev2) } }
+                }
             }
         }
     }
@@ -246,6 +296,6 @@ class BluetoothConnectVM : ViewModel() {
     fun connect(dev: BluetoothDevice) {
         val mac = dev.address
         log.logStr("connect: $mac")
-        BluetoothHelper.startConnect(mac)
+        //BluetoothHelper.startConnect(mac)
     }
 }

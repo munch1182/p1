@@ -27,6 +27,8 @@ class ARDefaultManager<T> : ARManager<T> {
     override fun iterator() = _list.iterator()
 
     override fun clear() = _list.clear()
+
+    val size = _list.size
 }
 
 class ARDefaultSyncManager<T> : ARManager<T> {

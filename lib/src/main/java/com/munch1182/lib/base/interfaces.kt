@@ -16,6 +16,11 @@ fun interface OnUpdateListener<T> {
 }
 
 @FunctionalInterface
+fun interface OnChangeListener<T> {
+    fun onUpdate(curr: T, prev: T)
+}
+
+@FunctionalInterface
 fun interface DialogProvider {
     fun onCreateDialog(ctx: Context): ComponentDialog?
 }
