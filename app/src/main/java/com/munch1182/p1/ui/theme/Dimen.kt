@@ -16,3 +16,4 @@ val ItemPadding = Modifier.padding(horizontal = PagePadding, vertical = PagePadd
 val FontSize = TextUnit.Unspecified
 val FontTitleSize = 16.sp
 val FontManySize = 12.sp
+val FontDescSize = 12.sp

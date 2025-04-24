@@ -62,12 +62,12 @@ interface IBluetoothEnv : IBluetoothAdapter {
      * 获取已配对的设备
      */
     @get:RequiresPermission(allOf = [Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_CONNECT])
-    val bondDevs get() = adapter?.bondedDevices ?: emptySet()
+    val bondDevs get() = adapter?.bondedDevices
 
     /***
      * 回调[profile]类型已连接的设备
      */
-    fun connectDevs(profile: Int, l: BluetoothProfile.ServiceListener?): Boolean {
+    fun getProfileProxy(profile: Int, l: BluetoothProfile.ServiceListener?): Boolean {
         return adapter?.getProfileProxy(BluetoothHelperHelper.ctx, l, profile) ?: false
     }
 
@@ -92,24 +92,7 @@ interface IBluetoothEnv : IBluetoothAdapter {
     /**
      * 回调所有支持的类型及其附属的已连接设备
      */
-    fun allConnected(l: OnResultListener<Map<Int, Array<BluetoothDevice>>>) {
-        allConnectedDevsLoop(hashMapOf(), profiles, 0, l)
-    }
-
-    private fun allConnectedDevsLoop(devs: HashMap<Int, Array<BluetoothDevice>>, profiles: Array<Int>, index: Int = 0, l: OnResultListener<Map<Int, Array<BluetoothDevice>>>) {
-        if (index >= profiles.size) return l.onResult(devs)
-        val result = connectDevs(profiles[index], object : BluetoothProfile.ServiceListener {
-            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
-                val result = proxy?.connectedDevices?.toTypedArray() ?: emptyArray()
-                devs[profile] = result
-                allConnectedDevsLoop(devs, profiles, index + 1, l)
-            }
-
-            override fun onServiceDisconnected(profile: Int) {
-            }
-        })
-        if (!result) allConnectedDevsLoop(devs, profiles, index + 1, l)
-    }
+    fun allConnected(l: OnResultListener<Map<Int, Array<BluetoothDevice>>>)
 
     /**
      * 调用该intent即可通过系统提示用户打开蓝牙
@@ -120,6 +103,7 @@ interface IBluetoothEnv : IBluetoothAdapter {
 object BluetoothEnv : IBluetoothEnv, IBluetoothReceiverListener {
     override val bm: BluetoothManager? by lazy { BluetoothHelperHelper.ctx.getSystemService(BluetoothManager::class.java) }
     override val adapter: BluetoothAdapter? get() = bm?.adapter
+    private val log = BluetoothHelperHelper.log.newLog("env")
 
     private val receiverLock = ReentrantLock()
     private val receiver = BluetoothReceiver()
@@ -158,6 +142,45 @@ object BluetoothEnv : IBluetoothEnv, IBluetoothReceiverListener {
         receiver.removeBondStateListener(l)
         ensureUnregisterIfNoOneFollowAfterRemove()
         return this
+    }
+
+    private val cacheProxy by lazy { hashMapOf<Int, BluetoothProfile?>() }
+
+    override fun allConnected(l: OnResultListener<Map<Int, Array<BluetoothDevice>>>) {
+        val result = hashMapOf<Int, Array<BluetoothDevice>>()
+        getProfilesLoop(profiles, 0, result, l)
+    }
+
+    private fun getProfilesLoop(profiles: Array<Int>, index: Int, result: HashMap<Int, Array<BluetoothDevice>>, l: OnResultListener<Map<Int, Array<BluetoothDevice>>>) {
+        if (index >= profiles.size) {
+            l.onResult(result)
+            return
+        }
+        val profile = profiles[index]
+        val proxy = cacheProxy[profile]
+        if (proxy != null) {
+            result[profile] = proxy.connectedDevices?.toTypedArray() ?: arrayOf()
+            getProfilesLoop(profiles, index + 1, result, l)
+        } else {
+            val get = getProfileProxy(profile, object : BluetoothProfile.ServiceListener {
+                override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+                    log.logStr("getProfileProxy: $profile: onServiceConnected")
+                    cacheProxy[profile] = proxy
+                    result[profile] = proxy?.connectedDevices?.toTypedArray() ?: arrayOf()
+                    getProfilesLoop(profiles, index + 1, result, l)
+                }
+
+                override fun onServiceDisconnected(profile: Int) {
+                    cacheProxy.remove(profile)
+                    log.logStr("getProfileProxy: $profile: onServiceDisconnected")
+                }
+            })
+            log.logStr("getProfileProxy: $profile: $get")
+            if (!get) {
+                getProfilesLoop(profiles, index + 1, result, l)
+            }
+        }
+
     }
 }
 

@@ -44,6 +44,7 @@ import com.munch1182.lib.helper.FileHelper
 import com.munch1182.lib.helper.FileHelper.sureExists
 import com.munch1182.lib.helper.closeQuietly
 import com.munch1182.lib.helper.result.intent
+import com.munch1182.lib.helper.result.onGranted
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.sound.AudioHelper
 import com.munch1182.lib.helper.sound.AudioPlayer
@@ -55,6 +56,7 @@ import com.munch1182.p1.base.handlePermissionWithName
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.DescText
 import com.munch1182.p1.ui.Split
+import com.munch1182.p1.ui.StateButton
 import com.munch1182.p1.ui.setContentWithScroll
 import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.ui.theme.PagePaddingHalf
@@ -103,8 +105,8 @@ class AudioActivity : AppCompatActivity() {
         val keys by audioVM.keys.collectAsState(arrayOf())
         Row {
             Column {
-                ClickButton(if (focus) "清除音频焦点" else "获取音频焦点") { audioVM.toggleFocus() }
-                ClickButton(if (listen) "清除按键监听" else "监听媒体按键") { audioVM.toggleMediaButtonListen() }
+                StateButton(if (focus) "清除音频焦点" else "获取音频焦点", focus) { audioVM.toggleFocus() }
+                StateButton(if (listen) "清除按键监听" else "监听媒体按键", listen) { audioVM.toggleMediaButtonListen() }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     ClickButton("当前输入：${if (input.isPhone) "手机" else "耳机"}") { audioVM.changeAudioInput() }
                 }
@@ -120,8 +122,8 @@ class AudioActivity : AppCompatActivity() {
     private fun Record() {
         val isRecording by recordVM.isRecording.observeAsState(false)
 
-        ClickButton(if (!isRecording) "开始录音" else "停止录音") {
-            permission(Manifest.permission.RECORD_AUDIO).handlePermissionWithName("录音").request {
+        StateButton(if (!isRecording) "开始录音" else "停止录音", isRecording) {
+            permission(Manifest.permission.RECORD_AUDIO).handlePermissionWithName("录音").onGranted {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) audioVM.sureInput()
                 recordVM.recordToggle()
             }

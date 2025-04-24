@@ -13,6 +13,7 @@ fun LifecycleOwner.launchIO(ctx: CoroutineContext? = null, start: CoroutineStart
     lifecycleScope.launchIO(ctx, start, block)
 
 fun CoroutineScope.launchIO(ctx: CoroutineContext? = null, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend CoroutineScope.() -> Unit) = launch(ctx?.let { it + Dispatchers.IO } ?: Dispatchers.IO, start, block)
+fun CoroutineScope.launchDefault(ctx: CoroutineContext? = null, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend CoroutineScope.() -> Unit) = launch(ctx?.let { it + Dispatchers.Default } ?: Dispatchers.IO, start, block)
 
 object ThreadHelper {
 

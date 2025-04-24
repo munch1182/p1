@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
@@ -61,8 +63,8 @@ fun ComponentActivity.setContentWithScroll(modifier: Modifier = Modifier.padding
 }
 
 @Composable
-fun ClickButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Button(onClick, modifier = modifier) { Text(text) }
+fun ClickButton(text: String, modifier: Modifier = Modifier, colors: ButtonColors = ButtonDefaults.buttonColors(), onClick: () -> Unit) {
+    Button(onClick, modifier = modifier, colors = colors) { Text(text) }
 }
 
 @Composable
@@ -106,4 +108,9 @@ fun <T> Rv(list: Array<T>, modifier: Modifier = Modifier, key: ((T) -> Any)? = n
             HorizontalDivider()
         }
     }
+}
+
+@Composable
+fun StateButton(text: String, state: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    ClickButton(text, modifier, colors = ButtonDefaults.buttonColors(if (state) Color.Red else Color.Unspecified), onClick)
 }
