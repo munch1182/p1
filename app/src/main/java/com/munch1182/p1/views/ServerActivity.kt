@@ -19,6 +19,7 @@ import com.munch1182.lib.base.Logger
 import com.munch1182.lib.helper.currAct
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.ui.ClickButton
+import com.munch1182.p1.ui.StateButton
 import com.munch1182.p1.ui.setContentWithRv
 import kotlin.random.Random
 
@@ -49,7 +50,7 @@ class ServerActivity : BaseActivity() {
     private fun Views() {
         var isBind by remember { mutableStateOf(false) }
         var getValue by remember { mutableIntStateOf(-1) }
-        ClickButton(if (!isBind) "绑定服务" else "解绑服务") {
+        StateButton(if (!isBind) "绑定服务" else "解绑服务", isBind) {
             isBind = !isBind
             if (isBind) {
                 runCatching { currAct.bindService(Intent(currAct, BindServer::class.java), conn, Context.BIND_AUTO_CREATE) }

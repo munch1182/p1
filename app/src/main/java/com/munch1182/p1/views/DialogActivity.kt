@@ -39,6 +39,12 @@ class DialogActivity : BaseActivity() {
         Split()
 
         ClickButton("YesNoLaterDialog") { showYesNoLaterDialog() }
+
+        Split()
+
+        ClickButton("悬浮窗") {
+            //DialogHelper.
+        }
     }
 
     private fun showDialogFragment() = newAlertDialog().container().show()

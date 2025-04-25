@@ -21,18 +21,9 @@ private fun dialogPermission(name: String): PermissionCanRequestDialogProvider {
 object DialogHelper {
 
     fun newPermissionIntent(
-        ctx: Context = currAct, permissionName: String? = null,
-        title: String = "权限请求",
-        content: String = "请前往设置界面手动允许${permissionName ?: throw IllegalStateException()}权限",
-        sure: String = "确定",
-        cancel: String = "取消"
+        ctx: Context = currAct, permissionName: String? = null, title: String = "权限请求", content: String = "请前往设置界面手动允许${permissionName ?: throw IllegalStateException()}权限", sure: String = "确定", cancel: String = "取消"
     ): AlertDialog {
-        return AlertDialog.Builder(ctx)
-            .setTitle(title)
-            .setMessage(content)
-            .setPositiveButton(sure) { _, _ -> }
-            .setNegativeButton(cancel) { _, _ -> }
-            .create()
+        return AlertDialog.Builder(ctx).setTitle(title).setMessage(content).setPositiveButton(sure) { _, _ -> }.setNegativeButton(cancel) { _, _ -> }.create()
     }
 
 
@@ -72,10 +63,6 @@ object DialogHelper {
     }
 
     private fun allowDenyDialog(msg: String, title: String, sure: String = "确定"): AllowDenyDialogContainer {
-        return AlertDialog.Builder(currAct).setTitle(title)
-            .setMessage(msg)
-            .setPositiveButton(sure) { _, _ -> }
-            .setNegativeButton("拒绝") { _, _ -> }
-            .create().asAllowDenyDialog()
+        return AlertDialog.Builder(currAct).setTitle(title).setMessage(msg).setPositiveButton(sure) { _, _ -> }.setNegativeButton("拒绝") { _, _ -> }.create().asAllowDenyDialog()
     }
 }

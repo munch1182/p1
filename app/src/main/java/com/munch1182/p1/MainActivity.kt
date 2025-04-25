@@ -64,7 +64,7 @@ class MainActivity : BaseActivity() {
         JumpButton("蓝牙相关", clazz = BluetoothActivity::class)
         JumpButton("音频相关", clazz = AudioActivity::class)
         JumpButton("服务相关", clazz = ServerActivity::class)
-        JumpButton("Dialog相关", clazz = DialogActivity::class)
+        JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
         JumpButton("View相关", clazz = ViewActivity::class)
         ClickButton("语言切换") { intent(Intent(this, LanguageActivity::class.java)).onData { recreateIfLangNeed(it) } }
