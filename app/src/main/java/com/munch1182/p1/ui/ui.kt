@@ -26,6 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalInspectionMode
 import com.munch1182.lib.helper.currAct
 import com.munch1182.p1.ui.theme.FontManySize
@@ -54,8 +56,36 @@ fun ScrollPage(modifier: Modifier = Modifier, content: @Composable ColumnScope.(
     Column(modifier = modifier.fillMaxWidth()) { content(this) }
 }
 
+fun Modifier.noApplyWindowPadding() = this then NoApplyWindowPadding(true)
+
+private class NoApplyWindow(var isNo: Boolean = false) : Modifier.Node()
+
+private class NoApplyWindowPadding(val isNo: Boolean = false) : ModifierNodeElement<NoApplyWindow>() {
+
+    companion object {
+        fun isNotPadding(modifier: Modifier) = modifier.any { it is NoApplyWindowPadding && it.isNo }
+    }
+
+    override fun InspectorInfo.inspectableProperties() {
+    }
+
+    override fun create(): NoApplyWindow = NoApplyWindow(isNo)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is NoApplyWindowPadding) return false
+        return isNo == (other).isNo
+    }
+
+    override fun hashCode() = isNo.hashCode()
+    override fun update(node: NoApplyWindow) {
+        node.isNo = isNo
+    }
+}
+
 fun ComponentActivity.setContentWithRv(modifier: Modifier = Modifier.padding(PagePadding), content: @Composable LazyItemScope.() -> Unit) {
-    setContentWithTheme { ip -> RvPage(modifier.padding(ip)) { content(this) } }
+    setContentWithTheme { ip ->
+        RvPage(if (NoApplyWindowPadding.isNotPadding(modifier)) modifier else modifier.padding(ip)) { content(this) }
+    }
 }
 
 fun ComponentActivity.setContentWithScroll(modifier: Modifier = Modifier.padding(PagePadding), content: @Composable ColumnScope.() -> Unit) {

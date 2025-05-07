@@ -6,11 +6,13 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -35,8 +37,10 @@ import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.JumpButton
 import com.munch1182.p1.ui.PageTheme
 import com.munch1182.p1.ui.RvPage
+import com.munch1182.p1.ui.Split
+import com.munch1182.p1.ui.noApplyWindowPadding
 import com.munch1182.p1.ui.setContentWithRv
-import com.munch1182.p1.ui.theme.PagePadding
+import com.munch1182.p1.ui.theme.PagePaddingModifier
 import com.munch1182.p1.views.AudioActivity
 import com.munch1182.p1.views.BluetoothActivity
 import com.munch1182.p1.views.DialogActivity
@@ -54,12 +58,13 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        setContentWithRv { Click() }
+        setContentWithRv(modifier = PagePaddingModifier.noApplyWindowPadding()) { Click() }
         //startActivity<RecordActivity>()
     }
 
     @Composable
     private fun Click() {
+        with(LocalDensity.current) { Spacer(Modifier.height(statusHeight().toDp())) }
         JumpButton("权限相关", clazz = ResultActivity::class)
         JumpButton("蓝牙相关", clazz = BluetoothActivity::class)
         JumpButton("音频相关", clazz = AudioActivity::class)
@@ -72,14 +77,13 @@ class MainActivity : BaseActivity() {
         ClickButton("开发者选项") { toDeveloperSettings() }
         JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))
         JumpButton("关于界面", intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
+        Split()
         MainInfo()
     }
 
     @Composable
     private fun MainInfo() {
-        Column(
-            modifier = Modifier.padding(top = PagePadding), horizontalAlignment = Alignment.Start
-        ) {
+        Column(horizontalAlignment = Alignment.Start) {
             val isPreMode = LocalInspectionMode.current
             Text(if (isPreMode) "0.1.0(1)" else "$versionName($versionCodeCompat)")
             Text(if (isPreMode) "1080(1080) x 2400(80 + 2320)" else screenStr())
@@ -124,4 +128,3 @@ class MainActivity : BaseActivity() {
         PageTheme { RvPage { Click() } }
     }
 }
-
