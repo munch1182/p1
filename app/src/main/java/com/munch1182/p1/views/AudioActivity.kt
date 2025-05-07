@@ -52,7 +52,7 @@ import com.munch1182.lib.helper.sound.RecordHelper
 import com.munch1182.lib.helper.sound.calculateDB
 import com.munch1182.lib.helper.sound.wavHeader
 import com.munch1182.p1.R
-import com.munch1182.p1.base.handlePermissionWithName
+import com.munch1182.p1.base.permissionIntentDialogWithName
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.DescText
 import com.munch1182.p1.ui.Split
@@ -123,7 +123,7 @@ class AudioActivity : AppCompatActivity() {
         val isRecording by recordVM.isRecording.observeAsState(false)
 
         StateButton(if (!isRecording) "开始录音" else "停止录音", isRecording) {
-            permission(Manifest.permission.RECORD_AUDIO).handlePermissionWithName("录音").onGranted {
+            permission(Manifest.permission.RECORD_AUDIO).permissionIntentDialogWithName("录音").onGranted {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) audioVM.sureInput()
                 recordVM.recordToggle()
             }
@@ -163,7 +163,8 @@ class AudioActivity : AppCompatActivity() {
     @Composable
     private fun ProgressPlay() {
         val progress by playVM.progressPlay.collectAsState(PlayVM.Progress(0, 1))
-        Slider(value = progress.progress.toFloat(), onValueChange = { playVM.seekPlayTo(it.toInt()) }, onValueChangeFinished = { playVM.seekPlayTo(-1) }, valueRange = 0f..progress.max.toFloat()
+        Slider(
+            value = progress.progress.toFloat(), onValueChange = { playVM.seekPlayTo(it.toInt()) }, onValueChangeFinished = { playVM.seekPlayTo(-1) }, valueRange = 0f..progress.max.toFloat()
         )
     }
 

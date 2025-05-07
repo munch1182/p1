@@ -13,10 +13,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.window.Dialog
+import com.munch1182.lib.base.withColor
 import com.munch1182.lib.helper.currAct
 import com.munch1182.lib.helper.dialog.container
+import com.munch1182.lib.helper.dialog.onResult
 import com.munch1182.p1.base.BaseActivity
+import com.munch1182.p1.base.DialogHelper
 import com.munch1182.p1.base.show
+import com.munch1182.p1.base.toast
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.setContentWithRv
@@ -42,8 +46,17 @@ class DialogActivity : BaseActivity() {
 
         Split()
 
-        ClickButton("悬浮窗") {
-            //DialogHelper.
+        ClickButton("Message") {
+            DialogHelper.newMessage(DialogHelper.Message(msg = "这是一条必须要处理的消息，请确认或者拒绝", ok = "确认", cancel = "拒绝".withColor("red")))
+                .onResult { toast("选择了 $it") }.show()
+        }
+
+        ClickButton("Progress") {
+            DialogHelper.newProgress(DialogHelper.Progress(msg = "正在加载中，请稍后...")) { toast("已取消") }.show()
+        }
+
+        ClickButton("Bottom") {
+            DialogHelper.newBottomChose(arrayOf("选项1", "选项2", "选项3")) { toast("选择了 ${it + 1}") }.show()
         }
     }
 

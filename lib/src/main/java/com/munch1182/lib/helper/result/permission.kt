@@ -12,6 +12,7 @@ import com.munch1182.lib.base.asPermissionCheck
 import com.munch1182.lib.base.asPermissionCheckRationale
 import com.munch1182.lib.base.newLog
 import com.munch1182.lib.base.onDestroyed
+import com.munch1182.lib.helper.dialog.AllowDenyDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

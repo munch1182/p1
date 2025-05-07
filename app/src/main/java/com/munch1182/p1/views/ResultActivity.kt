@@ -26,10 +26,10 @@ import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.result.permissions
 import com.munch1182.p1.base.BaseActivity
-import com.munch1182.p1.base.DialogHelper.intentBlueScan
-import com.munch1182.p1.base.DialogHelper.intentDialog
-import com.munch1182.p1.base.DialogHelper.permissionBlueScan
-import com.munch1182.p1.base.DialogHelper.permissionDialog
+import com.munch1182.p1.base.intentBlueScanDialog
+import com.munch1182.p1.base.intentDialog
+import com.munch1182.p1.base.permissionBlueScanDialog
+import com.munch1182.p1.base.permissionDialog
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.JumpButton
 import com.munch1182.p1.ui.Split
@@ -55,7 +55,7 @@ class ResultActivity : BaseActivity() {
         }
         ClickButton("请求相机权限") {
             permission(Manifest.permission.CAMERA)
-                .dialogWhen(permissionDialog("相机", "拍摄照片"))
+                .permissionDialog("相机", "拍摄照片")
                 .manualIntent()
                 .request(callback)
         }
@@ -65,7 +65,7 @@ class ResultActivity : BaseActivity() {
         ClickButton("悬浮窗权限") {
             judge { Settings.canDrawOverlays(it) }
                 .intent(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).wPName())
-                .dialogWhen(intentDialog("请在接下来的页面中选择本应用，并选择允许，以便使用跨应用相关功能。", "请在接下来的页面中选择本应用，并选择允许，否则无法使用跨应用相关功能。"))
+                .intentDialog("请在接下来的页面中选择本应用，并选择允许，以便使用跨应用相关功能。", "请在接下来的页面中选择本应用，并选择允许，否则无法使用跨应用相关功能。")
                 .request(callback)
         }
 
@@ -78,7 +78,7 @@ class ResultActivity : BaseActivity() {
                 arrayOf(Manifest.permission.BLUETOOTH)
             }
             permissions(p)
-                .dialogWhen(permissionDialog("蓝牙", "扫描蓝牙"))
+                .permissionDialog("蓝牙", "扫描蓝牙")
                 .manualIntent()
                 .ifAllGranted()
                 .judge { BluetoothHelper.isBlueOn }
@@ -86,13 +86,12 @@ class ResultActivity : BaseActivity() {
                 .ifTrue()
                 .judge { isLocationProvider }
                 .intent(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                .dialogWhen(intentBlueScan())
+                .intentBlueScanDialog()
                 .ifTrue()
                 .permission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION) // 定位打开此权限才会判断为true
-                .dialogWhen(permissionBlueScan())
+                .permissionBlueScanDialog()
                 .ifAllGranted()
                 .requestAll(callback)
-
         }
 
         Text(result)

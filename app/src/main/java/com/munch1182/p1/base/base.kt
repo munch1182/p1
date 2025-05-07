@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewbinding.ViewBinding
 import com.munch1182.lib.helper.currAct
@@ -23,6 +24,8 @@ abstract class BaseActivity : FragmentActivity() {
 }
 
 fun DialogContainer.show() = show(currAsFM.supportFragmentManager)
+
+fun DialogFragment.show() = show(currAsFM.supportFragmentManager, null)
 
 fun <VB : ViewBinding> Activity.bind(inflater: (LayoutInflater) -> VB): Lazy<VB> {
     return lazy { inflater(layoutInflater).apply { setContentView(root) } }

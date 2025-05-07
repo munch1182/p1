@@ -22,8 +22,8 @@ import com.munch1182.lib.base.screenDisplay
 import com.munch1182.lib.base.statusHeight
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
+import com.munch1182.lib.helper.dialog.asAllowDenyDialog
 import com.munch1182.lib.helper.result.JudgeHelper.IntentCanLaunchDialogProvider
-import com.munch1182.lib.helper.result.asAllowDenyDialog
 import com.munch1182.lib.helper.result.intent
 import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.onData

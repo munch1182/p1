@@ -45,9 +45,9 @@ import com.munch1182.lib.helper.result.ifTrue
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.result.permissions
 import com.munch1182.p1.base.BaseActivity
-import com.munch1182.p1.base.DialogHelper.intentBlueScan
-import com.munch1182.p1.base.DialogHelper.permissionBlueScan
-import com.munch1182.p1.base.DialogHelper.permissionDialog
+import com.munch1182.p1.base.intentBlueScanDialog
+import com.munch1182.p1.base.permissionBlueScanDialog
+import com.munch1182.p1.base.permissionDialog
 import com.munch1182.p1.base.toast
 import com.munch1182.p1.ui.CheckBoxWithLabel
 import com.munch1182.p1.ui.Rv
@@ -157,7 +157,14 @@ class BluetoothActivity : BaseActivity() {
         } else {
             arrayOf(Manifest.permission.BLUETOOTH)
         }
-        permissions(p).dialogWhen(permissionDialog("蓝牙", "连接蓝牙")).manualIntent().ifAllGranted().judge { BluetoothHelper.isBlueOn }.intent(BluetoothHelper.enableBlueIntent()).ifTrue().requestAll { if (it) canConnect() else toast("没有权限去连接蓝牙！") }
+        permissions(p)
+            .permissionDialog("蓝牙", "连接蓝牙")
+            .manualIntent()
+            .ifAllGranted()
+            .judge { BluetoothHelper.isBlueOn }
+            .intent(BluetoothHelper.enableBlueIntent())
+            .ifTrue()
+            .requestAll { if (it) canConnect() else toast("没有权限去连接蓝牙！") }
     }
 
     private fun withScanPermission(canScan: () -> Unit) {
@@ -166,9 +173,21 @@ class BluetoothActivity : BaseActivity() {
         } else {
             arrayOf(Manifest.permission.BLUETOOTH)
         }
-        permissions(p).dialogWhen(permissionDialog("蓝牙", "扫描蓝牙")).manualIntent().ifAllGranted().judge { BluetoothHelper.isBlueOn }.intent(BluetoothHelper.enableBlueIntent()).ifTrue().judge { isLocationProvider }.intent(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            .dialogWhen(intentBlueScan()).ifTrue().permission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION) // 定位打开此权限才会判断为true
-            .dialogWhen(permissionBlueScan()).ifAllGranted().requestAll { if (it) canScan() else toast("没有权限去扫描蓝牙！") }
+        permissions(p)
+            .permissionDialog("蓝牙", "扫描蓝牙")
+            .manualIntent()
+            .ifAllGranted()
+            .judge { BluetoothHelper.isBlueOn }
+            .intent(BluetoothHelper.enableBlueIntent())
+            .ifTrue()
+            .judge { isLocationProvider }
+            .intent(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            .intentBlueScanDialog()
+            .ifTrue()
+            .permission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION) // 定位打开此权限才会判断为true
+            .permissionBlueScanDialog()
+            .ifAllGranted()
+            .requestAll { if (it) canScan() else toast("没有权限去扫描蓝牙！") }
     }
 }
 

@@ -1,15 +1,12 @@
-package com.munch1182.lib.helper.result
+package com.munch1182.lib.helper.dialog
 
 import android.annotation.SuppressLint
 import android.view.MotionEvent
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.Lifecycle
 import com.munch1182.lib.base.onDestroyed
-import com.munch1182.lib.helper.dialog.DialogProvider
-import com.munch1182.lib.helper.dialog.ResultDialog
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-
 
 interface AllowDenyDialog : ResultDialog<AllowDenyDialog.Result> {
     sealed class Result {

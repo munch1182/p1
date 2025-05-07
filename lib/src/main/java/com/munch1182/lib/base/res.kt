@@ -7,6 +7,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import androidx.annotation.ArrayRes
 import androidx.annotation.ColorInt
+import androidx.annotation.StringRes
 
 @get:ColorInt
 val colorPrimary: Int get() = getAttrArrayFromTheme(android.R.attr.colorPrimary) { getColor(0, Color.WHITE) }
@@ -23,6 +24,8 @@ fun <T> getAttrArrayFromTheme(attrId: Int, get: TypedArray.() -> T): T {
 fun getStrArray(@ArrayRes arrayId: Int): Array<out String>? {
     return runCatching { ctx.resources.getStringArray(arrayId) }.getOrNull()
 }
+
+fun str(@StringRes str: Int) = ctx.getString(str)
 
 /**
  * 使用integer-array数组时，使用此方法获取数组
