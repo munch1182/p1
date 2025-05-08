@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.media.audiofx.AcousticEchoCanceler
+import android.media.audiofx.AudioEffect
+import android.media.audiofx.NoiseSuppressor
 import androidx.lifecycle.LifecycleOwner
 import com.munch1182.lib.base.onDestroyed
 import java.nio.ByteBuffer
@@ -49,11 +52,33 @@ class RecordHelper(val sampleRate: Int = 44100, val channel: Int = AudioFormat.C
             buffSize // 音频缓冲区的大小, 调用方法算，否则缓冲区可能不够用会报错
         )
     }
+    private val noise by lazy { NoiseSuppressor.create(ar.audioSessionId) }
+    private val acoustic by lazy { AcousticEchoCanceler.create(ar.audioSessionId) }
 
     val isRecording: Boolean get() = ar.recordingState == AudioRecord.RECORDSTATE_RECORDING
 
     fun toggle() {
         if (isRecording) stop() else start()
+    }
+
+    // 降噪
+    fun enableNoise(enable: Boolean): Boolean {
+        if (!NoiseSuppressor.isAvailable()) return false
+        return try {
+            noise?.setEnabled(enable) == AudioEffect.SUCCESS
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // 回声消除
+    fun enableAcoustic(enable: Boolean): Boolean {
+        if (!AcousticEchoCanceler.isAvailable()) return false
+        return try {
+            acoustic?.setEnabled(enable) == AudioEffect.SUCCESS
+        } catch (e: Exception) {
+            false
+        }
     }
 
     fun start() {

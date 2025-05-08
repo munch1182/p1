@@ -12,6 +12,7 @@ import android.view.KeyEvent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -52,6 +56,7 @@ import com.munch1182.lib.helper.sound.calculateDB
 import com.munch1182.lib.helper.sound.wavHeader
 import com.munch1182.p1.R
 import com.munch1182.p1.base.permissionIntentDialogWithName
+import com.munch1182.p1.ui.CheckBoxWithLabel
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.DescText
 import com.munch1182.p1.ui.Split
@@ -123,9 +128,17 @@ class AudioActivity : AppCompatActivity() {
     @Composable
     private fun Record() {
         val isRecording by recordVM.isRecording.observeAsState(false)
+        val effect by recordVM.recordEffect.observeAsState(RecordVM.RecordEffect())
+        var isShowEffect by remember { mutableStateOf(false) }
+
+        Text("音效", modifier = Modifier.clickable { isShowEffect = !isShowEffect })
+        if (isShowEffect) {
+            CheckBoxWithLabel("降噪", effect.noise) { withRecordPermission { recordVM.updateEffect(effect.newNoise()) } }
+            CheckBoxWithLabel("回声消除", effect.acoustic) { withRecordPermission { recordVM.updateEffect(effect.newAcoustic()) } }
+        }
 
         StateButton(if (!isRecording) "开始录音" else "停止录音", isRecording) {
-            permission(Manifest.permission.RECORD_AUDIO).permissionIntentDialogWithName("录音").onGranted {
+            withRecordPermission {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) audioVM.sureInput()
                 recordVM.recordToggle()
             }
@@ -134,6 +147,10 @@ class AudioActivity : AppCompatActivity() {
         Value()
         Split()
         if (!isRecording) Files()
+    }
+
+    private fun withRecordPermission(any: () -> Unit) {
+        permission(Manifest.permission.RECORD_AUDIO).permissionIntentDialogWithName("录音").onGranted { any.invoke() }
     }
 
     @Composable
@@ -367,10 +384,12 @@ class RecordVM : ViewModel() {
     private val _isRecording = MutableLiveData(false)
     private val _db = MutableStateFlow(0.0)
     private val _file = MutableLiveData(WriteState())
+    private val _recordEffect = MutableLiveData(RecordEffect())
 
     val isRecording = _isRecording.asLive()
     val db = _db.asStateFlow()
     val file = _file.asLive()
+    val recordEffect = _recordEffect.asLive()
 
     private val _isRecordingImpl get() = recordHelper.isRecording
     private var recordJob: Job? = null
@@ -378,8 +397,14 @@ class RecordVM : ViewModel() {
 
     fun recordToggle() = if (_isRecordingImpl) stopRecord() else startRecord()
 
+    fun updateEffect(effect: RecordEffect) {
+        setupRecordEffect(effect)
+        _recordEffect.postValue(effect)
+    }
+
     private fun startRecord() {
         log.logStr("startRecord")
+
         recordHelper.start()
         _isRecording.postValue(recordHelper.isRecording)
         viewModelScope.launchIO {
@@ -396,6 +421,12 @@ class RecordVM : ViewModel() {
             val f = writeHelper.complete()
             _file.postValue(WriteState.pcmComplete(f.path))
         }
+    }
+
+    private fun setupRecordEffect(effect: RecordEffect) {
+        val resNoise = recordHelper.enableNoise(effect.noise)
+        val resAcoustic = recordHelper.enableAcoustic(effect.acoustic)
+        log.logStr("setupRecordEffect: noise: ${effect.noise}:$resNoise acoustic ${effect.noise}:$resAcoustic")
     }
 
     private suspend fun recordLoop() {
@@ -550,6 +581,11 @@ class RecordVM : ViewModel() {
             file = null
             dir.deleteRecursively()
         }
+    }
+
+    data class RecordEffect(val noise: Boolean = false, val acoustic: Boolean = false) {
+        fun newNoise(noise: Boolean = !this.noise) = this.copy(noise = noise)
+        fun newAcoustic(acoustic: Boolean = !this.acoustic) = this.copy(acoustic = acoustic)
     }
 }
 
