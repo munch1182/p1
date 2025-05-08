@@ -21,7 +21,6 @@ import java.util.concurrent.Executor
 
 object AudioHelper {
 
-
     val am get() = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     class FocusHelper : ARManager<AudioManager.OnAudioFocusChangeListener> by ARDefaultManager() {
@@ -117,6 +116,9 @@ object AudioHelper {
 
         /**
          * @see android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+         *
+         * 打开蓝牙的sco通道，即可通过蓝牙设备录音
+         * 但是此时蓝牙设备按键大多数会自动关闭该通道(形同蓝牙耳机按键挂断通话)
          */
         fun setRecordFrom(type: Int): Boolean? {
             if (am.communicationDevice?.type == type) return true

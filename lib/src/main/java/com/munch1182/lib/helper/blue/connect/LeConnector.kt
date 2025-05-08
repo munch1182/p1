@@ -33,7 +33,7 @@ class LeConnector : IBluetoothAdapter by BluetoothHelper, IBluetoothConnect {
     override fun stopConnect(mac: String) {
         log.logStr("stopConnect: $mac")
         if (manager.contains(mac)) {
-            manager[mac]?.stopConnect(mac)
+            manager[mac]?.release()
             manager.remove(mac)
         }
     }
@@ -74,7 +74,8 @@ class LeConnector : IBluetoothAdapter by BluetoothHelper, IBluetoothConnect {
             gatt?.disconnect()
         }
 
-        private fun release() {
+        fun release() {
+            gatt?.disconnect()
             gatt?.close()
             gatt = null
         }

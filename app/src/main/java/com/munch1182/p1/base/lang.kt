@@ -1,6 +1,7 @@
 package com.munch1182.p1.base
 
 import android.content.Context
+import androidx.core.content.edit
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.log
 import com.munch1182.lib.helper.LanguageHelperImpl
@@ -29,7 +30,7 @@ object LanguageHelper : LanguageHelperImpl {
     }
 
     private fun save(lang: String) {
-        AppHelper.getSharedPreferences("LANG", Context.MODE_PRIVATE).edit().putString(KEY_LANG_STR, lang).apply()
+        AppHelper.getSharedPreferences("LANG", Context.MODE_PRIVATE).edit { putString(KEY_LANG_STR, lang) }
     }
 
     private fun load(): String? {

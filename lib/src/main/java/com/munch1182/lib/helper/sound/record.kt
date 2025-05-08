@@ -27,10 +27,7 @@ import kotlin.math.sqrt
  * RequiresPermission(Manifest.permission.RECORD_AUDIO)
  */
 @SuppressLint("MissingPermission")
-class RecordHelper(
-    val from: Int = MediaRecorder.AudioSource.MIC, //手机麦克风输入音源
-    val sampleRate: Int = 44100, val channel: Int = AudioFormat.CHANNEL_IN_MONO, val format: Int = AudioFormat.ENCODING_PCM_16BIT
-) {
+class RecordHelper(val sampleRate: Int = 44100, val channel: Int = AudioFormat.CHANNEL_IN_MONO, val format: Int = AudioFormat.ENCODING_PCM_16BIT) {
 
     /**
      * @see newBuffer
@@ -45,7 +42,7 @@ class RecordHelper(
 
     private val ar by lazy {
         AudioRecord(
-            from, // 输入音源
+            MediaRecorder.AudioSource.MIC, // 手机麦克风输入音源，VOICE_COMMUNICATION会降噪但是声音会变小
             sampleRate, // 采样率，目前44100Hz是唯一可以保证兼容所有Android手机的采样率
             channel, // 单声道双声道
             format, // 数据位宽，16BIT兼容所有Android手机

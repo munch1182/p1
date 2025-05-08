@@ -89,7 +89,7 @@ fun ComponentActivity.setContentWithRv(modifier: Modifier = Modifier.padding(Pag
 }
 
 fun ComponentActivity.setContentWithScroll(modifier: Modifier = Modifier.padding(PagePadding), content: @Composable ColumnScope.() -> Unit) {
-    setContentWithTheme { ip -> ScrollPage(modifier.padding(ip)) { content(this) } }
+    setContentWithTheme { ip -> ScrollPage(if (NoApplyWindowPadding.isNotPadding(modifier)) modifier else modifier.padding(ip)) { content(this) } }
 }
 
 @Composable

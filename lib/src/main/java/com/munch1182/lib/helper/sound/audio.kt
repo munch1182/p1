@@ -37,7 +37,7 @@ class AudioPlayer(
 
     val state get() = player.playState
 
-    val newBuffer: ByteArray get() = ByteArray(player.bufferCapacityInFrames)
+    val newBuffer: ByteArray get() = ByteArray(buffSize)
 
     private val fsib by lazy { audioFormat.frameSizeInBytesCompat }
 

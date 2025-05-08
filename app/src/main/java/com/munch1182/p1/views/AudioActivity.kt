@@ -6,7 +6,6 @@ import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.MediaPlayer
-import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
@@ -77,6 +76,9 @@ class AudioActivity : AppCompatActivity() {
 
     companion object {
         const val SAMPLE = 16000
+        const val CHANNEL_IN: Int = AudioFormat.CHANNEL_IN_MONO
+        const val CHANNEL_OUT: Int = AudioFormat.CHANNEL_OUT_MONO
+        const val FORMAT: Int = AudioFormat.ENCODING_PCM_16BIT
     }
 
     private val audioVM by viewModels<AudioVM>()
@@ -359,7 +361,7 @@ class RecordVM : ViewModel() {
     private val log = log()
 
     // RecordHelper必须在有权限之后创建，所以对其的所有访问都应在有权限之后
-    private val recordHelper by lazy { RecordHelper(MediaRecorder.AudioSource.VOICE_COMMUNICATION, AudioActivity.SAMPLE, AudioFormat.CHANNEL_IN_MONO) }
+    private val recordHelper by lazy { RecordHelper(AudioActivity.SAMPLE, AudioActivity.CHANNEL_IN, AudioActivity.FORMAT) }
     private val writeHelper by lazy { RecordWriteHelper(log) }
 
     private val _isRecording = MutableLiveData(false)
@@ -400,7 +402,7 @@ class RecordVM : ViewModel() {
         withContext(SupervisorJob().apply { recordJob = this } + Dispatchers.IO) {
             val byte = recordHelper.newBuffer
             while (true) {
-                delay(100L)
+                delay(40L)
                 val read = recordHelper.record(byte) ?: break
                 val db = byte.calculateDB(read)
                 writeHelper.write(byte, read)
@@ -559,7 +561,7 @@ class PlayVM : ViewModel() {
     val isPlay = _isPlay.asLive()
     val progressPlay = _progressPlay.asStateFlow()
 
-    private val audioPlayer by lazy { AudioPlayer(AudioActivity.SAMPLE) }
+    private val audioPlayer by lazy { AudioPlayer(AudioActivity.SAMPLE, AudioActivity.CHANNEL_OUT, AudioActivity.FORMAT) }
     private val log = log()
     private var stopPlay = false
 

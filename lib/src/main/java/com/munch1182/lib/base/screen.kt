@@ -2,6 +2,7 @@ package com.munch1182.lib.base
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.graphics.Rect
 import android.os.Build
 import android.util.DisplayMetrics
@@ -53,10 +54,10 @@ fun Activity.statusHeight(): Int {
 }
 
 @SuppressLint("InternalInsetResource", "DiscouragedApi")
-fun statusHeight(): Int {
-    val resourceId = ctx.resources.getIdentifier("status_bar_height", "dimen", "android")
+fun statusHeight(context: Context = ctx): Int {
+    val resourceId = context.resources.getIdentifier("status_bar_height", "dimen", "android")
     if (resourceId > 0) {
-        return ctx.resources.getDimensionPixelSize(resourceId)
+        return context.resources.getDimensionPixelSize(resourceId)
     }
     return 0
 }
@@ -66,10 +67,10 @@ fun statusHeight(): Int {
  * 当使用全面屏手势更改底部导航栏显示后，获取的值会随之更改
  */
 @SuppressLint("InternalInsetResource", "DiscouragedApi")
-fun navigationHeight(): Int {
-    val resourceId = ctx.resources.getIdentifier("navigation_bar_height", "dimen", "android")
+fun navigationHeight(context: Context = ctx): Int {
+    val resourceId = context.resources.getIdentifier("navigation_bar_height", "dimen", "android")
     if (resourceId > 0) {
-        return ctx.resources.getDimensionPixelSize(resourceId)
+        return context.resources.getDimensionPixelSize(resourceId)
     }
     return 0
 }
