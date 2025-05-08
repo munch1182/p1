@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -55,6 +54,7 @@ import com.munch1182.lib.helper.sound.RecordHelper
 import com.munch1182.lib.helper.sound.calculateDB
 import com.munch1182.lib.helper.sound.wavHeader
 import com.munch1182.p1.R
+import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.permissionIntentDialogWithName
 import com.munch1182.p1.ui.CheckBoxWithLabel
 import com.munch1182.p1.ui.ClickButton
@@ -77,7 +77,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.ArrayDeque
 
-class AudioActivity : AppCompatActivity() {
+class AudioActivity : BaseActivity() {
 
     companion object {
         const val SAMPLE = 16000

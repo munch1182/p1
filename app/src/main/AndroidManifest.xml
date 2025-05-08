@@ -29,6 +29,9 @@
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
         <activity
+            android:name=".views.libview.NumberHeightViewActivity"
+            android:exported="false" />
+        <activity
             android:name=".views.TestActivity"
             android:exported="false" />
         <activity
@@ -76,9 +79,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".views.BindServer" />
-
-        <!-- 分享文件， RecordActivity -->
+        <service android:name=".views.BindServer" /> <!-- 分享文件， RecordActivity -->
         <!-- https://developer.android.google.cn/training/secure-file-sharing/setup-sharing?hl=zh-cn -->
         <provider
             android:name="androidx.core.content.FileProvider"

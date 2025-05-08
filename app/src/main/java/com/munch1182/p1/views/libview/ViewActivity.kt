@@ -16,5 +16,6 @@ class ViewActivity : BaseActivity() {
     private fun Click() {
         JumpButton("SwapMenuLayout", clazz = SwapMenuLayoutActivity::class)
         JumpButton("RecyclerView", clazz = RecyclerviewActivity::class)
+        JumpButton("NumberHeightView", clazz = NumberHeightViewActivity::class)
     }
 }

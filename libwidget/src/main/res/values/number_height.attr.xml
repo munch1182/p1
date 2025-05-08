@@ -5,10 +5,12 @@
         <attr name="colorValued" format="color" />
         <!--未赋值的颜色-->
         <attr name="colorNoValue" format="color" />
-        <!--每秒要显示的数量-->
-        <attr name="secNum" format="integer" />
+        <!--要显示的数量-->
+        <attr name="itemNumber" format="integer" />
         <!--值宽度-->
         <attr name="itemWidth" format="dimension" />
+        <!--值间隔-->
+        <attr name="itemSpace" format="dimension" />
         <!--最小高度，小于等于minValue值要显示的高度-->
         <attr name="minHeight" format="dimension" />
         <!--最大高度，大于等于maxValue值要显示的高度-->
@@ -18,6 +20,8 @@
         <!--最大值-->
         <attr name="maxValue" format="float" />
 
+        <!--是否显示标尺-->
+        <attr name="showRuler" format="boolean" />
         <!--中间标尺的宽度-->
         <attr name="rulerWidth" format="dimension" />
         <!--中间标尺的颜色-->

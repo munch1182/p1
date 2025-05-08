@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.window.OnBackInvokedDispatcher
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -20,13 +19,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.munch1182.lib.base.Loglog
+import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.ui.setContentWithTheme
 import com.munch1182.p1.ui.theme.PagePadding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class WebContentActivity : AppCompatActivity() {
+class WebContentActivity : BaseActivity() {
 
     companion object {
         private const val KEY_URL = "url"

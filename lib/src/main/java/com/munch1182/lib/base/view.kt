@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.view.View
+import android.view.View.MeasureSpec
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
@@ -67,3 +68,6 @@ fun EditText.hideSoftInput() {
     val im = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
     im?.hideSoftInputFromWindow(windowToken, 0)
 }
+
+val Int.specMode get() = MeasureSpec.getMode(this)
+val Int.specSize get() = MeasureSpec.getSize(this)

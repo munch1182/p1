@@ -5,13 +5,13 @@ import android.util.TypedValue
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.widget.recyclerview.RecyclerViewDividerItemDecoration
+import com.munch1182.p1.base.BaseActivity
 
-class RecyclerviewActivity : AppCompatActivity() {
+class RecyclerviewActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
