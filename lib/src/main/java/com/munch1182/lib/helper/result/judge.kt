@@ -73,7 +73,7 @@ class JudgeHelper internal constructor(internal val ctx: Ctx) {
             return withContext(Dispatchers.Main) {
                 val dialog = dp?.onCreateDialog(act, state) ?: return@withContext state.isBefore.apply { log.logStr("dialog result $this as state is $state") }
                 suspendCoroutine { c ->
-                    dialog.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
+                    dialog.lifecycle.onDestroyed { c.resume(dialog.result.isAllow) }
                     log.logStr("request dialog when $state")
                     dialog.show()
                 }

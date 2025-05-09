@@ -11,7 +11,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.viewbinding.ViewBinding
 import com.munch1182.lib.helper.currAct
 import com.munch1182.lib.helper.currAsFM
-import com.munch1182.lib.helper.dialog.DialogContainer
 
 @Composable
 fun str(id: Int) = stringResource(id)
@@ -22,8 +21,6 @@ abstract class BaseActivity : FragmentActivity() {
         super.attachBaseContext(LanguageHelper.attachBaseContext(newBase))
     }
 }
-
-fun DialogContainer.show() = show(currAsFM.supportFragmentManager)
 
 fun DialogFragment.show() = show(currAsFM.supportFragmentManager, null)
 

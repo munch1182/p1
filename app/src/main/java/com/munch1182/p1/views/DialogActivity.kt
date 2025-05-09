@@ -47,12 +47,11 @@ class DialogActivity : BaseActivity() {
         Split()
 
         ClickButton("Message") {
-            DialogHelper.newMessage(DialogHelper.Message(msg = "这是一条必须要处理的消息，请确认或者拒绝", ok = "确认", cancel = "拒绝".withColor("red")))
-                .onResult { toast("选择了 $it") }.show()
+            DialogHelper.newMessage(DialogHelper.Message(msg = "这是一条必须要处理的消息，请确认或者拒绝", ok = "确认", cancel = "拒绝".withColor("red"))).onResult { toast("选择了 $it") }.show()
         }
 
         ClickButton("Progress") {
-            DialogHelper.newProgress(DialogHelper.Progress(msg = "正在加载中，请稍后...")) { toast("已取消") }.show()
+            DialogHelper.newProgress(DialogHelper.Progress(msg = "正在加载中，请稍候...")).onResult { if (it) toast("已取消") }.show()
         }
 
         ClickButton("Bottom") {

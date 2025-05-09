@@ -59,7 +59,7 @@ class IntentHelper internal constructor(internal val ctx: Ctx) {
             return withContext(Dispatchers.Main) {
                 val dialog = dp?.onCreateDialog(act) ?: return@withContext log.logStr("dialog result true event no dialog provider").let { true }
                 suspendCoroutine { c ->
-                    dialog.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
+                    dialog.lifecycle.onDestroyed { c.resume(dialog.result.isAllow) }
                     log.logStr("request dialog before start intent")
                     dialog.show()
                 }

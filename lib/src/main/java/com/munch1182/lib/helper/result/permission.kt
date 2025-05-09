@@ -97,7 +97,7 @@ class PermissionHelper internal constructor(internal val ctx: Ctx) {
                 val dialog = dp?.onCreateDialog(act, state, permission)
                     ?: return@withContext state.isBefore.apply { log.logStr("dialog result $this as state is $state") }
                 suspendCoroutine { c ->
-                    dialog.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
+                    dialog.lifecycle.onDestroyed { c.resume(dialog.result.isAllow) }
                     log.logStr("request dialog for ${permission.joinToString()} when $state")
                     dialog.show()
                 }

@@ -10,11 +10,11 @@ interface ResultDialog<RESULT> : LifecycleOwner {
      * 将dialog的值转为静态的值，当dialog销毁时，获取该值即dialog的结果回调
      * 相当于为该dialog添加了listener
      */
-    val result: RESULT?
+    val result: RESULT
     fun show()
 }
 
-fun <RESULT> ResultDialog<RESULT>.onResult(onResult: OnResultListener<RESULT?>): ResultDialog<RESULT> {
+fun <RESULT> ResultDialog<RESULT>.onResult(onResult: OnResultListener<RESULT>): ResultDialog<RESULT> {
     lifecycle.onDestroyed { onResult.onResult(result) }
     return this
 }

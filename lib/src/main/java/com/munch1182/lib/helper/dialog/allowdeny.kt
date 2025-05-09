@@ -19,7 +19,7 @@ interface AllowDenyDialog : ResultDialog<AllowDenyDialog.Result> {
 }
 
 suspend fun AllowDenyDialog.isAllow() = suspendCoroutine { c ->
-    lifecycle.onDestroyed { c.resume(result?.isAllow) }
+    lifecycle.onDestroyed { c.resume(result.isAllow) }
     show()
 }
 

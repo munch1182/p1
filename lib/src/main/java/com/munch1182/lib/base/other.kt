@@ -75,3 +75,8 @@ inline fun <reified T> Bundle.getParcelableCompat(key: String) = if (Build.VERSI
 
 @Suppress("DEPRECATION")
 inline fun <reified T> Intent.getParcelableCompat(key: String) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) getParcelableExtra(key, T::class.java) else getParcelableExtra(key)
+
+@Suppress("UNCHECKED_CAST")
+fun <V> Any.getFiled(name: String, clazz: Class<*>? = null): V {
+    return (clazz ?: this::class.java).getDeclaredField(name).apply { isAccessible = true }.get(this) as V
+}
