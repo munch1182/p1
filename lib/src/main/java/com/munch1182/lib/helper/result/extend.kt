@@ -1,5 +1,6 @@
 package com.munch1182.lib.helper.result
 
+import android.app.Activity
 import android.content.Intent
 import androidx.activity.result.contract.ActivityResultContract
 import com.munch1182.lib.helper.currAsFM
@@ -32,6 +33,7 @@ fun permission(permission: () -> Array<String>) = PermissionHelper.init(currAsFM
  * @see com.munch1182.lib.helper.ActivityCurrHelper.register
  */
 fun intent(i: Intent) = IntentHelper.init(currAsFM).intent(i)
+fun intent(clazz: Class<out Activity>) = intent(Intent(currAsFM, clazz))
 
 /**
  * @see com.munch1182.lib.helper.ActivityCurrHelper.register

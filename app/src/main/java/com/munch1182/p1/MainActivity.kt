@@ -72,7 +72,7 @@ class MainActivity : BaseActivity() {
         JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
         JumpButton("View相关", clazz = ViewActivity::class)
-        ClickButton("语言切换") { intent(Intent(this, LanguageActivity::class.java)).onData { recreateIfLangNeed(it) } }
+        ClickButton("语言切换") { intent(LanguageActivity::class.java).onData { recreateIfLangNeed(it) } }
         JumpButton("测试页面", clazz = TestActivity::class)
         ClickButton("开发者选项") { toDeveloperSettings() }
         JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))
