@@ -36,8 +36,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.munch1182.lib.AppHelper
-import com.munch1182.lib.base.ViewCtxProvider
-import com.munch1182.lib.base.ViewInflaterProvider
+import com.munch1182.lib.base.DialogViewCtxProvider
 import com.munch1182.lib.base.getFiled
 import com.munch1182.lib.base.lpW
 import com.munch1182.lib.base.str
@@ -100,15 +99,17 @@ object DialogHelper {
         return cd
     }
 
-    fun newBottomChose(items: Array<String>, ctx: Context = currAct, onChose: ((Int) -> Unit)? = null): DialogFragment {
-        val dialog = DFBottom()
-        dialog.inject {
+    fun newBottomChose(items: Array<String>, onChose: ((Int) -> Unit)? = null): DialogFragment {
+        return newBottom { ctx, d ->
             ViewImpl.newChose(ctx, items) {
+                d?.cancel()
                 onChose?.invoke(it)
-                dialog.dismiss()
             }
         }
-        return dialog
+    }
+
+    fun newBottom(vp: DialogViewCtxProvider): DFBottom {
+        return DFBottom().inject(vp)
     }
 
     data class Message(
@@ -178,13 +179,11 @@ object DialogHelper {
     }
 
     class DFBottom : BottomSheetDialogFragment() {
-        private var dProvider: ViewCtxProvider? = null
-        private var dInflater: ViewInflaterProvider? = null
-        fun inject(provider: ViewCtxProvider?) = this.apply { this.dProvider = provider }
-        fun injectLayout(provider: ViewInflaterProvider?) = this.apply { this.dInflater = provider }
+        private var dProvider: DialogViewCtxProvider? = null
+        fun inject(provider: DialogViewCtxProvider?) = this.apply { this.dProvider = provider }
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-            return (container?.context ?: context)?.let { dProvider?.onCreateView(it) } ?: dInflater?.onCreateView(inflater, container) ?: super.onCreateView(inflater, container, savedInstanceState)
+            return (container?.context ?: context)?.let { dProvider?.onCreateView(it, dialog) } ?: super.onCreateView(inflater, container, savedInstanceState)
         }
     }
 

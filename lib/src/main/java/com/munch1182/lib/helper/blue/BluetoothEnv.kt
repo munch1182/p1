@@ -73,7 +73,7 @@ interface IBluetoothEnv : IBluetoothAdapter {
 
     val profiles: Array<Int>
         get() {
-            val profiles = arrayListOf(BluetoothProfile.HEADSET, BluetoothProfile.A2DP, BluetoothProfile.GATT, BluetoothProfile.GATT_SERVER)
+            val profiles = arrayListOf(BluetoothProfile.HEADSET, BluetoothProfile.A2DP, BluetoothProfile.GATT, BluetoothProfile.GATT_SERVER) // GATT GATT_SERVER一般需要单独处理
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) profiles.add(BluetoothProfile.HEARING_AID)
             return profiles.toTypedArray()
         }
@@ -146,8 +146,11 @@ object BluetoothEnv : IBluetoothEnv, IBluetoothReceiverListener {
 
     private val cacheProxy by lazy { hashMapOf<Int, BluetoothProfile?>() }
 
+    @SuppressLint("MissingPermission")
     override fun allConnected(l: OnResultListener<Map<Int, Array<BluetoothDevice>>>) {
         val result = hashMapOf<Int, Array<BluetoothDevice>>()
+        bm?.getConnectedDevices(BluetoothProfile.GATT)?.let { result[BluetoothProfile.GATT] = it.toTypedArray() }
+        bm?.getConnectedDevices(BluetoothProfile.GATT_SERVER)?.let { result[BluetoothProfile.GATT_SERVER] = it.toTypedArray() }
         getProfilesLoop(profiles, 0, result, l)
     }
 

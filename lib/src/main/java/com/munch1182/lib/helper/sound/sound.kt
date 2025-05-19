@@ -2,6 +2,8 @@ package com.munch1182.lib.helper.sound
 
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.session.MediaSession
@@ -17,6 +19,7 @@ import com.munch1182.lib.base.getParcelableCompat
 import com.munch1182.lib.base.log
 import com.munch1182.lib.helper.ARDefaultManager
 import com.munch1182.lib.helper.ARManager
+import com.munch1182.lib.helper.BaseReceiver
 import java.util.concurrent.Executor
 
 object AudioHelper {
@@ -53,6 +56,11 @@ object AudioHelper {
         fun clearAudioFocus(): Boolean {
             return am.abandonAudioFocusRequest(AudioFocusRequest.Builder(focusGain).setOnAudioFocusChangeListener(callback).build()) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
         }
+
+        fun release() {
+            clear()
+            clearAudioFocus()
+        }
     }
 
     class MediaButtonHelper : ARManager<OnUpdateListener<KeyEvent>> by ARDefaultManager() {
@@ -69,14 +77,14 @@ object AudioHelper {
                 val key = mediaButtonIntent.extras?.getParcelableCompat<KeyEvent>(Intent.EXTRA_KEY_EVENT) ?: return super.onMediaButtonEvent(mediaButtonIntent)
                 log.logStr("${key.keyCode} ${key.action} ${key.eventTime}")
                 forEach { it.onUpdate(key) }
-                return super.onMediaButtonEvent(mediaButtonIntent)
+                return true
             }
         }
 
         /**
          * 要让系统分发按键事件：
-         * 1. 获取播放焦点；否则其它播放器将响应按键
-         * 2. 要有实际的播放过的播放器(不必正在播放，非必须响应按键)；否则当其它播放器播放时仍会响应按键
+         * 要作为最后一个运行过的播放器
+         *
          * @see MediaSession.Callback.onMediaButtonEvent
          * @see callback
          */
@@ -90,6 +98,7 @@ object AudioHelper {
 
         fun release() {
             clear()
+            unListen()
             session?.release()
             session = null
         }
@@ -104,6 +113,7 @@ object AudioHelper {
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
+    @Deprecated("BlueScoHelper")
     class InputHelper {
 
         fun listenChanged(executor: Executor = ThreadHelper.cacheExecutor, listener: AudioManager.OnCommunicationDeviceChangedListener) {
@@ -118,7 +128,7 @@ object AudioHelper {
          * @see android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
          *
          * 打开蓝牙的sco通道，即可通过蓝牙设备录音
-         * 但是此时蓝牙设备按键大多数会自动关闭该通道(形同蓝牙耳机按键挂断通话)
+         * 但是此时蓝牙设备播放/暂停按键会自动关闭该通道(形同蓝牙耳机按键挂断通话)
          */
         fun setRecordFrom(type: Int): Boolean? {
             if (am.communicationDevice?.type == type) return true
@@ -130,5 +140,62 @@ object AudioHelper {
         }
 
         fun currRecordFrom(): Int? = am.communicationDevice?.type
+    }
+
+    class BlueScoHelper {
+        private val receiver by lazy {
+            BlueScoAudioReceiver().apply {
+                add {
+                    if (it == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
+                        scoListener?.onUpdate(true)
+                    } else if (it == AudioManager.SCO_AUDIO_STATE_DISCONNECTED) {
+                        scoListener?.onUpdate(false)
+                    }
+                }
+            }
+        }
+        private val communicateListener = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AudioManager.OnCommunicationDeviceChangedListener { scoListener?.onUpdate(it?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) }
+        } else {
+            null
+        }
+        private var scoListener: OnUpdateListener<Boolean>? = null
+
+        fun setBlueScoConnectListener(executor: Executor = ThreadHelper.cacheExecutor, l: OnUpdateListener<Boolean>? = null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                am.addOnCommunicationDeviceChangedListener(executor, communicateListener!!)
+            } else {
+                receiver.registerIfNot()
+            }
+            this.scoListener = l
+        }
+
+        fun startBlueSco(): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }?.let { am.setCommunicationDevice(it) } == true
+            } else {
+                am.startBluetoothSco()
+                true
+            }
+        }
+
+        fun stopBlueSco() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                am.clearCommunicationDevice()
+            } else {
+                am.isSpeakerphoneOn = false
+                am.stopBluetoothSco()
+            }
+        }
+    }
+
+    class BlueScoAudioReceiver : BaseReceiver<OnUpdateListener<Int>>(IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)) {
+        private val log = log()
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val state = intent?.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
+            log.logStr("${intent?.action}: $state")
+            state ?: return
+            dispatchOnReceive { it.onUpdate(state) }
+        }
     }
 }

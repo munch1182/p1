@@ -1,6 +1,7 @@
 package com.munch1182.lib.base
 
 import android.content.Context
+import android.content.DialogInterface
 import android.view.LayoutInflater
 import android.view.View
 import androidx.activity.ComponentDialog
@@ -43,4 +44,9 @@ fun interface OnStateChangeListener<T> {
 @FunctionalInterface
 fun interface OnStateValueChangeListener<STATE, VALUE> {
     fun onStateChange(state: STATE, value: VALUE)
+}
+
+@FunctionalInterface
+fun interface DialogViewCtxProvider {
+    fun onCreateView(ctx: Context, dialog: DialogInterface?): View?
 }
