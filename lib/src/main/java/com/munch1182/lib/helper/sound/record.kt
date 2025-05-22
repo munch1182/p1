@@ -1,6 +1,7 @@
 package com.munch1182.lib.helper.sound
 
 import android.annotation.SuppressLint
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
@@ -61,6 +62,9 @@ class RecordHelper(val sampleRate: Int = 44100, val channel: Int = AudioFormat.C
         if (isRecording) stop() else start()
     }
 
+    val preferredDevice = ar.preferredDevice
+    fun setPreferredDevice(dev: AudioDeviceInfo?) = ar.setPreferredDevice(dev)
+
     // 降噪
     fun enableNoise(enable: Boolean): Boolean {
         if (!NoiseSuppressor.isAvailable()) return false
@@ -81,17 +85,20 @@ class RecordHelper(val sampleRate: Int = 44100, val channel: Int = AudioFormat.C
         }
     }
 
-    fun start() {
-        if (isRecording) return
+    fun start(): Boolean {
+        if (isRecording) return true
         if (ar.state == AudioRecord.STATE_INITIALIZED) {
             kotlin.runCatching { ar.startRecording() }
         }
+        return isRecording
     }
 
-    fun stop() {
+    fun stop(): Boolean {
         if (isRecording) {
             kotlin.runCatching { ar.stop() }
+            return ar.recordingState == AudioRecord.RECORDSTATE_STOPPED
         }
+        return true
     }
 
     val newBuffer: ByteArray get() = ByteArray(buffSize)

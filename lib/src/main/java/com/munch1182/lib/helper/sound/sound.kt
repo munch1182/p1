@@ -7,6 +7,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.session.MediaSession
+import android.media.session.PlaybackState
 import android.os.Build
 import android.os.Handler
 import android.view.KeyEvent
@@ -63,7 +64,7 @@ object AudioHelper {
         }
     }
 
-    class MediaButtonHelper : ARManager<OnUpdateListener<KeyEvent>> by ARDefaultManager() {
+    class MediaButtonHelper(private var isOrigin: Boolean = false) : ARManager<OnUpdateListener<KeyEvent>> by ARDefaultManager() {
 
         companion object {
             private const val TAG = "com.munch1182.lib.helper.sound.MediaButtonHelper.MediaSession"
@@ -73,12 +74,45 @@ object AudioHelper {
         private var session: MediaSession? = null
 
         private val callback = object : MediaSession.Callback() {
+            private var currKey: KeyEvent? = null
             override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
                 val key = mediaButtonIntent.extras?.getParcelableCompat<KeyEvent>(Intent.EXTRA_KEY_EVENT) ?: return super.onMediaButtonEvent(mediaButtonIntent)
                 log.logStr("${key.keyCode} ${key.action} ${key.eventTime}")
-                forEach { it.onUpdate(key) }
+                if (isOrigin) forEach { it.onUpdate(key) }
+                currKey = key
+                super.onMediaButtonEvent(mediaButtonIntent)
                 return true
             }
+
+            override fun onPause() {
+                super.onPause()
+                log.logStr("on: $currKey")
+                val key = currKey ?: return
+                if (!isOrigin) forEach { it.onUpdate(key) }
+            }
+
+            override fun onPlay() {
+                super.onPlay()
+                val key = currKey ?: return
+                if (!isOrigin) forEach { it.onUpdate(key) }
+            }
+
+            override fun onSkipToNext() {
+                super.onSkipToNext()
+                val key = currKey ?: return
+                if (!isOrigin) forEach { it.onUpdate(key) }
+            }
+
+            override fun onSkipToPrevious() {
+                super.onSkipToPrevious()
+                val key = currKey ?: return
+                if (!isOrigin) forEach { it.onUpdate(key) }
+            }
+        }
+
+        fun isOriginKeyEvent(isOrigin: Boolean = false): MediaButtonHelper {
+            this.isOrigin = isOrigin
+            return this
         }
 
         /**
@@ -107,6 +141,15 @@ object AudioHelper {
             if (session != null) return session!!
             val session = MediaSession(AppHelper, TAG)
             session.setCallback(callback)
+            session.setPlaybackState(
+                PlaybackState.Builder().setActions(
+                    PlaybackState.ACTION_PLAY or
+                            PlaybackState.ACTION_PAUSE or
+                            PlaybackState.ACTION_PLAY_PAUSE or
+                            PlaybackState.ACTION_SKIP_TO_NEXT or
+                            PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                ).build()
+            )
             this.session = session
             return session
         }
@@ -163,7 +206,11 @@ object AudioHelper {
 
         fun setBlueScoConnectListener(executor: Executor = ThreadHelper.cacheExecutor, l: OnUpdateListener<Boolean>? = null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                am.addOnCommunicationDeviceChangedListener(executor, communicateListener!!)
+                if (l == null) {
+                    am.removeOnCommunicationDeviceChangedListener(communicateListener!!)
+                } else {
+                    am.addOnCommunicationDeviceChangedListener(executor, communicateListener!!)
+                }
             } else {
                 receiver.registerIfNot()
             }
@@ -177,6 +224,12 @@ object AudioHelper {
                 am.startBluetoothSco()
                 true
             }
+        }
+
+        fun isBlueScoOn(): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                am.communicationDevice?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+            } else am.isBluetoothScoOn
         }
 
         fun stopBlueSco() {
