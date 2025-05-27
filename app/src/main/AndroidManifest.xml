@@ -4,11 +4,21 @@
 
     <uses-feature
         android:name="android.hardware.camera"
-        android:required="false" /> <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.CAMERA" /> <!-- webActivity -->
-    <uses-permission android:name="android.permission.INTERNET" /> <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" /> <!-- RecordActivity -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" /> <!-- BluetoothActivity, ResultActivity -->
+        android:required="false" />
+
+    <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- webActivity -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- RecordActivity -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- BluetoothActivity, ResultActivity -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -94,6 +104,15 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/share_file" />
         </provider>
+
+        <service
+            android:name="com.munch1182.lib.helper.sound.MusicNotificationListener"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

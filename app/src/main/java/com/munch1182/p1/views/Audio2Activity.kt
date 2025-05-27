@@ -1,12 +1,14 @@
 package com.munch1182.p1.views
 
 import android.Manifest
+import android.content.Intent
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.KeyEvent
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
@@ -21,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -32,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,15 +50,19 @@ import com.munch1182.lib.base.onDestroyed
 import com.munch1182.lib.base.toDateStr
 import com.munch1182.lib.helper.FileHelper
 import com.munch1182.lib.helper.FileWriteHelper
+import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.onGranted
+import com.munch1182.lib.helper.result.onTrue
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.sound.AudioHelper
 import com.munch1182.lib.helper.sound.AudioPlayer
+import com.munch1182.lib.helper.sound.MusicNotificationListener
 import com.munch1182.lib.helper.sound.RecordHelper
 import com.munch1182.lib.helper.sound.calculateDB
 import com.munch1182.p1.R
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.DialogHelper
+import com.munch1182.p1.base.intentDialog
 import com.munch1182.p1.base.permissionDialog
 import com.munch1182.p1.base.show
 import com.munch1182.p1.base.toast
@@ -137,7 +145,11 @@ class Audio2Activity : BaseActivity() {
         val isFocus by audioVM.focus.observeAsState(false)
         val isListen by audioVM.isListen.observeAsState(false)
         var showMbv by remember { mutableStateOf(false) }
-        StateButton(if (isFocus) "清除当前焦点" else "获取音频焦点", isFocus) { audioVM.gainFocusOrNot(!isFocus) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StateButton(if (isFocus) "清除当前焦点" else "获取音频焦点", isFocus) { audioVM.gainFocusOrNot(!isFocus) }
+            Spacer(Modifier.width(PagePadding))
+            DownUpArrow(true) { withNotifyListenerPermission { showMusicView() } }
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             StateButton(if (isListen) "取消按键监听" else "监听媒体按键", isListen) { audioVM.listenButtonOrNot(!isListen) }
             Spacer(Modifier.width(PagePadding))
@@ -152,7 +164,7 @@ class Audio2Activity : BaseActivity() {
         val isScoOn by recordVM.blueScoIsOpen.observeAsState(false)
         MsgButton("Bluetooth Sco录音已开启", isScoOn) {
             StateButton(if (isRecording) "停止录音" else "开始录音", isRecording) {
-                permission(Manifest.permission.RECORD_AUDIO).permissionDialog("录音", "录音").manualIntent().onGranted {
+                withRecordPermission {
                     recordHandleVM.startRecordOrStop(!isRecording)
                     recordVM.startRecordOrStop()
                 }
@@ -213,6 +225,36 @@ class Audio2Activity : BaseActivity() {
         }.show()
     }
 
+    private fun withNotifyListenerPermission(any: () -> Unit) {
+        judge { NotificationManagerCompat.getEnabledListenerPackages(AppHelper).contains(packageName) }.intent(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)).intentDialog("请允许通知监听权限, 以监听音乐信息", "请开启通知监听权限, 以监听音乐信息").onTrue(any)
+    }
+
+    private fun showMusicView() {
+        val mnl = MusicNotificationListener()
+        DialogHelper.newBottom { ctx, _ ->
+            ComposeView(ctx) {
+                var pair by remember { mutableStateOf<Pair<String?, String?>?>(null) }
+                //val onUpdate by rememberUpdatedState<Pair<String?, String?>>()
+                DisposableEffect(Unit) {
+                    log().logStr("111")
+                    val t1 = MusicNotificationListener.OnMusicUpdate { t, a ->
+                        log().logStr("$t, $a")
+                        pair = t to a
+                    }
+                    mnl.add(t1)
+                    onDispose { mnl.remove(t1) }
+                }
+                EmptyMsg(pair == null || pair?.first == null || pair?.second == null, "当前未接收到音乐信息") {
+                    Column {
+                        pair?.first?.let { Text(it) }
+                        pair?.second?.let { Text(it) }
+                    }
+                }
+            }
+
+        }.show()
+    }
+
     private fun showListenMediaButtonView(showOrNot: (Boolean) -> Unit) {
         val list = mutableListOf<Pair<KeyEvent, Long>>()
         DialogHelper.newBottom { ctx, _ ->
@@ -231,6 +273,10 @@ class Audio2Activity : BaseActivity() {
             }
         }.apply { lifecycle.onDestroyed { showOrNot.invoke(false) } }.show()
         showOrNot.invoke(true)
+    }
+
+    private fun withRecordPermission(block: () -> Unit) {
+        permission(Manifest.permission.RECORD_AUDIO).permissionDialog("录音", "录音").manualIntent().onGranted(block)
     }
 
     private fun Int.toChannelStr(): String {

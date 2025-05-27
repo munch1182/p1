@@ -1,6 +1,7 @@
 package com.munch1182.p1.views
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -49,24 +50,19 @@ class ResultActivity : BaseActivity() {
         JumpButton("app设置", intent = appSetting())
         Split()
         ClickButton("选择图片") {
-            contract(ActivityResultContracts.PickVisualMedia())
-                .input(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                .request(callback)
+            contract(ActivityResultContracts.PickVisualMedia()).input(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)).request(callback)
         }
         ClickButton("请求相机权限") {
-            permission(Manifest.permission.CAMERA)
-                .permissionDialog("相机", "拍摄照片")
-                .manualIntent()
-                .request(callback)
+            permission(Manifest.permission.CAMERA).permissionDialog("相机", "拍摄照片").manualIntent().request(callback)
         }
         ClickButton("请求跳转") {
             intent(WebContentActivity.url(currAct)).request(callback)
         }
         ClickButton("悬浮窗权限") {
-            judge { Settings.canDrawOverlays(it) }
-                .intent(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).wPName())
-                .intentDialog("请在接下来的页面中选择本应用，并选择允许，以便使用跨应用相关功能。", "请在接下来的页面中选择本应用，并选择允许，否则无法使用跨应用相关功能。")
-                .request(callback)
+            judge { Settings.canDrawOverlays(it) }.intent(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).wPName()).intentDialog("请在接下来的页面中选择本应用，并选择允许，以便使用跨应用相关功能。", "请在接下来的页面中选择本应用，并选择允许，否则无法使用跨应用相关功能。").request(callback)
+        }
+        ClickButton("跳转进阶页面") {
+            intent(Intent().setComponent(ComponentName.unflattenFromString("com.android.settings/.Settings\$AdvancedAppsActivity"))).request(callback)
         }
 
         Split()
@@ -77,21 +73,9 @@ class ResultActivity : BaseActivity() {
             } else {
                 arrayOf(Manifest.permission.BLUETOOTH)
             }
-            permissions(p)
-                .permissionDialog("蓝牙", "扫描蓝牙")
-                .manualIntent()
-                .ifAllGranted()
-                .judge { BluetoothHelper.isBlueOn }
-                .intent(BluetoothHelper.enableBlueIntent())
-                .ifTrue()
-                .judge { isLocationProvider }
-                .intent(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                .intentBlueScanDialog()
-                .ifTrue()
+            permissions(p).permissionDialog("蓝牙", "扫描蓝牙").manualIntent().ifAllGranted().judge { BluetoothHelper.isBlueOn }.intent(BluetoothHelper.enableBlueIntent()).ifTrue().judge { isLocationProvider }.intent(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)).intentBlueScanDialog().ifTrue()
                 .permission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION) // 定位打开此权限才会判断为true
-                .permissionBlueScanDialog()
-                .ifAllGranted()
-                .requestAll(callback)
+                .permissionBlueScanDialog().ifAllGranted().requestAll(callback)
         }
 
         Text(result)

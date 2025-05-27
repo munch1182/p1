@@ -7,6 +7,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.util.TypedValue
 import androidx.annotation.ArrayRes
+import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
 import androidx.annotation.StringRes
 import com.munch1182.lib.AppHelper
@@ -62,7 +63,6 @@ fun Uri.getPath(proj: Array<String>, columnName: String): String? {
 
 fun Uri.getMediaPath() = getPath(arrayOf(MediaStore.Images.Media.DATA), MediaStore.Images.Media.DATA)
 
-
 val Number.dp2PX
     get() = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, this.toFloat(), AppHelper.resources.displayMetrics
@@ -71,3 +71,9 @@ val Number.sp2Px
     get() = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_SP, this.toFloat(), AppHelper.resources.displayMetrics
     )
+
+fun getIcon(@AttrRes resId: Int): Drawable? {
+    return getAttrArrayFromTheme(resId) { getDrawable(0) }
+}
+
+val backIcon get() = getIcon(resId = android.R.attr.homeAsUpIndicator)

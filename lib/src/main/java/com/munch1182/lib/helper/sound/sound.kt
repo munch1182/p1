@@ -25,7 +25,7 @@ import java.util.concurrent.Executor
 
 object AudioHelper {
 
-    val am get() = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    val am get() = ctx.getSystemService(AudioManager::class.java) as AudioManager
 
     class FocusHelper : ARManager<AudioManager.OnAudioFocusChangeListener> by ARDefaultManager() {
 
