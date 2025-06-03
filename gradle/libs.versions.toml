@@ -58,6 +58,8 @@ androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation
 #https://developer.android.google.cn/jetpack/androidx/releases/compose-runtime?hl=zh-cn
 androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedataVersion" }
 
+gson = { group = "com.google.code.gson", name = "gson", version = "2.13.1" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

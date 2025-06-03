@@ -2,10 +2,11 @@ package com.munch1182.lib.base
 
 class UnSupportImpl : RuntimeException("UnSupportImpl")
 
-fun withCatch(any: () -> Unit) {
+fun <T> withCatch(any: () -> T): T? {
     try {
-        any()
+        return any()
     } catch (e: Exception) {
         e.printStackTrace()
     }
+    return null
 }

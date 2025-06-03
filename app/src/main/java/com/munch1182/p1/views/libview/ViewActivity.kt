@@ -17,5 +17,6 @@ class ViewActivity : BaseActivity() {
         JumpButton("SwapMenuLayout", clazz = SwapMenuLayoutActivity::class)
         JumpButton("RecyclerView", clazz = RecyclerviewActivity::class)
         JumpButton("NumberHeightView", clazz = NumberHeightViewActivity::class)
+        JumpButton("MindMapView", clazz = MindMapActivity::class)
     }
 }
