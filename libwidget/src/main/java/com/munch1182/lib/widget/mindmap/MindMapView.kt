@@ -10,14 +10,34 @@ class MindMapView @JvmOverloads constructor(
     ctx: Context, set: AttributeSet? = null, defStyleAttr: Int = 0, defStyleRes: Int = 0
 ) : View(ctx, set, defStyleAttr, defStyleRes) {
 
+    private var currStyle: NodeStyle = MindMapFromStart2EndStyle
+
+    private var currNode = Node(
+        "rootyi", arrayOf(
+            Node(
+                "child1", arrayOf(
+                    Node("child11"), Node("chi112", arrayOf(Node("aaa"), Node("bbb"))), Node("child113", arrayOf(Node("11111"), Node("111222"))), Node("child115")
+                )
+            ), Node("child2", arrayOf(Node("child22"))), Node("child3")
+        )
+    )
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val views = currStyle.layoutNode(currNode)
+        views.forEach { currStyle.drawNode(canvas, it) }
+    }
+
     class NodeView(
         val name: String, // 标题
         val level: Int, // 层级，大多数样式都跟层级有关
-        val contentRect: RectF, // 显示内容的位置，显示内容的位置即视觉效果的位置
+        val spaceRect: RectF, // 节点占用位置
+        val contentRect: RectF, // 节点显示区域
+        val linkPoints: MutableList<Float> = MutableList(4) { 0f }
     )
 
     class Node(val name: String, val children: Array<Node>? = null) {
-        internal var totalHeight = 0f
+        internal var childrenHeight: Float = 0f // 子节点占用高度，用于计算父节点位置
     }
 
     interface NodeStyle {
@@ -32,6 +52,5 @@ class MindMapView @JvmOverloads constructor(
          */
         fun layoutNode(node: Node): Array<NodeView>
         fun drawNode(canvas: Canvas, node: NodeView)
-        fun drawLinkLine(canvas: Canvas, from: NodeView, to: NodeView)
     }
 }

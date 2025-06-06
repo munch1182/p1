@@ -1,67 +1,151 @@
 package com.munch1182.lib.widget.mindmap
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
+import com.munch1182.lib.base.drawTextInCenter
+import com.munch1182.lib.base.getTextRect
+import com.munch1182.lib.base.log
+import kotlin.math.max
 
 object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val log = log()
 
     //要先测量高度，然后根据高度布局
     override fun layoutNode(node: MindMapView.Node): Array<MindMapView.NodeView> {
-        measureNodeHeight(node)
         // 测量所有节点的高度，父节点高度为子节点高度和
+        measureNode(node, 0)
         val list = mutableListOf<MindMapView.NodeView>()
-        layoutNodeChildren(list, 0, node)
+        layoutChildrenNode(list, 0, node)
         return list.toTypedArray()
     }
 
-    private fun measureNodeHeight(node: MindMapView.Node): Float {
-        val selfHeight = calculateSelfHeight(node)
+    private fun measureNode(node: MindMapView.Node, level: Int): Float {
+        val selfHeight = calculateNodeContent(node.name, level).height()
+        val padding = nodePadding(level)
+        if (node.children.isNullOrEmpty()) return selfHeight + padding.second
 
-        if (node.children.isNullOrEmpty()) {
-            node.totalHeight = selfHeight
-            return selfHeight
+        var sum = 0f
+        node.children.forEachIndexed { index, it ->
+            if (index > 0) sum += verticalPadding(level + 1)
+            sum += measureNode(it, level + 1)
+        }
+        node.childrenHeight = sum
+        return sum
+    }
+
+
+    private fun layoutChildrenNode(list: MutableList<MindMapView.NodeView>, level: Int, currNode: MindMapView.Node, parent: MindMapView.NodeView? = null, last: MindMapView.NodeView? = null): MindMapView.NodeView {
+        val contentRect = calculateNodeContent(currNode.name, level)
+        val spaceRect = RectF(0f, 0f, contentRect.width(), if (currNode.childrenHeight == 0f) contentRect.height() else currNode.childrenHeight)
+        val node = MindMapView.NodeView(currNode.name, level, spaceRect, contentRect)
+        adjustNodeViewByCommon(node)
+        adjustNodeViewByLocation(node, parent, last)
+
+        val linkPoint = getLeftLinkPoint(node, parent)
+        node.linkPoints.clear()
+        node.linkPoints.addAll(linkPoint?.toList() ?: emptyList())
+
+        var lastNode: MindMapView.NodeView? = null
+        currNode.children?.forEach {
+            lastNode = layoutChildrenNode(list, level + 1, it, node, lastNode)
         }
 
-        var totalHeight = 0f
-        node.children.forEachIndexed { index, child ->
-            totalHeight += measureNodeHeight(child)
-            if (index > 0) totalHeight += spaceByLevel()
+        list.add(node)
+        return node
+    }
+
+
+    private fun getLeftLinkPoint(node: MindMapView.NodeView?, parent: MindMapView.NodeView?): Array<Float>? {
+        if (node == null || parent == null) return null
+        return arrayOf(parent.contentRect.right, parent.contentRect.centerY(), node.contentRect.left, node.contentRect.centerY())
+    }
+
+    private fun adjustNodeViewByLocation(node: MindMapView.NodeView, parent: MindMapView.NodeView?, last: MindMapView.NodeView?) {
+        var xOffset = 0f
+        var yOffset = 0f
+
+        if (parent != null) xOffset += parent.contentRect.right + horizontalPadding(node.level)
+
+        if (last == null && parent != null) {
+            yOffset += parent.spaceRect.top
+        } else if (last != null) {
+            yOffset += last.spaceRect.bottom + verticalPadding(node.level)
         }
 
-        // 父节点采取的高度是顶部到文字底部的高度，而不是完整的高度
-        val height = totalHeight / 2f + selfHeight / 2f
-        node.totalHeight = height
+        node.spaceRect.offset(xOffset, yOffset)
 
-        return height
+        val height = node.contentRect.height()
+        // 因为spaceRect已经加上padding，所以不需要再处理
+        node.contentRect.left = node.spaceRect.left
+        node.contentRect.right = node.spaceRect.right
+        node.contentRect.top = node.spaceRect.top + (node.spaceRect.height() - height) / 2
+        node.contentRect.bottom = node.contentRect.top + height
     }
 
-    private fun spaceByLevel(): Float {
-        return 10f
+    private fun verticalPadding(level: Int): Float {
+        return max(30f - level * 5, 5f)
     }
 
-    private fun calculateSelfHeight(node: MindMapView.Node): Float {
-        return 40f
-    }
-
-    private fun layoutNodeChildren(result: MutableList<MindMapView.NodeView>, level: Int, curr: MindMapView.Node, parent: MindMapView.NodeView? = null) {
-        val rect = newRectFromParent(parent)
-        val nodeView = MindMapView.NodeView(curr.name, level, rect)
-        result.add(nodeView)
-        curr.children?.forEach { child ->
-            layoutNodeChildren(result, level + 1, child, nodeView)
-        }
-    }
-
-    private fun newRectFromParent(parent: MindMapView.NodeView?): RectF {
-        return parent?.let { RectF(it.contentRect.right + spaceByLevel(), 0f, 0f, 0f) } ?: RectF()
+    private fun horizontalPadding(level: Int): Float {
+        return max(50f - level * 10, 5f)
     }
 
     override fun drawNode(canvas: Canvas, node: MindMapView.NodeView) {
+        setupTextPaint(node.level)
+        canvas.drawTextInCenter(node.name, node.contentRect.centerX(), node.contentRect.centerY(), paint)
+
+        setupBorderPaint(node.level)
+        canvas.drawRect(node.contentRect, paint)
+
+        paint.color = Color.CYAN
+        canvas.drawRect(node.spaceRect, paint)
+
+        if (node.linkPoints.size != 4) {
+            val path = Path()
+            path.moveTo(node.linkPoints[0], node.linkPoints[1])
+            path.quadTo(node.linkPoints[2] - 15f, node.linkPoints[3] - 15f, node.linkPoints[2], node.linkPoints[3])
+            setupLinkPointPaint(node.level)
+            canvas.drawPath(path, paint)
+        }
     }
 
-    override fun drawLinkLine(canvas: Canvas, from: MindMapView.NodeView, to: MindMapView.NodeView) {
+    /**
+     * 调整节点位置, 包括间距或者其它样式需要
+     */
+    private fun adjustNodeViewByCommon(node: MindMapView.NodeView) {
+        val padding = nodePadding(node.level)
+        node.spaceRect.right += padding.first
+        node.spaceRect.bottom += padding.second
     }
 
+    private fun nodePadding(level: Int): Pair<Float, Float> {
+        return 10f to 5f
+    }
+
+    private fun calculateNodeContent(node: String, level: Int): RectF {
+        setupTextPaint(level)
+        return paint.getTextRect(node)
+    }
+
+    private fun setupLinkPointPaint(level: Int) {
+        paint.color = Color.RED
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1f
+    }
+
+    private fun setupTextPaint(level: Int) {
+        paint.color = Color.BLACK
+        paint.textSize = 36f
+        paint.style = Paint.Style.FILL
+    }
+
+    private fun setupBorderPaint(level: Int) {
+        paint.color = Color.BLACK
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1f
+    }
 }

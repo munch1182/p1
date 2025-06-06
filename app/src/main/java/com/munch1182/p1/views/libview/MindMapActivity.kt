@@ -1,18 +1,16 @@
 package com.munch1182.p1.views.libview
 
 import android.os.Bundle
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.google.gson.Gson
-import com.munch1182.lib.base.withCatch
-import com.munch1182.lib.widget.mindmap.MindMapFromStart2EndStyle
 import com.munch1182.lib.widget.mindmap.MindMapView
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.ui.ClickButton
@@ -38,19 +36,8 @@ class MindMapActivity : BaseActivity() {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(),
-            update = { v ->
-            })
-    }
-
-    private val styles = arrayOf(MindMapFromStart2EndStyle)
-
-    private fun nextStyle(curr: Int): MindMapView.NodeStyle {
-        return styles.getOrNull(curr) ?: styles[0]
-    }
-
-    private fun newTestData(): MindMapView.Node? {
-        return withCatch { Gson().fromJson(json, MindMapView.Node::class.java) }
+                .height(500.dp),
+            update = { })
     }
 
     private val json = "{" +
