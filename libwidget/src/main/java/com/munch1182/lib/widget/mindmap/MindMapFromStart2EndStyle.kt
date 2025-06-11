@@ -44,9 +44,7 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         adjustNodeViewByCommon(node)
         adjustNodeViewByLocation(node, parent, last)
 
-        val linkPoint = getLeftLinkPoint(node, parent)
-        node.linkPoints.clear()
-        node.linkPoints.addAll(linkPoint?.toList() ?: emptyList())
+        node.linkPoint = getLeftLinkPoint(node, parent)
 
         var lastNode: MindMapView.NodeView? = null
         currNode.children?.forEach {
@@ -58,9 +56,9 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
     }
 
 
-    private fun getLeftLinkPoint(node: MindMapView.NodeView?, parent: MindMapView.NodeView?): Array<Float>? {
+    private fun getLeftLinkPoint(node: MindMapView.NodeView?, parent: MindMapView.NodeView?): MindMapView.LinkPoint? {
         if (node == null || parent == null) return null
-        return arrayOf(parent.contentRect.right, parent.contentRect.centerY(), node.contentRect.left, node.contentRect.centerY())
+        return MindMapView.LinkPoint(parent.contentRect.right, parent.contentRect.centerY(), node.contentRect.left, node.contentRect.centerY())
     }
 
     private fun adjustNodeViewByLocation(node: MindMapView.NodeView, parent: MindMapView.NodeView?, last: MindMapView.NodeView?) {
@@ -90,7 +88,7 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
     }
 
     private fun horizontalPadding(level: Int): Float {
-        return max(100f - level * 10, 50f)
+        return max(150f - level * 10, 50f)
     }
 
     override fun drawNode(canvas: Canvas, node: MindMapView.NodeView) {
@@ -101,18 +99,8 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         val radius = node.contentRect.height() / 4f
         canvas.drawRoundRect(node.contentRect, radius, radius, paint)
 
-        /*paint.color = Color.CYAN
-        canvas.drawRect(node.spaceRect, paint)*/
-
-        /*if (node.linkPoints.size != 4) {
-            val path = Path()
-            path.moveTo(node.linkPoints[0], node.linkPoints[1])
-            path.quadTo(node.linkPoints[2] - 15f, node.linkPoints[3] - 15f, node.linkPoints[2], node.linkPoints[3])
-            setupLinkPointPaint(node.level)
-            canvas.drawPath(path, paint)
-        }*/
         setupLinkPointPaint(node.level)
-        canvas.drawLines(node.linkPoints.toFloatArray(), paint)
+        node.linkPoint?.drawLink(canvas, paint, node.level)
     }
 
     /**
@@ -136,7 +124,8 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
     private fun setupLinkPointPaint(level: Int) {
         paint.color = Color.RED
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 1f
+        paint.strokeWidth = 2f
+        paint.strokeCap = Paint.Cap.ROUND
     }
 
     private fun setupTextPaint(level: Int) {
