@@ -1,44 +1,41 @@
 package com.munch1182.p1.views.libview
 
 import android.os.Bundle
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
+import com.google.gson.Gson
 import com.munch1182.lib.widget.mindmap.MindMapView
 import com.munch1182.p1.base.BaseActivity
-import com.munch1182.p1.ui.ClickButton
-import com.munch1182.p1.ui.Split
-import com.munch1182.p1.ui.setContentWithRv
+import com.munch1182.p1.base.bind
+import com.munch1182.p1.databinding.ActivityMindmapBinding
 
 class MindMapActivity : BaseActivity() {
+
+    private val bind by bind(ActivityMindmapBinding::inflate)
+    private var index = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentWithRv { Views() }
+        bind.root.fitsSystemWindows = true
+        bind.btn.setOnClickListener { changeNode() }
+        changeNode()
     }
 
-    @Composable
-    private fun Views() {
-        var styleIndex by remember { mutableIntStateOf(0) }
-        ClickButton("下一个样式") { }
-
-        Split()
-
-        AndroidView(
-            factory = {
-                MindMapView(it)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(500.dp),
-            update = { })
+    private fun changeNode() {
+        bind.mindmap.update {
+            val arr = arrayOf(json, json1)
+            val jsonStr = arr[index % arr.size]
+            setNode(Gson().fromJson(jsonStr, MindMapView.Node::class.java))
+            index += 1
+        }
     }
+
+    private val json1 = "{" +
+            "  \"name\": \"高效学习\"," +
+            "  \"children\": [" +
+            "        {\"name\": \"补充坚果类食物维持大脑供能\"}," +
+            "        {\"name\": \"每日重点任务清单\"}," +
+            "        {\"name\": \"培养信息溯源意识避免被误导\"}" +
+            "  ]" +
+            "}"
 
     private val json = "{" +
             "  \"name\": \"高效学习\"," +
