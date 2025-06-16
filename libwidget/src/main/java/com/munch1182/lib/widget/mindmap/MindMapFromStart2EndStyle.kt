@@ -19,6 +19,7 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         measureNode(node, 0)
         val list = mutableListOf<MindMapView.NodeView>()
         layoutChildrenNode(list, 0, node)
+        list.reverse()
         return list.toTypedArray()
     }
 

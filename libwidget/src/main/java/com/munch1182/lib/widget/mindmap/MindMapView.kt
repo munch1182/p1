@@ -27,7 +27,7 @@ class MindMapView @JvmOverloads constructor(
     private var currStyle: NodeStyle = MindMapFromStart2EndStyle
     private val matrix = Matrix()
 
-    private var currScale = 1f
+    private var centerScale = 1f
     private val minScale = 1.0f
     private val maxScale = 5.0f
     private var currMode: Mode = Mode.Center
@@ -38,6 +38,10 @@ class MindMapView @JvmOverloads constructor(
     // 当前数据
     private var currNode: Node? = null
     private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
+        override fun onLongPress(e: MotionEvent) {
+            super.onLongPress(e)
+        }
+
         override fun onDoubleTap(e: MotionEvent): Boolean {
             matrix { centerContent() }
             return true
@@ -94,7 +98,6 @@ class MindMapView @JvmOverloads constructor(
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        log.logStr("${event.actionMasked}")
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> currMode = Mode.Drag
             MotionEvent.ACTION_POINTER_DOWN -> currMode = Mode.Scale
@@ -111,11 +114,12 @@ class MindMapView @JvmOverloads constructor(
      * 将内容居中, 如果内容比页面大，则居中并缩小；否则，居中并放大
      */
     private fun Matrix.centerContent() {
-        postTranslate(abs(contentRect.width() - width) / 2f, abs(contentRect.height() - height) / 2f)
-        val scale = max(contentRect.width() / width, contentRect.height() / height)
-
-        log.logStr("scale: $scale")
-        postScale(scale, scale, width / 2f, height / 2f)
+        if (centerScale == 1f) {
+            val scale = min(width / contentRect.width(), height / contentRect.height())
+            centerScale = scale
+        }
+        reset()
+        postScale(centerScale, centerScale, 0f, 0f)
     }
 
     /**
@@ -125,29 +129,29 @@ class MindMapView @JvmOverloads constructor(
      * @param x,y 缩放中心点
      */
     private fun handleScale(scale: Float, x: Float, y: Float) {
-        log.logStr("handleScale: $scale, $x, $y")
-        matrix {
-            postScale(scale, scale, x, y)
-        }
+        matrix { postScale(scale, scale, x, y) }
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val node = currNode ?: return
-        var maxEnd = 0f
-        var maxHeight = 0f
-        canvas.withMatrix(matrix) {
-            val views = currStyle.layoutNode(node)
-            // 因为已经计算过子节点所占高度，所以整体高度即第一个节点的高度
-            maxHeight = views[0].spaceRect.height()
-            views.forEach {
-                currStyle.drawNode(this, it)
-                // 宽度即最右侧节点的右侧位置
-                maxEnd = max(maxEnd, it.spaceRect.right)
+        val views = currStyle.layoutNode(node)
+        // 如果要居中，需要计算内容宽高
+        if (currMode.isCenter) {
+            if (contentRect.width() == 0f && contentRect.height() == 0f) {
+                // 因为已经计算过子节点所占高度，所以整体高度即第一个节点的高度
+                val maxHeight = views[0].spaceRect.height()
+                var maxEnd = 0f
+                views.forEach {
+                    // 宽度即最右侧节点的右侧位置
+                    maxEnd = max(maxEnd, it.spaceRect.right)
+                }
+                contentRect.set(0f, 0f, maxEnd, maxHeight)
             }
-            contentRect.set(0f, 0f, maxHeight, maxEnd)/*if (currMode == Mode.Center) {
-                this@MindMapView.matrix.centerContent()
-            }*/
+            this@MindMapView.matrix.centerContent()
+        }
+        canvas.withMatrix(matrix) {
+            views.forEach { currStyle.drawNode(this, it) }
         }
     }
 
@@ -234,5 +238,7 @@ class MindMapView @JvmOverloads constructor(
         data object Drag : Mode()
         data object Scale : Mode()
         data object Center : Mode()
+
+        val isCenter get() = this is Center
     }
 }
