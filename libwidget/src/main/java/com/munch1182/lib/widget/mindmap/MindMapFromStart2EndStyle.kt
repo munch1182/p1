@@ -96,7 +96,11 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         setupTextPaint(node.level)
         canvas.drawTextInCenter(node.name, node.contentRect.centerX(), node.contentRect.centerY(), paint)
 
-        setupBorderPaint(node.level)
+        if (node.isSelected) {
+            setupSelectedBorderPaint(node.level)
+        } else {
+            setupBorderPaint(node.level)
+        }
         val radius = node.contentRect.height() / 4f
         canvas.drawRoundRect(node.contentRect, radius, radius, paint)
 
@@ -133,6 +137,12 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         paint.color = Color.BLACK
         paint.textSize = 36f
         paint.style = Paint.Style.FILL
+    }
+
+    private fun setupSelectedBorderPaint(level: Int) {
+        setupBorderPaint(level)
+        paint.color = Color.BLUE
+        paint.strokeWidth = 2f
     }
 
     private fun setupBorderPaint(level: Int) {

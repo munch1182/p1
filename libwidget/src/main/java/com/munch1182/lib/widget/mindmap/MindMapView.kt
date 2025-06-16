@@ -13,7 +13,9 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import androidx.core.graphics.contains
 import androidx.core.graphics.withMatrix
+import com.munch1182.lib.base.dp2PX
 import com.munch1182.lib.base.log
 import kotlin.math.abs
 import kotlin.math.max
@@ -27,7 +29,6 @@ class MindMapView @JvmOverloads constructor(
     private var currStyle: NodeStyle = MindMapFromStart2EndStyle
     private val matrix = Matrix()
 
-    private var centerScale = 1f
     private val minScale = 1.0f
     private val maxScale = 5.0f
     private var currMode: Mode = Mode.Center
@@ -35,11 +36,31 @@ class MindMapView @JvmOverloads constructor(
     // 记录的内容大小(未缩放的大小)
     private val contentRect = RectF()
 
+    private var nodeViews: Array<NodeView>? = null
+
     // 当前数据
     private var currNode: Node? = null
     private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
         override fun onLongPress(e: MotionEvent) {
             super.onLongPress(e)
+            val nodes = nodeViews ?: return
+
+            val longPressPointF = PointF()
+            longPressPointF.set(e.x, e.y)
+
+            // 缓存不如实时计算有效率
+            val mappedRect = MutableList(nodes.size) { RectF().apply { matrix.mapRect(this, nodes[it].contentRect) } }
+            var anySelected = false
+            mappedRect.forEachIndexed { index, it ->
+
+                val isSelected = it.contains(longPressPointF)
+                nodes[index].isSelected = isSelected
+                if (isSelected) {
+                    log.logStr("isSelected: ${nodes[index].name}, $it, $longPressPointF")
+                }
+                if (isSelected) anySelected = true
+            }
+            if (anySelected) invalidate()
         }
 
         override fun onDoubleTap(e: MotionEvent): Boolean {
@@ -61,6 +82,7 @@ class MindMapView @JvmOverloads constructor(
         private val point = PointF()
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
             point.set(detector.focusX, detector.focusY)
+            nodeViews = null
             return true
         }
 
@@ -75,6 +97,7 @@ class MindMapView @JvmOverloads constructor(
 
     fun setNode(node: Node) {
         this.currNode = node
+        reset()
     }
 
     fun setStyle(style: NodeStyle) {
@@ -84,6 +107,12 @@ class MindMapView @JvmOverloads constructor(
     fun update(any: MindMapView.() -> Unit) {
         any(this)
         invalidate()
+    }
+
+    private fun reset() {
+        this.nodeViews = null
+        this.contentRect.set(0f, 0f, 0f, 0f)
+        this.currMode = Mode.Center
     }
 
     private inline fun matrix(any: Matrix.() -> Unit) {
@@ -100,7 +129,11 @@ class MindMapView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> currMode = Mode.Drag
-            MotionEvent.ACTION_POINTER_DOWN -> currMode = Mode.Scale
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                currMode = Mode.Scale
+                // 因为gestureDetector的长按是延时判断，所以当多指按下时需要传入事件以取消长按判断
+                gestureDetector.onTouchEvent(event)
+            }
         }
         when (currMode) {
             Mode.Drag -> gestureDetector.onTouchEvent(event)
@@ -114,12 +147,14 @@ class MindMapView @JvmOverloads constructor(
      * 将内容居中, 如果内容比页面大，则居中并缩小；否则，居中并放大
      */
     private fun Matrix.centerContent() {
-        if (centerScale == 1f) {
-            val scale = min(width / contentRect.width(), height / contentRect.height())
-            centerScale = scale
-        }
+        val padding = 16.dp2PX
+        val w = width - padding * 2f
+        val h = height - padding * 2f
+        val scale = min(w / contentRect.width(), h / contentRect.height())
+        log.logStr("scale: $scale")
         reset()
-        postScale(centerScale, centerScale, 0f, 0f)
+        postTranslate((w - contentRect.width() * scale) / 2 + padding, (h - contentRect.height() * scale) / 2 + padding)
+        postScale(scale, scale, 0f, 0f)
     }
 
     /**
@@ -135,7 +170,12 @@ class MindMapView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val node = currNode ?: return
-        val views = currStyle.layoutNode(node)
+        // 有限使用缓存数据，因为要处理选中效果。因此当数据更改时，需要清空缓存
+        if (nodeViews == null) {
+            val views = currStyle.layoutNode(node)
+            nodeViews = views
+        }
+        val views = nodeViews ?: return
         // 如果要居中，需要计算内容宽高
         if (currMode.isCenter) {
             if (contentRect.width() == 0f && contentRect.height() == 0f) {
@@ -160,7 +200,8 @@ class MindMapView @JvmOverloads constructor(
         val level: Int, // 层级，大多数样式都跟层级有关
         val spaceRect: RectF, // 节点占用位置
         val contentRect: RectF, // 节点显示区域
-        var linkPoint: LinkPoint? = null // 子节点到其父节点的连接点
+        var linkPoint: LinkPoint? = null, // 子节点到其父节点的连接点
+        var isSelected: Boolean = false
     )
 
     open class LinkPoint(open val sX: Float, open val sY: Float, open val eX: Float, open val eY: Float) {
