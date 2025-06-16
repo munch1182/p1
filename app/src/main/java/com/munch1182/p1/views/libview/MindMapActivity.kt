@@ -1,11 +1,27 @@
 package com.munch1182.p1.views.libview
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.RectF
 import android.os.Bundle
+import android.view.View
+import androidx.core.graphics.createBitmap
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
+import com.munch1182.lib.base.launchIO
+import com.munch1182.lib.base.shareImage
+import com.munch1182.lib.helper.FileHelper
+import com.munch1182.lib.helper.FileHelper.sureExists
+import com.munch1182.lib.helper.result.intent
 import com.munch1182.lib.widget.mindmap.MindMapView
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.bind
 import com.munch1182.p1.databinding.ActivityMindmapBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlin.math.max
+import kotlin.math.round
 
 class MindMapActivity : BaseActivity() {
 
@@ -17,6 +33,46 @@ class MindMapActivity : BaseActivity() {
         bind.root.fitsSystemWindows = true
         bind.btn.setOnClickListener { changeNode() }
         changeNode()
+        bind.btnShare.setOnClickListener { share() }
+    }
+
+    private fun share() {
+        lifecycleScope.launchIO {
+            val file = FileHelper.newFile("share", "mindmap.png").sureExists()
+            val bitmap = bind.mindmap.toBitmap(bind.mindmap.currMatrix)
+            file.outputStream().use {
+                try {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            val uri = FileHelper.uri(file.path) ?: return@launchIO
+
+            withContext(Dispatchers.Main) {
+                intent(shareImage(uri, "思维导图")).request {}
+            }
+        }
+    }
+
+    private fun View.toBitmap(matrix: Matrix): Bitmap {
+        val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
+        matrix.mapRect(rect)
+
+        val w = max(1, round(rect.width()).toInt())
+        val h = max(1, round(rect.height()).toInt())
+
+        val bm = createBitmap(w * 2, h * 2, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bm)
+        // 逆变缩放
+        Matrix().apply {
+            matrix.invert(this)
+            postScale(2f, 2f)
+            canvas.concat(this)
+        }
+        draw(canvas)
+        return bm
     }
 
     private fun changeNode() {
@@ -28,68 +84,8 @@ class MindMapActivity : BaseActivity() {
         }
     }
 
-    private val json1 = "{" +
-            "  \"name\": \"高效学习\"," +
-            "  \"children\": [" +
-            "        {\"name\": \"补充坚果类食物维持大脑供能\"}," +
-            "        {\"name\": \"每日重点任务清单\"}," +
-            "        {\"name\": \"培养信息溯源意识避免被误导\"}" +
-            "  ]" +
-            "}"
+    private val json1 = "{" + "  \"name\": \"高效学习\"," + "  \"children\": [" + "        {\"name\": \"补充坚果类食物维持大脑供能\"}," + "        {\"name\": \"每日重点任务清单\"}," + "        {\"name\": \"培养信息溯源意识避免被误导\"}" + "  ]" + "}"
 
-    private val json = "{" +
-            "  \"name\": \"高效学习\"," +
-            "  \"children\": [" +
-            "    {" +
-            "      \"name\": \"时间规划与知识吸收质量\"," +
-            "      \"children\": [" +
-            "        {\"name\": \"番茄工作法保持专注周期\"}," +
-            "        {\"name\": \"每日重点任务清单\"}" +
-            "      ]" +
-            "    }," +
-            "    {" +
-            "      \"name\": \"知识获取渠道\"," +
-            "      \"children\": [" +
-            "        {\"name\": \"主题阅读筛选经典书籍\"}," +
-            "        {\"name\": \"慕课平台补充最新行业课程\"}," +
-            "        {\"name\": \"培养信息溯源意识避免被误导\"}" +
-            "      ]" +
-            "    }," +
-            "    {" +
-            "      \"name\": \"整理环节\"," +
-            "      \"children\": [" +
-            "        {\"name\": \"康奈尔笔记法记录核心观点\"}," +
-            "        {\"name\": \"思维导图梳理逻辑结构\"}," +
-            "        {\"name\": \"视觉化图表提升记忆效率\"}" +
-            "      ]" +
-            "    }," +
-            "    {" +
-            "      \"name\": \"刻意练习\"," +
-            "      \"children\": [" +
-            "        {\"name\": \"拆分复杂技能（如语言学习：高频词汇→连读发音）\"}," +
-            "        {\"name\": \"模拟考试获取即时反馈\"}" +
-            "      ]" +
-            "    }," +
-            "    {" +
-            "      \"name\": \"定期复盘\"," +
-            "      \"children\": [" +
-            "        {\"name\": \"学习日志分析时间投入产出比\"}" +
-            "      ]" +
-            "    }," +
-            "    {" +
-            "      \"name\": \"输出成果\"," +
-            "      \"children\": [" +
-            "        {\"name\": \"撰写文章检验理解深度\"}," +
-            "        {\"name\": \"参加实践项目验证方法论有效性\"}" +
-            "      ]" +
-            "    }," +
-            "    {" +
-            "      \"name\": \"其他注意事项\"," +
-            "      \"children\": [" +
-            "        {\"name\": \"学习环境：光线明暗/座椅舒适度\"}," +
-            "        {\"name\": \"补充坚果类食物维持大脑供能\"}" +
-            "      ]" +
-            "    }" +
-            "  ]" +
-            "}"
+    private val json =
+        "{" + "  \"name\": \"高效学习\"," + "  \"children\": [" + "    {" + "      \"name\": \"时间规划与知识吸收质量\"," + "      \"children\": [" + "        {\"name\": \"番茄工作法保持专注周期\"}," + "        {\"name\": \"每日重点任务清单\"}" + "      ]" + "    }," + "    {" + "      \"name\": \"知识获取渠道\"," + "      \"children\": [" + "        {\"name\": \"主题阅读筛选经典书籍\"}," + "        {\"name\": \"慕课平台补充最新行业课程\"}," + "        {\"name\": \"培养信息溯源意识避免被误导\"}" + "      ]" + "    }," + "    {" + "      \"name\": \"整理环节\"," + "      \"children\": [" + "        {\"name\": \"康奈尔笔记法记录核心观点\"}," + "        {\"name\": \"思维导图梳理逻辑结构\"}," + "        {\"name\": \"视觉化图表提升记忆效率\"}" + "      ]" + "    }," + "    {" + "      \"name\": \"刻意练习\"," + "      \"children\": [" + "        {\"name\": \"拆分复杂技能（如语言学习：高频词汇→连读发音）\"}," + "        {\"name\": \"模拟考试获取即时反馈\"}" + "      ]" + "    }," + "    {" + "      \"name\": \"定期复盘\"," + "      \"children\": [" + "        {\"name\": \"学习日志分析时间投入产出比\"}" + "      ]" + "    }," + "    {" + "      \"name\": \"输出成果\"," + "      \"children\": [" + "        {\"name\": \"撰写文章检验理解深度\"}," + "        {\"name\": \"参加实践项目验证方法论有效性\"}" + "      ]" + "    }," + "    {" + "      \"name\": \"其他注意事项\"," + "      \"children\": [" + "        {\"name\": \"学习环境：光线明暗/座椅舒适度\"}," + "        {\"name\": \"补充坚果类食物维持大脑供能\"}" + "      ]" + "    }" + "  ]" + "}"
 }

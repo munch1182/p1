@@ -6,12 +6,24 @@
     android:orientation="vertical"
     tools:context=".views.libview.MindMapActivity">
 
-    <Button
-        android:id="@+id/btn"
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="none"
-        tools:ignore="HardcodedText" />
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="next"
+            tools:ignore="HardcodedText" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnShare"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="share"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
 
     <com.munch1182.lib.widget.mindmap.MindMapView
         android:id="@+id/mindmap"

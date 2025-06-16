@@ -15,6 +15,14 @@ fun shareTextIntent(text: String, title: String? = null): Intent = Intent.create
     }, title
 )
 
+fun shareImage(uri: Uri, title: String? = null): Intent = Intent.createChooser(
+    Intent(Intent.ACTION_SEND).apply {
+        type = "image/*"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }, title
+)
+
 fun appSetting() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).wPName()
 
 // https://developer.android.com/training/monitoring-device-state/doze-standby?hl=zh-cn#support_for_other_use_cases

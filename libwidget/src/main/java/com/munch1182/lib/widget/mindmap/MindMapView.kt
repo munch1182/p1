@@ -38,6 +38,8 @@ class MindMapView @JvmOverloads constructor(
 
     private var nodeViews: Array<NodeView>? = null
 
+    val currMatrix get() = matrix
+
     // 当前数据
     private var currNode: Node? = null
     private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
