@@ -1,12 +1,6 @@
 package com.munch1182.p1.views.libview
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Matrix
-import android.graphics.RectF
 import android.os.Bundle
-import android.view.View
-import androidx.core.graphics.createBitmap
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
 import com.munch1182.lib.base.launchIO
@@ -18,10 +12,6 @@ import com.munch1182.lib.widget.mindmap.MindMapView
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.bind
 import com.munch1182.p1.databinding.ActivityMindmapBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.math.max
-import kotlin.math.round
 
 class MindMapActivity : BaseActivity() {
 
@@ -39,40 +29,12 @@ class MindMapActivity : BaseActivity() {
     private fun share() {
         lifecycleScope.launchIO {
             val file = FileHelper.newFile("share", "mindmap.png").sureExists()
-            val bitmap = bind.mindmap.toBitmap(bind.mindmap.currMatrix)
-            file.outputStream().use {
-                try {
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
+            bind.mindmap.withBitmap2File(file) {
+                val uri = kotlin.runCatching { FileHelper.uri(file.path) }.getOrNull() ?: return@withBitmap2File
 
-            val uri = FileHelper.uri(file.path) ?: return@launchIO
-
-            withContext(Dispatchers.Main) {
                 intent(shareImage(uri, "思维导图")).request {}
             }
         }
-    }
-
-    private fun View.toBitmap(matrix: Matrix): Bitmap {
-        val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
-        matrix.mapRect(rect)
-
-        val w = max(1, round(rect.width()).toInt())
-        val h = max(1, round(rect.height()).toInt())
-
-        val bm = createBitmap(w * 2, h * 2, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bm)
-        // 逆变缩放
-        Matrix().apply {
-            matrix.invert(this)
-            postScale(2f, 2f)
-            canvas.concat(this)
-        }
-        draw(canvas)
-        return bm
     }
 
     private fun changeNode() {

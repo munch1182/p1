@@ -2,6 +2,7 @@ package com.munch1182.lib.widget.mindmap
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
@@ -14,9 +15,11 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.core.graphics.contains
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withMatrix
 import com.munch1182.lib.base.dp2PX
 import com.munch1182.lib.base.log
+import java.io.File
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -37,8 +40,6 @@ class MindMapView @JvmOverloads constructor(
     private val contentRect = RectF()
 
     private var nodeViews: Array<NodeView>? = null
-
-    val currMatrix get() = matrix
 
     // 当前数据
     private var currNode: Node? = null
@@ -167,6 +168,44 @@ class MindMapView @JvmOverloads constructor(
      */
     private fun handleScale(scale: Float, x: Float, y: Float) {
         matrix { postScale(scale, scale, x, y) }
+    }
+
+    /**
+     * 将内容写入到一个bitmap中，以供诸如分享之内的操作
+     */
+    fun withBitmap(any: (Bitmap) -> Unit) {
+        nodeViews?.find { it.isSelected }?.isSelected = false // 重置选择状态
+        matrix { centerContent() } // 分享时先居中，否则只能分享成缩放后的样子
+        this.post { // 等待居中绘制完成
+            val bitmap = createBitmap(width * 2, height * 2) // 放大两倍，防止模糊
+            val canvas = Canvas(bitmap)
+            val matrix = Matrix()
+            matrix.postScale(2f, 2f)
+            canvas.withMatrix(matrix) { draw(canvas) }
+            any(bitmap)
+            bitmap.recycle()
+        }
+    }
+
+    /**
+     * 将内容写入到一个bitmap中，然后再转成文件
+     *
+     * @param file 要写入的文件
+     * @param any 写入操作完成回调
+     *
+     * @see withBitmap
+     */
+    fun withBitmap2File(file: File, any: (File) -> Unit) {
+        withBitmap { bt ->
+            file.outputStream().use {
+                try {
+                    bt.compress(Bitmap.CompressFormat.PNG, 100, it)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            any(file)
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
