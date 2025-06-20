@@ -10,8 +10,11 @@ import com.munch1182.lib.helper.FileHelper.sureExists
 import com.munch1182.lib.helper.result.intent
 import com.munch1182.lib.widget.mindmap.MindMapView
 import com.munch1182.p1.base.BaseActivity
+import com.munch1182.p1.base.DialogHelper
 import com.munch1182.p1.base.bind
+import com.munch1182.p1.base.show
 import com.munch1182.p1.databinding.ActivityMindmapBinding
+import com.munch1182.p1.databinding.FragmentMindmapEdititemBinding
 
 class MindMapActivity : BaseActivity() {
 
@@ -24,6 +27,7 @@ class MindMapActivity : BaseActivity() {
         bind.btn.setOnClickListener { changeNode() }
         changeNode()
         bind.btnShare.setOnClickListener { share() }
+        bind.btnEditItem.setOnClickListener { editItem() }
     }
 
     private fun share() {
@@ -44,6 +48,10 @@ class MindMapActivity : BaseActivity() {
             setNode(Gson().fromJson(jsonStr, MindMapView.Node::class.java))
             index += 1
         }
+    }
+
+    private fun editItem() {
+        DialogHelper.newBottom(FragmentMindmapEdititemBinding::inflate) {}.show()
     }
 
     private val json1 = "{" + "  \"name\": \"高效学习\"," + "  \"children\": [" + "        {\"name\": \"补充坚果类食物维持大脑供能\"}," + "        {\"name\": \"每日重点任务清单\"}," + "        {\"name\": \"培养信息溯源意识避免被误导\"}" + "  ]" + "}"

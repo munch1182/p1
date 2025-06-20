@@ -23,6 +23,13 @@
             android:layout_height="wrap_content"
             android:text="share"
             tools:ignore="HardcodedText" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnEditItem"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="EditItem"
+            tools:ignore="HardcodedText" />
     </LinearLayout>
 
     <com.munch1182.lib.widget.mindmap.MindMapView

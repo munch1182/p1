@@ -34,6 +34,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
+import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.DialogViewCtxProvider
@@ -112,6 +113,10 @@ object DialogHelper {
         return DFBottom().inject(vp)
     }
 
+    fun <VB : ViewBinding> newBottom(inflater: (LayoutInflater, ViewGroup?, Boolean) -> VB, onViewCreated: VB.() -> Unit): DFBottom {
+        return DFBottom().inject(inflater, onViewCreated)
+    }
+
     data class Message(
         val msg: CharSequence, val title: CharSequence = str(android.R.string.dialog_alert_title), val ok: CharSequence = str(android.R.string.ok), val cancel: CharSequence = AppHelper.getString(android.R.string.cancel), val isCancel: Boolean = true
     )
@@ -182,8 +187,26 @@ object DialogHelper {
         private var dProvider: DialogViewCtxProvider? = null
         fun inject(provider: DialogViewCtxProvider?) = this.apply { this.dProvider = provider }
 
+        private var vbInflater: ((LayoutInflater, ViewGroup?, Boolean) -> ViewBinding)? = null
+        private var bind: ViewBinding? = null
+        private var onViewCreated: ((ViewBinding) -> Unit)? = null
+
+        @Suppress("UNCHECKED_CAST")
+        fun <VB : ViewBinding> inject(inflater: (LayoutInflater, ViewGroup?, Boolean) -> VB, onViewCreated: (VB) -> Unit): DFBottom {
+            this.vbInflater = inflater
+            this.onViewCreated = { onViewCreated.invoke(it as VB) }
+            return this
+        }
+
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+            val bind = bind ?: vbInflater?.invoke(inflater, container, false)?.apply { bind = this }
+            if (bind != null) return bind.root
             return (container?.context ?: context)?.let { dProvider?.onCreateView(it, dialog) } ?: super.onCreateView(inflater, container, savedInstanceState)
+        }
+
+        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+            super.onViewCreated(view, savedInstanceState)
+            bind?.let { onViewCreated?.invoke(it) }
         }
     }
 
