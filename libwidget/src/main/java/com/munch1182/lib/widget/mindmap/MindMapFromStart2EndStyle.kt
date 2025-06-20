@@ -1,10 +1,8 @@
 package com.munch1182.lib.widget.mindmap
 
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
-import com.munch1182.lib.base.drawTextInCenter
 import com.munch1182.lib.base.getTextRect
 import com.munch1182.lib.base.log
 import kotlin.math.max
@@ -36,7 +34,6 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         node.childrenHeight = sum
         return sum
     }
-
 
     private fun layoutChildrenNode(list: MutableList<MindMapView.NodeView>, level: Int, currNode: MindMapView.Node, parent: MindMapView.NodeView? = null, last: MindMapView.NodeView? = null): MindMapView.NodeView {
         val contentRect = calculateNodeContent(currNode.name, level)
@@ -92,22 +89,6 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         return max(150f - level * 10, 50f)
     }
 
-    override fun drawNode(canvas: Canvas, node: MindMapView.NodeView) {
-        setupTextPaint(node.level)
-        canvas.drawTextInCenter(node.name, node.contentRect.centerX(), node.contentRect.centerY(), paint)
-
-        if (node.isSelected) {
-            setupSelectedBorderPaint(node.level)
-        } else {
-            setupBorderPaint(node.level)
-        }
-        val radius = node.contentRect.height() / 4f
-        canvas.drawRoundRect(node.contentRect, radius, radius, paint)
-
-        setupLinkPointPaint(node.level)
-        node.linkPoint?.drawLink(canvas, paint, node.level)
-    }
-
     /**
      * 调整节点位置, 包括间距或者其它样式需要
      */
@@ -126,28 +107,9 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         return paint.getTextRect(node)
     }
 
-    private fun setupLinkPointPaint(level: Int) {
-        paint.color = Color.RED
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 2f
-        paint.strokeCap = Paint.Cap.ROUND
-    }
-
     private fun setupTextPaint(level: Int) {
         paint.color = Color.BLACK
         paint.textSize = 36f
         paint.style = Paint.Style.FILL
-    }
-
-    private fun setupSelectedBorderPaint(level: Int) {
-        setupBorderPaint(level)
-        paint.color = Color.BLUE
-        paint.strokeWidth = 2f
-    }
-
-    private fun setupBorderPaint(level: Int) {
-        paint.color = Color.BLACK
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 1f
     }
 }

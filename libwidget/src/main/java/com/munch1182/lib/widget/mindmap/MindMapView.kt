@@ -6,21 +6,37 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.PointF
 import android.graphics.RectF
+import android.os.Bundle
+import android.text.InputType
 import android.util.AttributeSet
 import android.view.GestureDetector
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.inputmethod.BaseInputConnection
+import android.view.inputmethod.CompletionInfo
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputContentInfo
+import android.view.inputmethod.TextAttribute
+import androidx.annotation.WorkerThread
 import androidx.core.graphics.contains
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withMatrix
+import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.base.dp2PX
+import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
+import com.munch1182.lib.helper.SoftKeyBoardHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.io.File
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -32,6 +48,10 @@ class MindMapView @JvmOverloads constructor(
     private var currStyle: NodeStyle = MindMapFromStart2EndStyle
     private val matrix = Matrix()
 
+    init {
+        SoftKeyBoardHelper.enableEditMode(this)
+    }
+
     private val minScale = 1.0f
     private val maxScale = 5.0f
     private var currMode: Mode = Mode.Center
@@ -39,10 +59,20 @@ class MindMapView @JvmOverloads constructor(
     // 记录的内容大小(未缩放的大小)
     private val contentRect = RectF()
 
+    // 当前使用的节点位置
     private var nodeViews: Array<NodeView>? = null
 
     // 当前数据
     private var currNode: Node? = null
+
+    // 当前正在编辑的节点的位置(nodeViews)
+    private var currEditIndex: Int = -1
+    private val currCursorJob = CursorJob(this)
+
+    // 必须在onAttachedToWindow()之后调用
+    private val scope by lazy { findViewTreeLifecycleOwner()?.lifecycleScope }
+
+    // 按键回调
     private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
         override fun onLongPress(e: MotionEvent) {
             super.onLongPress(e)
@@ -54,16 +84,33 @@ class MindMapView @JvmOverloads constructor(
             // 缓存不如实时计算有效率
             val mappedRect = MutableList(nodes.size) { RectF().apply { matrix.mapRect(this, nodes[it].contentRect) } }
             var anySelected = false
+
+            nodes.getOrNull(currEditIndex)?.noSelect()
+            noCurrEditIndex()
+            currCursorJob.stopEditMode()
+
             mappedRect.forEachIndexed { index, it ->
 
                 val isSelected = it.contains(longPressPointF)
                 nodes[index].isSelected = isSelected
+                nodes[index].isEditSelected = isSelected
                 if (isSelected) {
+                    anySelected = true
                     log.logStr("isSelected: ${nodes[index].name}, $it, $longPressPointF")
+                    currEditIndex = index
+                    return@forEachIndexed
                 }
-                if (isSelected) anySelected = true
+
             }
-            if (anySelected) invalidate()
+            if (anySelected) {
+                adjustSelectNode(nodes.getOrNull(currEditIndex))
+                invalidate() // 编辑交由onDraw绘制
+                post { showInput() }
+
+                scope?.launchIO {
+                    currCursorJob.startEditMode(nodes.getOrNull(currEditIndex))
+                }
+            }
         }
 
         override fun onDoubleTap(e: MotionEvent): Boolean {
@@ -77,10 +124,11 @@ class MindMapView @JvmOverloads constructor(
         }
 
         override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-
             return true
         }
     }
+
+    // 缩放回调
     private val scaleListener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         private val point = PointF()
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
@@ -97,6 +145,85 @@ class MindMapView @JvmOverloads constructor(
     }
     private val gestureDetector = GestureDetector(ctx, gestureListener)
     private val scaleDetector = ScaleGestureDetector(ctx, scaleListener)
+
+    // 键盘操作
+    private val inputConn by lazy {
+        object : BaseInputConnection(this, true) {
+            override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
+                log.logStr("commitText: $text, $newCursorPosition")
+                nodeViews?.getOrNull(currEditIndex)?.commitText(text.toString())
+                invalidate()
+                return true
+            }
+
+            override fun commitCompletion(text: CompletionInfo?): Boolean {
+                log.logStr("commitCompletion: $text")
+                if (text == null) return false
+                nodeViews?.getOrNull(currEditIndex)?.commitText(text.text.toString())
+                return super.commitCompletion(text)
+            }
+
+            override fun commitContent(inputContentInfo: InputContentInfo, flags: Int, opts: Bundle?): Boolean {
+                log.logStr("commitContent: $inputContentInfo, $flags, $opts")
+                return super.commitContent(inputContentInfo, flags, opts)
+            }
+
+            override fun commitText(text: CharSequence, newCursorPosition: Int, textAttribute: TextAttribute?): Boolean {
+                log.logStr("commitText: $text, $newCursorPosition, $textAttribute")
+                return super.commitText(text, newCursorPosition, textAttribute)
+            }
+
+            override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean {
+                log.logStr("deleteSurroundingText: $beforeLength, $afterLength")
+                val edit = editable ?: return true
+                edit.delete(0, edit.length)
+                return true
+            }
+
+            override fun performContextMenuAction(id: Int): Boolean {
+                log.logStr("performContextMenuAction: $id")
+                if (id == android.R.id.selectAll || id == android.R.id.copy) {
+                    return true
+                }
+                return super.performContextMenuAction(id)
+            }
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        log.logStr("onKeyDown: $keyCode, ${event?.action}, ${event?.isPrintingKey}")
+        when (keyCode) {
+            KeyEvent.KEYCODE_DEL -> {
+                nodeViews?.getOrNull(currEditIndex)?.deleteText()
+                invalidate()
+                return true
+            }
+
+            KeyEvent.KEYCODE_ENTER -> {
+                nodeViews?.getOrNull(currEditIndex)?.commitText("\n")
+                invalidate()
+                return true
+            }
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private val boardHelper by lazy {
+        SoftKeyBoardHelper(this).setKeyBoardChangeListener {
+            val isHideBoard = it <= 0
+            if (isHideBoard) {
+                nodeViews?.getOrNull(currEditIndex)?.noSelect() // 收回键盘时取消选中状态
+                invalidate()
+                noCurrEditIndex()
+            }
+            log.logStr("onBoardChange: $it")
+        }
+    }
+
+    private fun noCurrEditIndex() {
+        currEditIndex = -1
+    }
+
 
     fun setNode(node: Node) {
         this.currNode = node
@@ -119,9 +246,20 @@ class MindMapView @JvmOverloads constructor(
     }
 
     private inline fun matrix(any: Matrix.() -> Unit) {
+        noSelectEdit()
         any(matrix)
         invalidate()
     }
+
+    private fun noSelectEdit() {
+        currCursorJob.stopEditMode()
+        if (SoftKeyBoardHelper.im.isActive) {
+            SoftKeyBoardHelper.hide(this)
+        }
+        nodeViews?.getOrNull(currEditIndex)?.noSelect()
+        noCurrEditIndex()
+    }
+
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
@@ -150,15 +288,16 @@ class MindMapView @JvmOverloads constructor(
      * 将内容居中, 如果内容比页面大，则居中并缩小；否则，居中并放大
      */
     private fun Matrix.centerContent() {
-        val padding = 16.dp2PX
-        val w = width - padding * 2f
-        val h = height - padding * 2f
+        val w = width - innerPadding * 2f
+        val h = height - innerPadding * 2f
         val scale = min(w / contentRect.width(), h / contentRect.height())
         log.logStr("scale: $scale")
         reset()
-        postTranslate((w - contentRect.width() * scale) / 2 + padding, (h - contentRect.height() * scale) / 2 + padding)
+        postTranslate((w - contentRect.width() * scale) / 2 + innerPadding, (h - contentRect.height() * scale) / 2 + innerPadding)
         postScale(scale, scale, 0f, 0f)
     }
+
+    private val innerPadding get() = 16.dp2PX
 
     /**
      * 处理缩放
@@ -208,6 +347,60 @@ class MindMapView @JvmOverloads constructor(
         }
     }
 
+    /**
+     * 编辑模式时，增加的宽度
+     */
+    fun editSpace(node: NodeView): Float {
+        return 10f
+    }
+
+    /**
+     * 当一个节点被选中时，调整相关视图
+     *
+     * 1. 将该节点缩放(如果需要)并居中
+     * 2. 设置该节点的editRect的范围
+     */
+    private fun adjustSelectNode(node: NodeView?) {
+        val content = node?.contentRealRect ?: return
+
+        // 只用于调整位置，因为进过转换，所以不能实际使用
+        val rect = RectF().apply { matrix.mapRect(this, content) }
+        rect.right += node.wPadding * 2
+
+        val containerRect = RectF(0f, 0f, width.toFloat(), height.toFloat())
+        val offX = containerRect.centerX() - rect.centerX()
+        val offY = containerRect.centerY() - rect.centerY()
+
+        // 不使用调整过的值
+        rect.set(content)
+        rect.right += node.wPadding * 2
+        node.editRect = rect
+
+        matrix.postTranslate(offX, offY)/*val scale = containerRect.width() / rect.width()
+        log.logStr("adjustCenter4SelectRect: $scale")
+        matrix.postScale(scale, scale, offX, offY)*/
+    }
+
+    override fun onCreateInputConnection(outAttrs: EditorInfo?): InputConnection {
+        outAttrs?.imeOptions = EditorInfo.IME_ACTION_DONE
+        outAttrs?.inputType = InputType.TYPE_CLASS_TEXT
+        return inputConn
+    }
+
+    private fun showInput() {
+        SoftKeyBoardHelper.show(this)
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        boardHelper.listen()
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        boardHelper.unListen()
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val node = currNode ?: return
@@ -232,7 +425,13 @@ class MindMapView @JvmOverloads constructor(
             this@MindMapView.matrix.centerContent()
         }
         canvas.withMatrix(matrix) {
-            views.forEach { currStyle.drawNode(this, it) }
+            views.forEach {
+                if (it.isSelected) {
+                    currStyle.drawEditNode(this@MindMapView, this, it)
+                } else {
+                    currStyle.drawNode(this, it)
+                }
+            }
         }
     }
 
@@ -240,61 +439,57 @@ class MindMapView @JvmOverloads constructor(
         val name: String, // 标题
         val level: Int, // 层级，大多数样式都跟层级有关
         val spaceRect: RectF, // 节点占用位置
-        val contentRect: RectF, // 节点显示区域
+        val contentRealRect: RectF, // 节点显示区域
         var linkPoint: LinkPoint? = null, // 子节点到其父节点的连接点
-        var isSelected: Boolean = false
-    )
+        // 选中相关
+        var isSelected: Boolean = false, // 预留菜单选择
+        var isEditSelected: Boolean = false, // 节点编辑模式
+        var editRect: RectF? = null, // 因为编辑框要比内容框更大(初次显示时内容+光标)，所以单独保存
+        var editName: String? = null, // 编辑后保存的文字
+    ) {
+        var showCursor: Boolean = false // 显示光标，需要isEditSelected=true，值会定时切换
+
+        val contentRect get() = editRect ?: contentRealRect
+
+        /**
+         * 编辑节点
+         */
+        fun commitText(toString: String) {
+            if (!isEditSelected) return
+            editName += toString
+        }
+
+        fun noSelect() {
+            isEditSelected = false
+            isSelected = false
+            editRect = null
+            editName = null
+        }
+
+        fun startEditMode() {
+            editName = name
+            showCursor = true
+        }
+
+        fun deleteText() {
+            if (!isEditSelected) return
+            val name = editName ?: return
+            if (name.isNotEmpty()) {
+                editName = name.substring(0, name.length - 1)
+            }
+        }
+
+        // 节点圆角
+        val radius get() = contentRect.height() / 4f
+
+        // 节点水平上间距
+        val wPadding get() = min(contentRect.width() * 0.03f, 10f)
+    }
 
     open class LinkPoint(open val sX: Float, open val sY: Float, open val eX: Float, open val eY: Float) {
-        private val path = Path()
 
         open fun drawLink(canvas: Canvas, paint: Paint, level: Int) {
-            if (abs(sY - eY) < 5f) {
-                canvas.drawLine(sX, sY, eX, sY, paint)
-                return
-            }
-
-            /*val sX = min(sX, eX)
-            val eX = max(this.sX, eX)
-            val sY = min(sY, eY)
-            val eY = max(this.sY, eY)*/
-
-            val disX = abs(eX - sX)
-            val disY = abs(eY - sY)
-
-            val dis = min(disX, disY)
-            // 因为是最短的距离
-            path.reset()
-
-
-            val offsetStartX = dis * 0.1f
-            val tbOffset = if (sY > eY) -1f else 1f
-
-            val sc1x = sX + offsetStartX * 1.5f - disY * 0.01f
-            val sc1y = sY + offsetStartX * 0.3f * tbOffset
-            val sc2x = sX + offsetStartX * 3f + disY * 0.01f
-            val sc2y = sY + offsetStartX * 2f * tbOffset
-            val cX = sX + (eX - sX) / 3f + offsetStartX
-            val cY = sY + (eY - sY) / 3f + offsetStartX * tbOffset
-            path.moveTo(sX, sY)
-            path.cubicTo(sc1x, sc1y, sc2x, sc2y, cX, cY)
-
-            var offsetEnd = dis * 0.1f
-            offsetEnd *= 3f
-            val ec1x = eX - offsetEnd
-            val ec1y = eY
-            val ec2x = eX - offsetEnd - offsetEnd / 2f
-            val ec2y = eY
-            path.cubicTo(ec1x, ec1y, ec2x, ec2y, eX, eY)
-            canvas.drawPath(path, paint)
-
-            /*paint.setColor(Color.BLACK)
-            canvas.drawCircle(sc1x, sc1y, 1f, paint)
-            canvas.drawCircle(sc2x, sc2y, 1f, paint)
-            canvas.drawCircle(ec1x, ec1y, 1f, paint)
-            canvas.drawCircle(ec2x, ec2y, 1f, paint)
-            paint.setColor(Color.CYAN)
-            canvas.drawCircle(cX, cY, 1f, paint)*/
+            MindMapCommon.drawLink(canvas, paint, level, this)
         }
     }
 
@@ -313,7 +508,22 @@ class MindMapView @JvmOverloads constructor(
          * 组合子节点显示高度的中点确定父节点位置（只与相邻节点的显示高度有关，与间隔一个节点的高度无关）
          */
         fun layoutNode(node: Node): Array<NodeView>
-        fun drawNode(canvas: Canvas, node: NodeView)
+
+        /**
+         * 实际绘制节点，会将layoutNode返回的NodeView作为参数无序传入
+         * 已处理缩放、移动、选择等通用项，只需要按照node的参数绘制即可
+         */
+        fun drawNode(canvas: Canvas, node: NodeView) {
+            MindMapCommon.drawNode(canvas, node)
+        }
+
+        /**
+         * 编辑节点绘制
+         * 替代drawNode
+         */
+        fun drawEditNode(view: MindMapView, canvas: Canvas, node: NodeView) {
+            MindMapCommon.drawEditNode(view, canvas, node)
+        }
     }
 
     private sealed class Mode {
@@ -322,5 +532,29 @@ class MindMapView @JvmOverloads constructor(
         data object Center : Mode()
 
         val isCenter get() = this is Center
+    }
+
+    private class CursorJob(private val view: View) {
+        private var currJob: Job? = null
+
+        @WorkerThread
+        suspend fun startEditMode(node: NodeView?) {
+            stopEditMode()
+            node ?: return
+            val newJob = Job()
+            currJob = newJob
+            node.startEditMode() // todo stopEditMode调用时在等待中导致并没有断掉当前循环就开始下一个循环
+            while (currJob?.isActive == true) {
+                delay(500L)
+                node.showCursor = !node.showCursor
+                withContext(Dispatchers.Main) { view.invalidate() }
+            }
+        }
+
+        fun stopEditMode() {
+            currJob?.cancel()
+            currJob = null
+        }
+
     }
 }

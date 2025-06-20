@@ -1,6 +1,5 @@
 package com.munch1182.lib.base
 
-import android.content.Context
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
@@ -9,8 +8,6 @@ import android.graphics.drawable.StateListDrawable
 import android.view.View
 import android.view.View.MeasureSpec
 import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
 
 fun View.toRect() = Rect(left, top, right, bottom)
 
@@ -51,22 +48,6 @@ fun newSelectDrawable(
     drawable.addState(intArrayOf(-android.R.attr.state_selected), unselectedDrawable)
     drawable.addState(intArrayOf(android.R.attr.state_selected), selectedDrawable)
     return drawable
-}
-
-fun EditText.showSoftInput(delay: Long = 300L) {
-    isFocusable = true
-    isFocusableInTouchMode = true
-    postDelayed({
-        requestFocus()
-        requestFocusFromTouch()
-        val im = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-        im?.showSoftInput(this, 0)
-    }, delay)
-}
-
-fun EditText.hideSoftInput() {
-    val im = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-    im?.hideSoftInputFromWindow(windowToken, 0)
 }
 
 val Int.specMode get() = MeasureSpec.getMode(this)
