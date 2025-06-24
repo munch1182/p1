@@ -38,7 +38,13 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
     private fun layoutChildrenNode(list: MutableList<MindMapView.NodeView>, level: Int, currNode: MindMapView.Node, parent: MindMapView.NodeView? = null, last: MindMapView.NodeView? = null): MindMapView.NodeView {
         val contentRect = calculateNodeContent(currNode.name, level)
         val spaceRect = RectF(0f, 0f, contentRect.width(), if (currNode.childrenHeight == 0f) contentRect.height() else currNode.childrenHeight)
-        val node = MindMapView.NodeView(currNode.name, level, spaceRect, contentRect)
+        val innerPadding = nodeContentPadding(level)
+        setupTextPaint(level)
+        val node = MindMapView.NodeView(
+            currNode.name, level, spaceRect, contentRect,
+            hContentPadding = innerPadding.first, vContentPadding = innerPadding.second,
+            textSize = paint.textSize,
+        )
         adjustNodeViewByCommon(node)
         adjustNodeViewByLocation(node, parent, last)
 
@@ -102,9 +108,18 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         return 10f to 5f
     }
 
+    private fun nodeContentPadding(level: Int): Pair<Int, Int> {
+        return 10 to 3
+    }
+
     private fun calculateNodeContent(node: String, level: Int): RectF {
         setupTextPaint(level)
-        return paint.getTextRect(node)
+        val rect = paint.getTextRect(node)
+        val innerPadding = nodeContentPadding(level)
+        // 加上内间距
+        rect.right += innerPadding.first * 2f
+        rect.bottom += innerPadding.second * 2f
+        return rect
     }
 
     private fun setupTextPaint(level: Int) {

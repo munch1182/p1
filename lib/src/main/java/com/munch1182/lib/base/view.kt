@@ -24,21 +24,25 @@ val lpMM = ViewGroup.LayoutParams(lpM, lpM)
  *
  * @param color Drawable颜色
  * @param tl TopLeftRadius
- * @param tr BottomRightRadius
+ * @param tr TopRightRadius
  * @param bl BottomLeftRadius
  * @param br BottomRightRadius
  * @param strokeWidth 边框宽度
  * @param strokeColor 边框颜色
  */
 fun newCornerDrawable(
-    color: Int, tl: Float = 0f, tr: Float = 0f, bl: Float = 0f, br: Float = 0f, strokeWidth: Int = 0, strokeColor: Int = Color.WHITE
+    tl: Float = 0f, tr: Float = 0f, bl: Float = 0f, br: Float = 0f, strokeWidth: Int = 1, strokeColor: Int = Color.BLACK
 ): GradientDrawable {
     val gradientDrawable = GradientDrawable()
+    // tlx, tly, trx, try, blx, bly, brx, bry
     val f = floatArrayOf(tl, tl, tr, tr, bl, bl, br, br)
     gradientDrawable.cornerRadii = f
-    gradientDrawable.setColor(color)
     gradientDrawable.setStroke(strokeWidth, strokeColor)
     return gradientDrawable
+}
+
+fun newCornerDrawable(corner: Float = 8f, strokeWidth: Int = 1, strokeColor: Int = Color.BLACK): GradientDrawable {
+    return newCornerDrawable(corner, corner, corner, corner, strokeWidth, strokeColor)
 }
 
 fun newSelectDrawable(

@@ -6,7 +6,6 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import com.munch1182.lib.base.drawTextInCenter
-import com.munch1182.lib.base.drawTextInStartXCenterY
 import com.munch1182.lib.widget.mindmap.MindMapView.NodeView
 import kotlin.math.abs
 import kotlin.math.min
@@ -21,9 +20,8 @@ object MindMapCommon {
      * 绘制编辑节点的默认实现
      */
     fun drawEditNode(view: MindMapView, canvas: Canvas, node: NodeView) {
-        val contentRect = node.contentRect
         val level = node.level
-
+        /* val contentRect = node.contentRect
         val hPadding = contentRect.height() * 0.2f
         val wPadding = node.wPadding
 
@@ -42,7 +40,7 @@ object MindMapCommon {
             val cursorX = contentRect.left + paint.measureText(node.editName) + wPadding
             tmpRect.set(cursorX, contentRect.top + hPadding, cursorX, contentRect.bottom - hPadding)
             canvas.drawLine(tmpRect.left, tmpRect.top, tmpRect.left, tmpRect.bottom, paint)
-        }
+        }*/
 
         setupLinkPointPaint(level)
         node.linkPoint?.drawLink(canvas, paint, level)
