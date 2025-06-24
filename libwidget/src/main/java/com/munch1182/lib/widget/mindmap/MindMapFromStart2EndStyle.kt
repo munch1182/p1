@@ -50,7 +50,7 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         adjustNodeViewByCommon(node)
         adjustNodeViewByLocation(node, parent, last)
 
-        node.linkPoint = getLeftLinkPoint(node, parent)
+        node.newLinkPoint(parent)
 
         var lastNode: MindMapView.NodeView? = null
         currNode.children?.forEachIndexed { i, it ->
@@ -59,12 +59,6 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
 
         list.add(node)
         return node
-    }
-
-
-    private fun getLeftLinkPoint(node: MindMapView.NodeView?, parent: MindMapView.NodeView?): MindMapView.LinkPoint? {
-        if (node == null || parent == null) return null
-        return MindMapView.LinkPoint(parent.contentRect.right, parent.contentRect.centerY(), node.contentRect.left, node.contentRect.centerY())
     }
 
     private fun adjustNodeViewByLocation(node: MindMapView.NodeView, parent: MindMapView.NodeView?, last: MindMapView.NodeView?) {

@@ -199,9 +199,14 @@ class MindMapView @JvmOverloads constructor(
         if (SoftKeyBoardHelper.im.isActive) {
             SoftKeyBoardHelper.hide(this)
         }
-        nodeViews?.getOrNull(currEditIndex)?.noSelect()
+        val nodeView = nodeViews?.getOrNull(currEditIndex)
         noCurrEditIndex()
         removeAllViews()
+        nodeView?.let {
+            it.noSelect()
+            updateChildAsParentEdit(it)
+            invalidate()
+        }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -400,12 +405,34 @@ class MindMapView @JvmOverloads constructor(
         }
     }
 
+    /**
+     * 当父节点进行编辑导致变宽时，子节点需要跟着移动
+     */
+    fun updateChildAsParentEdit(node: NodeView) {
+        val nodes = nodeViews ?: return
+        val editRect = node.editRectF ?: return
+        val offset = editRect.right - node.contentRealRect.right
+        nodes.filter { it.fromID == node.id }.forEach {
+            it.editRectF = RectF(it.contentRealRect)
+            it.editRectF?.offset(offset, 0f)
+            it.newLinkPoint(node)
+            updateChildAsParentEdit(it)
+        }
+    }
+
+    /**
+     * 当父节点退出编辑时，恢复相关子节点
+     */
+    fun resetChildAsParentEditNot(node: NodeView) {
+
+    }
+
     open class NodeView(
         val name: String, // 标题
         val level: Int, // 层级，大多数样式都跟层级有关
         val spaceRect: RectF, // 节点占用位置
         val contentRealRect: RectF, // 节点显示区域
-        var linkPoint: LinkPoint? = null, // 子节点到其父节点的连接点
+        var contentLinkPoint: LinkPoint? = null, // 子节点到其父节点的连接点
 
         val hContentPadding: Int = 0, // 水平内容间距
         val vContentPadding: Int = 0, // 垂直内容间距
@@ -414,12 +441,14 @@ class MindMapView @JvmOverloads constructor(
         var isEditSelected: Boolean = false, // 节点编辑模式
         var textSize: Float = 36f, // 文字大小
         var editRectF: RectF? = null, // 编辑区域，用于缓存诸如增加的区域
+        var editLinkPoint: LinkPoint? = null, // 编辑模式下，子节点到其父节点的连接点
 
         val id: String = "", // 节点id，
         val fromID: String = "", // 父节点id
     ) {
 
         val contentRect get() = editRectF ?: contentRealRect
+        val linkPoint get() = editLinkPoint ?: contentLinkPoint
 
         /**
          * 编辑节点
@@ -432,6 +461,20 @@ class MindMapView @JvmOverloads constructor(
             isEditSelected = false
             isSelected = false
             editRectF = null
+            editLinkPoint = null
+        }
+
+        /**
+         * 更加当前属性和父节点生成连接点
+         */
+        fun newLinkPoint(parent: NodeView?) {
+            parent ?: return
+            val newLP = LinkPoint(parent.contentRect.right, parent.contentRect.centerY(), contentRect.left, contentRect.centerY())
+            if (isEditSelected) {
+                editLinkPoint = newLP
+            } else {
+                contentLinkPoint = newLP
+            }
         }
 
         // 节点圆角

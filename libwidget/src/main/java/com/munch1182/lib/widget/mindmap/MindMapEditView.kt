@@ -76,8 +76,8 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
 
         val xOffset = (mp.width - this.width) / 2f - translationX
         translationX += xOffset
-
         mp.matrix.postTranslate(xOffset, 0f)
+        mp.updateChildAsParentEdit(node)
         mp.invalidate()
     }
 

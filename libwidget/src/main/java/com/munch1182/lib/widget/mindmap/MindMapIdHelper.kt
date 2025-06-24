@@ -8,7 +8,7 @@ object MindMapIdHelper {
         return from?.let { "$it$SPLIT$index" } ?: "$index"
     }
 
-    fun parentFromID(id: String): String? {
+    fun parentID(id: String): String? {
         if (!id.contains(SPLIT)) return null
         return id.substringBeforeLast(SPLIT)
     }
