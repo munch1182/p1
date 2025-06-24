@@ -4,16 +4,17 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.RectF
-import android.text.Editable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.ViewGroup.MarginLayoutParams
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.widget.addTextChangedListener
+import com.munch1182.lib.base.log
 import com.munch1182.lib.base.mapByMatrix
 import com.munch1182.lib.base.newCornerDrawable
 import kotlin.math.hypot
+import kotlin.math.min
 
 @SuppressLint("ViewConstructor")
 class MindMapEditView(private val mp: MindMapView, private val node: MindMapView.NodeView) : AppCompatEditText(mp.context) {
@@ -54,9 +55,15 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
         setSingleLine()
 
         requestFocus()
-
+        val maxW = mp.width - node.wPadding * 2f
         addTextChangedListener(afterTextChanged = {
-            updateNewWidth(it)
+            val str = it?.toString() ?: return@addTextChangedListener
+            var newWidth = paint.measureText(str) + paddingLeft + paddingRight
+            if (newWidth > maxW && width == newWidth.toInt()) return@addTextChangedListener
+
+            // 一次性通过输入法输入超过最大宽度字符的情形
+            newWidth = min(newWidth, maxW)
+            updateNewWidth(newWidth)
             post { updateNewWidthForLoc(width.toFloat()) }
         })
     }
@@ -65,20 +72,23 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
     private fun updateNewWidthForLoc(w: Float) {
         mp.setEditMode()
         node.editRectF?.right = node.contentRealRect.left + w
-        val point = node.linkPoint ?: return
+        log().logStr("${this.width}, ${mp.width}")
+
+        val xOffset = (mp.width - this.width) / 2f - translationX
+        translationX += xOffset
+
+        mp.matrix.postTranslate(xOffset, 0f)
         mp.invalidate()
     }
 
-    private fun updateNewWidth(it: Editable?) {
-        val str = it?.toString() ?: return
-
-        val newWidth = paint.measureText(str) + paddingLeft + paddingRight
-
+    private fun updateNewWidth(newWidth: Float) {
         // 只增长不缩减
         if (newWidth <= width) return
         val lp = layoutParams ?: return
         lp.width = newWidth.toInt()
         layoutParams = lp
+
+
     }
 
     private fun newTextScale(matrix: Matrix): Float {

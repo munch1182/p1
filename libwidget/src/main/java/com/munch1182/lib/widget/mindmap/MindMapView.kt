@@ -324,19 +324,21 @@ class MindMapView @JvmOverloads constructor(
 
         // 只用于调整位置，因为进过转换，所以不能实际使用
         val rect = content.mapByMatrix(matrix)
-        rect.right += node.wPadding * 2
+        //rect.right += node.wPadding * 2
 
-        val containerRect = RectF(0f, 0f, width.toFloat(), height.toFloat())
+        val wp = node.wPadding
+        val containerRect = RectF(wp, wp, width.toFloat() - wp, height.toFloat() - wp)
         val offX = containerRect.centerX() - rect.centerX()
         val offY = containerRect.centerY() - rect.centerY()
+        matrix.postTranslate(offX, offY)
 
-        // 不使用调整过的值
-        rect.set(content)
-        rect.right += node.wPadding * 2
-
-        matrix.postTranslate(offX, offY)/*val scale = containerRect.width() / rect.width()
+        val scale = containerRect.width() / rect.width()
         log.logStr("adjustCenter4SelectRect: $scale")
-        matrix.postScale(scale, scale, offX, offY)*/
+        // 只缩小不放大
+        if (scale < 1) {
+            matrix.postScale(scale, scale, containerRect.centerX(), containerRect.centerY())
+            currScale = scale
+        }
     }
 
     private fun showInput(node: NodeView?) {

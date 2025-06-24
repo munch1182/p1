@@ -6,9 +6,4 @@
     android:orientation="vertical"
     tools:context=".views.libview.MindMapActivity">
 
-    <com.munch1182.lib.widget.mindmap.MindMapNode
-        android:id="@+id/mindmap_node"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="500dp" />
 </LinearLayout>
