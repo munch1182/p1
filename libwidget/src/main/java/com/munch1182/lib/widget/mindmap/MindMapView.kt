@@ -24,6 +24,7 @@ import com.munch1182.lib.base.dp2PX
 import com.munch1182.lib.base.log
 import com.munch1182.lib.base.mapByMatrix
 import com.munch1182.lib.base.specSize
+import com.munch1182.lib.base.withUI
 import com.munch1182.lib.helper.SoftKeyBoardHelper
 import java.io.File
 import kotlin.math.max
@@ -271,9 +272,9 @@ class MindMapView @JvmOverloads constructor(
     /**
      * 将内容写入到一个bitmap中，以供诸如分享之内的操作
      */
-    fun withBitmap(any: (Bitmap) -> Unit) {
+    suspend fun withBitmap(any: (Bitmap) -> Unit) {
         nodeViews?.find { it.isSelected }?.isSelected = false // 重置选择状态
-        matrix { centerContent() } // 分享时先居中，否则只能分享成缩放后的样子
+        withUI { matrix { centerContent() } } // 分享时先居中，否则只能分享成缩放后的样子
         this.post { // 等待居中绘制完成
             val bitmap = createBitmap(width * 2, height * 2) // 放大两倍，防止模糊
             val canvas = Canvas(bitmap)
@@ -293,7 +294,7 @@ class MindMapView @JvmOverloads constructor(
      *
      * @see withBitmap
      */
-    fun withBitmap2File(file: File, any: (File) -> Unit) {
+    suspend fun withBitmap2File(file: File, any: (File) -> Unit) {
         withBitmap { bt ->
             file.outputStream().use {
                 try {
