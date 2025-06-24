@@ -100,12 +100,7 @@ class MindMapView @JvmOverloads constructor(
             if (anySelected) {
                 val node = nodes.getOrNull(currEditIndex)
                 adjustSelectNode(node)
-                //invalidate() // 编辑交由onDraw绘制
-                post { showInput(node) }
-
-                /*scope?.launchIO {
-                    currCursorJob.startEditMode(nodes.getOrNull(currEditIndex))
-                }*/
+                showInput(node)
             }
         }
 
@@ -238,8 +233,13 @@ class MindMapView @JvmOverloads constructor(
             Mode.Drag -> gestureDetector.onTouchEvent(event)
             Mode.Scale -> scaleDetector.onTouchEvent(event)
             Mode.Center -> {}
+            Mode.Edit -> {}
         }
         return true
+    }
+
+    fun setEditMode() {
+        currMode = Mode.Edit
     }
 
     /**
@@ -343,6 +343,7 @@ class MindMapView @JvmOverloads constructor(
         log.logStr("showInput: ${node?.name}")
         node ?: return
         removeAllViews()
+        node.editRectF = RectF(node.contentRealRect)
         val et = MindMapEditView.newNode(this, node)
         addView(et)
         post { SoftKeyBoardHelper.show(et) }
@@ -409,9 +410,10 @@ class MindMapView @JvmOverloads constructor(
         var isSelected: Boolean = false, // 预留菜单选择
         var isEditSelected: Boolean = false, // 节点编辑模式
         var textSize: Float = 36f, // 文字大小
+        var editRectF: RectF? = null, // 编辑区域，用于缓存诸如增加的区域
     ) {
 
-        val contentRect get() = contentRealRect
+        val contentRect get() = editRectF ?: contentRealRect
 
         /**
          * 编辑节点
@@ -423,6 +425,7 @@ class MindMapView @JvmOverloads constructor(
         fun noSelect() {
             isEditSelected = false
             isSelected = false
+            editRectF = null
         }
 
         // 节点圆角
@@ -476,6 +479,7 @@ class MindMapView @JvmOverloads constructor(
         data object Drag : Mode()
         data object Scale : Mode()
         data object Center : Mode()
+        data object Edit : Mode()
 
         val isCenter get() = this is Center
     }

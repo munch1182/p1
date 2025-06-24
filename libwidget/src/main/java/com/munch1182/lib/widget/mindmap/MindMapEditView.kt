@@ -4,12 +4,13 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.RectF
+import android.text.Editable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.ViewGroup.MarginLayoutParams
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.AppCompatEditText
-import com.munch1182.lib.base.log
+import androidx.core.widget.addTextChangedListener
 import com.munch1182.lib.base.mapByMatrix
 import com.munch1182.lib.base.newCornerDrawable
 import kotlin.math.hypot
@@ -36,11 +37,10 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
             val w = newPaddingRect.width().toInt()
             val h = newPaddingRect.height().toInt()
             et.setPadding(w, h, w, h)
+
             return et
         }
     }
-
-    private val log = log()
 
     init {
         val matrix = mp.matrix
@@ -51,7 +51,34 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
         setPadding(0, 0, 0, 0)
         gravity = Gravity.CENTER_VERTICAL
         imeOptions = EditorInfo.IME_ACTION_DONE
+        setSingleLine()
+
         requestFocus()
+
+        addTextChangedListener(afterTextChanged = {
+            updateNewWidth(it)
+            post { updateNewWidthForLoc(width.toFloat()) }
+        })
+    }
+
+    // 更新宽度后，需要子节点让位
+    private fun updateNewWidthForLoc(w: Float) {
+        mp.setEditMode()
+        node.editRectF?.right = node.contentRealRect.left + w
+        val point = node.linkPoint ?: return
+        mp.invalidate()
+    }
+
+    private fun updateNewWidth(it: Editable?) {
+        val str = it?.toString() ?: return
+
+        val newWidth = paint.measureText(str) + paddingLeft + paddingRight
+
+        // 只增长不缩减
+        if (newWidth <= width) return
+        val lp = layoutParams ?: return
+        lp.width = newWidth.toInt()
+        layoutParams = lp
     }
 
     private fun newTextScale(matrix: Matrix): Float {
