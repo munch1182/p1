@@ -414,6 +414,9 @@ class MindMapView @JvmOverloads constructor(
         var isEditSelected: Boolean = false, // 节点编辑模式
         var textSize: Float = 36f, // 文字大小
         var editRectF: RectF? = null, // 编辑区域，用于缓存诸如增加的区域
+
+        val id: String = "", // 节点id，
+        val fromID: String = "", // 父节点id
     ) {
 
         val contentRect get() = editRectF ?: contentRealRect
