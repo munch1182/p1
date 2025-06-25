@@ -4,7 +4,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.RectF
 import com.munch1182.lib.base.drawTextInCenter
 import com.munch1182.lib.widget.mindmap.MindMapView.NodeView
 import kotlin.math.abs
@@ -14,13 +13,13 @@ object MindMapCommon {
 
     private val tmpPath = Path()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val tmpRect = RectF()
 
     /**
      * 绘制编辑节点的默认实现
      */
     fun drawEditNode(view: MindMapView, canvas: Canvas, node: NodeView) {
         val level = node.level
+
         /* val contentRect = node.contentRect
         val hPadding = contentRect.height() * 0.2f
         val wPadding = node.wPadding

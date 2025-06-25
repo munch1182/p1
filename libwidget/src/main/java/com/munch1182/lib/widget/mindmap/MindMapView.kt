@@ -18,8 +18,6 @@ import androidx.core.graphics.contains
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withMatrix
 import androidx.core.view.children
-import androidx.lifecycle.findViewTreeLifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.base.dp2PX
 import com.munch1182.lib.base.log
 import com.munch1182.lib.base.mapByMatrix
@@ -61,9 +59,6 @@ class MindMapView @JvmOverloads constructor(
 
     // 当前正在编辑的节点的位置(nodeViews)
     private var currEditIndex: Int = -1
-
-    // 必须在onAttachedToWindow()之后调用
-    private val scope by lazy { findViewTreeLifecycleOwner()?.lifecycleScope }
 
     override fun getMatrix(): Matrix {
         return matrix
@@ -204,7 +199,7 @@ class MindMapView @JvmOverloads constructor(
         removeAllViews()
         nodeView?.let {
             it.noSelect()
-            updateChildAsParentEdit(it)
+            resetChildAsParentEditNot(it)
             invalidate()
         }
     }
@@ -313,13 +308,6 @@ class MindMapView @JvmOverloads constructor(
     }
 
     /**
-     * 编辑模式时，增加的宽度
-     */
-    fun editSpace(node: NodeView): Float {
-        return 10f
-    }
-
-    /**
      * 当一个节点被选中时，调整相关视图
      *
      * 1. 将该节点缩放(如果需要)并居中
@@ -412,6 +400,8 @@ class MindMapView @JvmOverloads constructor(
         val nodes = nodeViews ?: return
         val editRect = node.editRectF ?: return
         val offset = editRect.right - node.contentRealRect.right
+        log.logStr("updateChildAsParentEdit offset: $offset")
+        if (offset <= 0) return
         nodes.filter { it.fromID == node.id }.forEach {
             it.editRectF = RectF(it.contentRealRect)
             it.editRectF?.offset(offset, 0f)
@@ -424,7 +414,13 @@ class MindMapView @JvmOverloads constructor(
      * 当父节点退出编辑时，恢复相关子节点
      */
     fun resetChildAsParentEditNot(node: NodeView) {
-
+        val nodes = nodeViews ?: return
+        node.noSelect()
+        nodes.filter { it.fromID == node.id }.forEach {
+            it.noSelect()
+            it.newLinkPoint(node)
+            resetChildAsParentEditNot(it)
+        }
     }
 
     open class NodeView(

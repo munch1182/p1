@@ -10,7 +10,6 @@ import android.view.ViewGroup.MarginLayoutParams
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.widget.addTextChangedListener
-import com.munch1182.lib.base.log
 import com.munch1182.lib.base.mapByMatrix
 import com.munch1182.lib.base.newCornerDrawable
 import kotlin.math.hypot
@@ -58,6 +57,7 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
         val maxW = mp.width - node.wPadding * 2f
         addTextChangedListener(afterTextChanged = {
             val str = it?.toString() ?: return@addTextChangedListener
+            if (str == node.name) return@addTextChangedListener
             var newWidth = paint.measureText(str) + paddingLeft + paddingRight
             if (newWidth > maxW && width == newWidth.toInt()) return@addTextChangedListener
 
@@ -71,11 +71,10 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
     // 更新宽度后，需要子节点让位
     private fun updateNewWidthForLoc(w: Float) {
         mp.setEditMode()
-        node.editRectF?.right = node.contentRealRect.left + w
-        log().logStr("${this.width}, ${mp.width}")
-
         val xOffset = (mp.width - this.width) / 2f - translationX
         translationX += xOffset
+
+        node.editRectF?.let { it.right = it.left + w / newWidthScale(mp.matrix) }
         mp.matrix.postTranslate(xOffset, 0f)
         mp.updateChildAsParentEdit(node)
         mp.invalidate()
@@ -93,7 +92,15 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
 
     private fun newTextScale(matrix: Matrix): Float {
         val vector = floatArrayOf(0f, 1f)
-        val mappedVector = floatArrayOf(0f, 1f)
+        val mappedVector = FloatArray(2)
+        matrix.mapVectors(mappedVector, vector)
+        val scale = hypot(mappedVector[0], mappedVector[1])
+        return scale
+    }
+
+    private fun newWidthScale(matrix: Matrix): Float {
+        val vector = floatArrayOf(1f, 0f)
+        val mappedVector = FloatArray(2)
         matrix.mapVectors(mappedVector, vector)
         val scale = hypot(mappedVector[0], mappedVector[1])
         return scale
