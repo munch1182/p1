@@ -14,36 +14,6 @@ object MindMapCommon {
     private val tmpPath = Path()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    /**
-     * 绘制编辑节点的默认实现
-     */
-    fun drawEditNode(view: MindMapView, canvas: Canvas, node: NodeView) {
-        val level = node.level
-
-        /* val contentRect = node.contentRect
-        val hPadding = contentRect.height() * 0.2f
-        val wPadding = node.wPadding
-
-        setupSelectedBorderPaint(level)
-        val radius = node.radius
-        canvas.drawRoundRect(contentRect, radius, radius, paint)
-
-        setupCursorPaint(level)
-        if (node.editName == null) {
-            canvas.drawTextInCenter(node.name, node.contentRect.centerX(), node.contentRect.centerY(), paint)
-        } else {
-            canvas.drawTextInStartXCenterY(node.editName ?: "", node.contentRect.left, contentRect.centerY(), paint)
-        }
-
-        if (node.showCursor) {
-            val cursorX = contentRect.left + paint.measureText(node.editName) + wPadding
-            tmpRect.set(cursorX, contentRect.top + hPadding, cursorX, contentRect.bottom - hPadding)
-            canvas.drawLine(tmpRect.left, tmpRect.top, tmpRect.left, tmpRect.bottom, paint)
-        }*/
-
-        setupLinkPointPaint(level)
-        node.linkPoint?.drawLink(canvas, paint, level)
-    }
 
     /**
      * 绘制连接线的默认实现
@@ -106,10 +76,53 @@ object MindMapCommon {
      * 绘制节点的默认实现
      */
     fun drawNode(canvas: Canvas, node: NodeView) {
+        if (node.isEditSelected) {
+            drawEditNode(canvas, node)
+        } else {
+            drawNoEditNode(canvas, node)
+        }
+    }
+
+    /**
+     * 绘制编辑节点的默认实现
+     */
+    private fun drawEditNode(canvas: Canvas, node: NodeView) {
+        val level = node.level
+
+        /* val contentRect = node.contentRect
+        val hPadding = contentRect.height() * 0.2f
+        val wPadding = node.wPadding
+
+        setupSelectedBorderPaint(level)
+        val radius = node.radius
+        canvas.drawRoundRect(contentRect, radius, radius, paint)
+
+        setupCursorPaint(level)
+        if (node.editName == null) {
+            canvas.drawTextInCenter(node.name, node.contentRect.centerX(), node.contentRect.centerY(), paint)
+        } else {
+            canvas.drawTextInStartXCenterY(node.editName ?: "", node.contentRect.left, contentRect.centerY(), paint)
+        }
+
+        if (node.showCursor) {
+            val cursorX = contentRect.left + paint.measureText(node.editName) + wPadding
+            tmpRect.set(cursorX, contentRect.top + hPadding, cursorX, contentRect.bottom - hPadding)
+            canvas.drawLine(tmpRect.left, tmpRect.top, tmpRect.left, tmpRect.bottom, paint)
+        }*/
+
+        setupLinkPointPaint(level)
+        node.linkPoint?.drawLink(canvas, paint, level)
+    }
+
+    private fun drawNoEditNode(canvas: Canvas, node: NodeView) {
         setupTextPaint(node.level)
         canvas.drawTextInCenter(node.name, node.contentRect.centerX(), node.contentRect.centerY(), paint)
 
-        setupBorderPaint(node.level)
+        if (node.isSelected) {
+            setupSelectedBorderPaint(node.level)
+        } else {
+            setupBorderPaint(node.level)
+        }
         val radius = node.radius
         canvas.drawRoundRect(node.contentRect, radius, radius, paint)
 

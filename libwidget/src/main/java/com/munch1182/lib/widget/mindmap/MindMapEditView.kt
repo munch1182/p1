@@ -2,7 +2,6 @@ package com.munch1182.lib.widget.mindmap
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.RectF
 import android.util.TypedValue
 import android.view.Gravity
@@ -12,7 +11,6 @@ import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.widget.addTextChangedListener
 import com.munch1182.lib.base.mapByMatrix
 import com.munch1182.lib.base.newCornerDrawable
-import kotlin.math.hypot
 import kotlin.math.min
 
 @SuppressLint("ViewConstructor")
@@ -47,7 +45,7 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
         val radius = matrix.mapRadius(node.radius)
 
         setBackgroundDrawable(newCornerDrawable(corner = radius, strokeWidth = 2, strokeColor = Color.BLUE))
-        setTextSize(TypedValue.COMPLEX_UNIT_PX, node.textSize * newTextScale(matrix))
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, node.textSize * mp.newTextScale())
         setPadding(0, 0, 0, 0)
         gravity = Gravity.CENTER_VERTICAL
         imeOptions = EditorInfo.IME_ACTION_DONE
@@ -74,7 +72,7 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
         val xOffset = (mp.width - this.width) / 2f - translationX
         translationX += xOffset
 
-        node.editRectF?.let { it.right = it.left + w / newWidthScale(mp.matrix) }
+        node.editRectF?.let { it.right = it.left + w / mp.newWidthScale() }
         mp.matrix.postTranslate(xOffset, 0f)
         mp.updateChildAsParentEdit(node)
         mp.invalidate()
@@ -86,23 +84,5 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
         val lp = layoutParams ?: return
         lp.width = newWidth.toInt()
         layoutParams = lp
-
-
-    }
-
-    private fun newTextScale(matrix: Matrix): Float {
-        val vector = floatArrayOf(0f, 1f)
-        val mappedVector = FloatArray(2)
-        matrix.mapVectors(mappedVector, vector)
-        val scale = hypot(mappedVector[0], mappedVector[1])
-        return scale
-    }
-
-    private fun newWidthScale(matrix: Matrix): Float {
-        val vector = floatArrayOf(1f, 0f)
-        val mappedVector = FloatArray(2)
-        matrix.mapVectors(mappedVector, vector)
-        val scale = hypot(mappedVector[0], mappedVector[1])
-        return scale
     }
 }

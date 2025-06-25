@@ -25,6 +25,7 @@ import com.munch1182.lib.base.specSize
 import com.munch1182.lib.base.withUI
 import com.munch1182.lib.helper.SoftKeyBoardHelper
 import java.io.File
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 
@@ -57,8 +58,8 @@ class MindMapView @JvmOverloads constructor(
     // 当前数据
     private var currNode: Node? = null
 
-    // 当前正在编辑的节点的位置(nodeViews)
-    private var currEditIndex: Int = -1
+    // 当前选中的节点的位置(nodeViews)
+    private var currSelectIndex: Int = -1
 
     override fun getMatrix(): Matrix {
         return matrix
@@ -66,38 +67,15 @@ class MindMapView @JvmOverloads constructor(
 
     // 按键回调
     private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
+
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+            judgeSelect(e) { _, node -> selectNode(node) }
+            return true
+        }
+
         override fun onLongPress(e: MotionEvent) {
             super.onLongPress(e)
-            val nodes = nodeViews ?: return
-
-            val longPressPointF = PointF()
-            longPressPointF.set(e.x, e.y)
-
-            // 缓存不如实时计算有效率
-            val mappedRect = MutableList(nodes.size) { nodes[it].contentRect.mapByMatrix(matrix) }
-            var anySelected = false
-
-            nodes.getOrNull(currEditIndex)?.noSelect()
-            noCurrEditIndex()
-
-            mappedRect.forEachIndexed { index, it ->
-
-                val isSelected = it.contains(longPressPointF)
-                nodes[index].isSelected = isSelected
-                nodes[index].isEditSelected = isSelected
-                if (isSelected) {
-                    anySelected = true
-                    log.logStr("isSelected: ${nodes[index].name}, $it, $longPressPointF")
-                    currEditIndex = index
-                    return@forEachIndexed
-                }
-
-            }
-            if (anySelected) {
-                val node = nodes.getOrNull(currEditIndex)
-                adjustSelectNode(node)
-                showInput(node)
-            }
+            judgeSelect(e) { _, node -> selectNode(node, true) }
         }
 
         override fun onDoubleTap(e: MotionEvent): Boolean {
@@ -106,7 +84,7 @@ class MindMapView @JvmOverloads constructor(
         }
 
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-            if (currEditIndex != -1) {
+            if (currSelectIndex != -1) {
                 noSelectEdit()
             }
             matrix { postTranslate(-distanceX, -distanceY) }
@@ -141,7 +119,7 @@ class MindMapView @JvmOverloads constructor(
         log.logStr("onKeyDown: $keyCode, ${event?.action}, ${event?.isPrintingKey}")
         when (keyCode) {
             KeyEvent.KEYCODE_ENTER -> {
-                nodeViews?.getOrNull(currEditIndex)?.commitText("\n")
+                nodeViews?.getOrNull(currSelectIndex)?.commitText("\n")
                 invalidate()
                 return true
             }
@@ -159,10 +137,27 @@ class MindMapView @JvmOverloads constructor(
         }
     }
 
-    private fun noCurrEditIndex() {
-        currEditIndex = -1
+    private fun noCurrSelectIndex() {
+        currSelectIndex = -1
     }
 
+    private fun selectNode(node: NodeView, isEdit: Boolean = false) {
+        if (currSelectIndex != -1 && currSelectIndex != node.currIndex) {
+            nodeViews?.getOrNull(currSelectIndex)?.noSelect()
+        }
+        currSelectIndex = node.currIndex
+        node.select(isEdit)
+        adjustSelectNode(node)
+        if (isEdit) {
+            showInput(node)
+        } else {
+            showMenu(node)
+        }
+    }
+
+    fun startEditByNode(node: NodeView) {
+        selectNode(node, true)
+    }
 
     fun setNode(node: Node) {
         this.currNode = node
@@ -194,14 +189,30 @@ class MindMapView @JvmOverloads constructor(
         if (SoftKeyBoardHelper.im.isActive) {
             SoftKeyBoardHelper.hide(this)
         }
-        val nodeView = nodeViews?.getOrNull(currEditIndex)
-        noCurrEditIndex()
+        val nodeView = nodeViews?.getOrNull(currSelectIndex)
+        noCurrSelectIndex()
         removeAllViews()
         nodeView?.let {
             it.noSelect()
             resetChildAsParentEditNot(it)
             invalidate()
         }
+    }
+
+    fun newTextScale(): Float {
+        val vector = floatArrayOf(0f, 1f)
+        val mappedVector = FloatArray(2)
+        matrix.mapVectors(mappedVector, vector)
+        val scale = hypot(mappedVector[0], mappedVector[1])
+        return scale
+    }
+
+    fun newWidthScale(): Float {
+        val vector = floatArrayOf(1f, 0f)
+        val mappedVector = FloatArray(2)
+        matrix.mapVectors(mappedVector, vector)
+        val scale = hypot(mappedVector[0], mappedVector[1])
+        return scale
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -234,13 +245,11 @@ class MindMapView @JvmOverloads constructor(
             Mode.Drag -> gestureDetector.onTouchEvent(event)
             Mode.Scale -> scaleDetector.onTouchEvent(event)
             Mode.Center -> {}
-            Mode.Edit -> {}
         }
         return true
     }
 
     fun setEditMode() {
-        currMode = Mode.Edit
     }
 
     /**
@@ -335,6 +344,14 @@ class MindMapView @JvmOverloads constructor(
         }
     }
 
+    private fun showMenu(node: NodeView?) {
+        log.logStr("showInput: ${node?.name}")
+        node ?: return
+        removeAllViews()
+        val menu = MindMapMenuView.newNode(this, node)
+        addView(menu)
+    }
+
     private fun showInput(node: NodeView?) {
         log.logStr("showInput: ${node?.name}")
         node ?: return
@@ -383,12 +400,9 @@ class MindMapView @JvmOverloads constructor(
             this@MindMapView.matrix.centerContent()
         }
         canvas.withMatrix(matrix) {
-            views.forEach {
-                if (it.isSelected) {
-                    currStyle.drawEditNode(this@MindMapView, this, it)
-                } else {
-                    currStyle.drawNode(this, it)
-                }
+            views.forEachIndexed { index, it ->
+                it.currIndex = index
+                currStyle.drawNode(this, it)
             }
         }
     }
@@ -423,6 +437,29 @@ class MindMapView @JvmOverloads constructor(
         }
     }
 
+    /**
+     * 传入按键事件，判断选中； 只判断，不处理
+     */
+    private fun judgeSelect(e: MotionEvent, select: (Int, NodeView) -> Unit) {
+        val nodes = nodeViews ?: return
+
+        val longPressPointF = PointF()
+        longPressPointF.set(e.x, e.y)
+
+        // 缓存不如实时计算有效率
+        val mappedRect = MutableList(nodes.size) { nodes[it].contentRect.mapByMatrix(matrix) }
+
+        mappedRect.forEachIndexed { index, it ->
+            val isSelected = it.contains(longPressPointF)
+            if (isSelected) {
+                val nodeView = nodes[index]
+                log.logStr("isSelected: ${nodeView.name}, $it, $longPressPointF")
+                select(index, nodeView)
+                return@forEachIndexed
+            }
+        }
+    }
+
     open class NodeView(
         val name: String, // 标题
         val level: Int, // 层级，大多数样式都跟层级有关
@@ -447,6 +484,11 @@ class MindMapView @JvmOverloads constructor(
         val linkPoint get() = editLinkPoint ?: contentLinkPoint
 
         /**
+         * 节点在nodeviews中的索引，有时效，且需要实时更新
+         */
+        internal var currIndex: Int = -1
+
+        /**
          * 编辑节点
          */
         fun commitText(toString: String) {
@@ -460,8 +502,13 @@ class MindMapView @JvmOverloads constructor(
             editLinkPoint = null
         }
 
+        fun select(isEdit: Boolean = false) {
+            isSelected = true
+            isEditSelected = isEdit
+        }
+
         /**
-         * 更加当前属性和父节点生成连接点
+         * 根据当前属性和父节点生成连接点
          */
         fun newLinkPoint(parent: NodeView?) {
             parent ?: return
@@ -472,6 +519,7 @@ class MindMapView @JvmOverloads constructor(
                 contentLinkPoint = newLP
             }
         }
+
 
         // 节点圆角
         val radius get() = contentRect.height() / 4f
@@ -510,21 +558,12 @@ class MindMapView @JvmOverloads constructor(
         fun drawNode(canvas: Canvas, node: NodeView) {
             MindMapCommon.drawNode(canvas, node)
         }
-
-        /**
-         * 编辑节点绘制
-         * 替代drawNode
-         */
-        fun drawEditNode(view: MindMapView, canvas: Canvas, node: NodeView) {
-            MindMapCommon.drawEditNode(view, canvas, node)
-        }
     }
 
     private sealed class Mode {
         data object Drag : Mode()
         data object Scale : Mode()
         data object Center : Mode()
-        data object Edit : Mode()
 
         val isCenter get() = this is Center
     }
