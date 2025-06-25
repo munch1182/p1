@@ -46,6 +46,7 @@ import com.munch1182.p1.views.Audio2Activity
 import com.munch1182.p1.views.BluetoothActivity
 import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
+import com.munch1182.p1.views.QrScanActivity
 import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
@@ -73,6 +74,7 @@ class MainActivity : BaseActivity() {
         JumpButton("服务相关", clazz = ServerActivity::class)
         JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)
+        JumpButton("扫码相关", clazz = QrScanActivity::class)
         JumpButton("View相关", clazz = ViewActivity::class)
         ClickButton("语言切换") { intent(LanguageActivity::class.java).onData { recreateIfLangNeed(it) } }
         JumpButton("测试页面", clazz = TestActivity::class)

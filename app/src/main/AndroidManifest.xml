@@ -30,6 +30,9 @@
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
         <activity
+            android:name=".views.QrScanActivity"
+            android:exported="false" />
+        <activity
             android:name=".views.libview.MindMapActivity"
             android:exported="false" />
         <activity
