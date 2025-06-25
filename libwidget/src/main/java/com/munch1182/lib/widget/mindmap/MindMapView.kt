@@ -159,9 +159,9 @@ class MindMapView @JvmOverloads constructor(
         selectNode(node, true)
     }
 
-    fun setNode(node: Node) {
+    fun setNode(node: Node?, noCenter: Boolean = false) {
         this.currNode = node
-        reset()
+        reset(noCenter)
     }
 
     fun setStyle(style: NodeStyle) {
@@ -173,10 +173,12 @@ class MindMapView @JvmOverloads constructor(
         invalidate()
     }
 
-    private fun reset() {
+    private fun reset(noCenter: Boolean = false) {
         this.nodeViews = null
         this.contentRect.set(0f, 0f, 0f, 0f)
-        this.currMode = Mode.Center
+        if (!noCenter) {
+            this.currMode = Mode.Center
+        }
     }
 
     private inline fun matrix(any: Matrix.() -> Unit) {
@@ -247,9 +249,6 @@ class MindMapView @JvmOverloads constructor(
             Mode.Center -> {}
         }
         return true
-    }
-
-    fun setEditMode() {
     }
 
     /**
@@ -384,6 +383,7 @@ class MindMapView @JvmOverloads constructor(
             val views = currStyle.layoutNode(node)
             nodeViews = views
         }
+        log.logStr("onDraw:views size: ${nodeViews?.size}")
         val views = nodeViews ?: return
         // 如果要居中，需要计算内容宽高
         if (currMode.isCenter) {
@@ -401,6 +401,7 @@ class MindMapView @JvmOverloads constructor(
         }
         canvas.withMatrix(matrix) {
             views.forEachIndexed { index, it ->
+                log.logStr("$index, ${it.name}, ${it.fromID}, ${it.id}")
                 it.currIndex = index
                 currStyle.drawNode(this, it)
             }
@@ -427,7 +428,7 @@ class MindMapView @JvmOverloads constructor(
     /**
      * 当父节点退出编辑时，恢复相关子节点
      */
-    fun resetChildAsParentEditNot(node: NodeView) {
+    private fun resetChildAsParentEditNot(node: NodeView) {
         val nodes = nodeViews ?: return
         node.noSelect()
         nodes.filter { it.fromID == node.id }.forEach {
@@ -460,6 +461,14 @@ class MindMapView @JvmOverloads constructor(
         }
     }
 
+    fun delNode(node: NodeView) {
+        val nodes = nodeViews ?: return
+        noSelectEdit()
+        val newNode = nodes.filterNot { it.fromID == node.id || it.id == node.id }
+        nodeViews = null
+        update { setNode(Node.from(newNode), true) }
+    }
+
     open class NodeView(
         val name: String, // 标题
         val level: Int, // 层级，大多数样式都跟层级有关
@@ -470,7 +479,7 @@ class MindMapView @JvmOverloads constructor(
         val hContentPadding: Int = 0, // 水平内容间距
         val vContentPadding: Int = 0, // 垂直内容间距
         // 选中相关
-        var isSelected: Boolean = false, // 预留菜单选择
+        var isSelected: Boolean = false, // 菜单选择
         var isEditSelected: Boolean = false, // 节点编辑模式
         var textSize: Float = 36f, // 文字大小
         var editRectF: RectF? = null, // 编辑区域，用于缓存诸如增加的区域
@@ -535,8 +544,53 @@ class MindMapView @JvmOverloads constructor(
         }
     }
 
-    class Node(val name: String, val children: Array<Node>? = null) {
+    class Node(val name: String, var children: Array<Node>? = null) {
         internal var childrenHeight: Float = 0f // 子节点占用高度，用于计算父节点位置
+
+        override fun toString(): String {
+            return "$name[${children?.joinToString()}]"
+        }
+
+        companion object {
+            fun from(nodes: List<NodeView>): Node? {
+
+                val locMap = HashMap<String, MutableList<String>>()
+                val nameMap = HashMap<String, String>()
+
+                var from = ""
+                nodes.forEach {
+                    nameMap[it.id] = it.name
+                    if (it.fromID.isEmpty()) {
+                        from = it.name
+                    } else {
+                        locMap[it.fromID] = locMap.getOrDefault(it.fromID, mutableListOf()).apply { add(it.id) }
+                    }
+                }
+
+                if (from.isEmpty()) return null
+                // 保证原序
+                locMap.forEach { (_, u) -> u.sortBy { MindMapIdHelper.sortById(it) } }
+
+
+                val start = locMap[MindMapIdHelper.ROOT_ID] ?: return null
+                val node = Node(nameMap[MindMapIdHelper.ROOT_ID] ?: "")
+
+                node.children = locs(locMap, nameMap, start, node)?.toTypedArray()
+
+                return node
+            }
+
+            private fun locs(loc: Map<String, MutableList<String>>, name: Map<String, String>, from: List<String>?, node: Node): List<Node>? {
+                return from?.map {
+                    val n = Node(name[it] ?: "")
+                    val c = loc[it]
+                    n.children = locs(loc, name, c, n)?.toTypedArray()
+                    n
+                }
+            }
+        }
+
+
     }
 
     interface NodeStyle {

@@ -68,7 +68,6 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
 
     // 更新宽度后，需要子节点让位
     private fun updateNewWidthForLoc(w: Float) {
-        mp.setEditMode()
         val xOffset = (mp.width - this.width) / 2f - translationX
         translationX += xOffset
 

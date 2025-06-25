@@ -27,7 +27,7 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         if (node.children.isNullOrEmpty()) return selfHeight + padding.second
 
         var sum = 0f
-        node.children.forEachIndexed { index, it ->
+        node.children?.forEachIndexed { index, it ->
             if (index > 0) sum += verticalPadding(level + 1)
             sum += measureNode(it, level + 1)
         }
