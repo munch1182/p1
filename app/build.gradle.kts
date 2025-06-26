@@ -22,6 +22,7 @@ android {
             versionNameSuffix = "_dev"
             applicationIdSuffix = ".dev"
             dimension = "version"
+            signingConfig = signingConfigs.findByName("release")
         }
 
         create("publish") {
