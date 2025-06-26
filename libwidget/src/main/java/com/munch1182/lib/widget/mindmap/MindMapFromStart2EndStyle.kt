@@ -44,9 +44,8 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
             currNode.name, level, spaceRect, contentRect,
             hContentPadding = innerPadding.first, vContentPadding = innerPadding.second,
             textSize = paint.textSize,
-            fromID = currNode.fromID,
-            id = currNode.id
         )
+        node.extendFrom(currNode)
         adjustNodeViewByCommon(node)
         adjustNodeViewByLocation(node, parent, last)
 

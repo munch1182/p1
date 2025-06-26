@@ -22,5 +22,4 @@ object MindMapIdHelper {
     private fun index(id: String): Int {
         return id.substringAfterLast(SPLIT).toIntOrNull() ?: -1
     }
-
 }

@@ -130,7 +130,7 @@ class MindMapView @JvmOverloads constructor(
     private val boardHelper by lazy {
         SoftKeyBoardHelper(this).setKeyBoardChangeListener {
             val isHideBoard = it <= 0
-            if (isHideBoard) {
+            if (isHideBoard && currMode.isEdit) { // 编辑模式下取消键盘取消选择
                 noSelectEdit()
             }
             log.logStr("onBoardChange: $it")
@@ -189,12 +189,13 @@ class MindMapView @JvmOverloads constructor(
     }
 
     private fun noSelectEdit() {
+        log.logStr("noSelectEdit noSelectEdit noSelectEdit")
         if (SoftKeyBoardHelper.im.isActive) {
             SoftKeyBoardHelper.hide(this)
         }
         val nodeView = nodeViews?.getOrNull(currSelectIndex)
-        noCurrSelectIndex()
         removeAllViews()
+        noCurrSelectIndex()
         nodeView?.let {
             it.noSelect()
             resetChildAsParentEditNot(it)
@@ -247,7 +248,7 @@ class MindMapView @JvmOverloads constructor(
         when (currMode) {
             Mode.Drag -> gestureDetector.onTouchEvent(event)
             Mode.Scale -> scaleDetector.onTouchEvent(event)
-            Mode.Center -> {}
+            else -> {}
         }
         return true
     }
@@ -346,12 +347,18 @@ class MindMapView @JvmOverloads constructor(
     private fun showMenu(node: NodeView?) {
         node ?: return
         removeAllViews()
-        val menu = MindMapMenuView.newNode(this, node)
-        addView(menu)
+        if (SoftKeyBoardHelper.im.isActive) {
+            SoftKeyBoardHelper.hide(this)
+        }
+        post {
+            val menu = MindMapMenuView.newNode(this, node)
+            addView(menu)
+        }
     }
 
     private fun showInput(node: NodeView?) {
         node ?: return
+        currMode = Mode.Edit
         removeAllViews()
         node.editRectF = RectF(node.contentRealRect)
         val et = MindMapEditView.newNode(this, node).setOnEditDownListener { str, it ->
@@ -380,7 +387,7 @@ class MindMapView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val node = currNode ?: return
-        // 有限使用缓存数据，因为要处理选中效果。因此当数据更改时，需要清空缓存
+        // 优先使用缓存数据，因为要处理选中效果。因此当数据更改时，需要清空缓存
         if (nodeViews == null) {
             val views = currStyle.layoutNode(node)
             nodeViews = views
@@ -400,11 +407,24 @@ class MindMapView @JvmOverloads constructor(
             }
             this@MindMapView.matrix.centerContent()
         }
+        var addNode: NodeView? = null
         canvas.withMatrix(matrix) {
             views.forEachIndexed { index, it ->
-                log.logStr("$index, ${it.name}, ${it.fromID}, ${it.id}")
                 it.currIndex = index
                 currStyle.drawNode(this, it)
+                if (it.isCreateAsAdd) {
+                    addNode = it
+                }
+            }
+        }
+        if (currMode.isAdd) {
+            addNode?.let {
+                post {
+                    it.isCreateAsAdd = false
+                    nodeViews?.find { n -> n.id == it.id }?.isCreateAsAdd = false
+                    currNode?.update(it.id) { n -> n.isCreateAsAdd = false }
+                    selectNode(it, true)
+                }
             }
         }
     }
@@ -471,6 +491,41 @@ class MindMapView @JvmOverloads constructor(
     }
 
     /**
+     * 在该id的节点的同级下一个位置插入node，并重新绘制
+     */
+    fun addNextNode(fromNode: NodeView, addNode: Node = Node.create()) {
+        val node = currNode ?: return
+        val parentID = fromNode.fromID ?: return // 起始节点只能添加下一级节点
+        noSelectEdit()
+        node.update(parentID) {
+            val nodes = (it.children ?: arrayOf())
+            var index = nodes.indexOfFirst { n -> n.id == fromNode.id }
+            if (index == -1) index = 0
+            val newNodes = nodes.toMutableList()
+            newNodes.add(index + 1, addNode)
+            it.children = newNodes.toTypedArray()
+        }
+        currMode = Mode.Add
+        update { setNode(node, true) }
+    }
+
+    /**
+     * 在该id的节点的下级节点的末尾插入node，并重新绘制
+     */
+    fun addChildNode(fromNode: NodeView, addNode: Node = Node.create()) {
+        val node = currNode ?: return
+        noSelectEdit()
+        node.update(fromNode.id) {
+            val nodes = (it.children ?: arrayOf())
+            val newNodes = nodes.toMutableList()
+            newNodes.add(addNode)
+            it.children = newNodes.toTypedArray()
+        }
+        currMode = Mode.Add
+        update { setNode(node, true) }
+    }
+
+    /**
      * 更新Node（当当前node更改了内容需要重新绘制的情形）
      */
     fun updateNode(id: String, update: (Node) -> Unit) {
@@ -496,8 +551,6 @@ class MindMapView @JvmOverloads constructor(
         var editRectF: RectF? = null, // 编辑区域，用于缓存诸如增加的区域
         var editLinkPoint: LinkPoint? = null, // 编辑模式下，子节点到其父节点的连接点
 
-        val id: String = "", // 节点id，
-        val fromID: String? = null, // 父节点id
     ) {
 
         val contentRect get() = editRectF ?: contentRealRect
@@ -507,6 +560,11 @@ class MindMapView @JvmOverloads constructor(
          * 节点在nodeviews中的索引，有时效，且需要实时更新
          */
         internal var currIndex: Int = -1
+        internal var isCreateAsAdd: Boolean = false
+        internal var id: String = "" // 节点id，
+        internal var fromID: String? = null // 父节点id
+
+        val isRoot get() = fromID == null
 
         /**
          * 编辑节点
@@ -541,6 +599,12 @@ class MindMapView @JvmOverloads constructor(
             }
         }
 
+        fun extendFrom(node: Node) {
+            id = node.id
+            fromID = node.fromID
+            isCreateAsAdd = node.isCreateAsAdd
+        }
+
 
         // 节点圆角
         val radius get() = contentRect.height() / 4f
@@ -560,6 +624,7 @@ class MindMapView @JvmOverloads constructor(
         internal var childrenHeight: Float = 0f // 子节点占用高度，用于计算父节点位置
         internal var id: String = ""
         internal var fromID: String? = null
+        internal var isCreateAsAdd: Boolean = false
 
         override fun toString(): String {
             return "$name($id, ${children?.joinToString()?.let { "[$it]" }})"
@@ -591,10 +656,11 @@ class MindMapView @JvmOverloads constructor(
                 var from = ""
                 nodes.forEach {
                     nameMap[it.id] = it.name
-                    if (it.fromID.isNullOrEmpty()) {
+                    val fromID = it.fromID
+                    if (fromID.isNullOrEmpty()) {
                         from = it.name
                     } else {
-                        locMap[it.fromID] = locMap.getOrDefault(it.fromID, mutableListOf()).apply { add(it.id) }
+                        locMap[fromID] = locMap.getOrDefault(fromID, mutableListOf()).apply { add(it.id) }
                     }
                 }
 
@@ -618,6 +684,10 @@ class MindMapView @JvmOverloads constructor(
                     n.children = locs(loc, name, c, n)?.toTypedArray()
                     n
                 }
+            }
+
+            fun create(): Node {
+                return Node(MindMapConfig.nameNewNode).apply { isCreateAsAdd = true }
             }
         }
 
@@ -649,7 +719,11 @@ class MindMapView @JvmOverloads constructor(
         data object Drag : Mode()
         data object Scale : Mode()
         data object Center : Mode()
+        data object Edit : Mode()
+        data object Add : Mode()
 
+        val isEdit get() = this is Edit
         val isCenter get() = this is Center
+        val isAdd get() = this is Add
     }
 }

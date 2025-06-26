@@ -16,10 +16,10 @@ import com.munch1182.lib.base.newCornerDrawable
 class MindMapMenuView(private val mp: MindMapView, private val node: MindMapView.NodeView) : LinearLayout(mp.context) {
 
     private val ops = arrayOf(
-        Menu("编辑") { mp.startEditByNode(node) },
-        Menu("添加节点") {},
-        Menu("添加子节点") {},
-        Menu("删除") { mp.delNode(node) })
+        Menu(MindMapConfig.menuEdit) { mp.startEditByNode(node) },
+        Menu(MindMapConfig.menuAddNode) { mp.addNextNode(node) }.apply { filterIfNeed = { !it.isRoot } },
+        Menu(MindMapConfig.menuAddChild) { mp.addChildNode(node) },
+        Menu(MindMapConfig.menuDelete) { mp.delNode(node) })
 
     init {
         translationZ = 16f
@@ -27,7 +27,7 @@ class MindMapMenuView(private val mp: MindMapView, private val node: MindMapView
         elevation = 12f
         gravity = Gravity.CENTER_VERTICAL
 
-        ops.forEachIndexed { i, it ->
+        ops.filter { it.filterIfNeed(node) }.forEachIndexed { i, it ->
             if (i > 0) {
                 addView(View(context).apply {
                     layoutParams = LayoutParams(1, LayoutParams.MATCH_PARENT)
@@ -68,5 +68,7 @@ class MindMapMenuView(private val mp: MindMapView, private val node: MindMapView
 
     private val space get() = measuredHeight * 0.3f
 
-    class Menu(val name: String, val onClick: (View) -> Unit)
+    class Menu(val name: String, val onClick: (View) -> Unit) {
+        var filterIfNeed: (MindMapView.NodeView) -> Boolean = { true }
+    }
 }
