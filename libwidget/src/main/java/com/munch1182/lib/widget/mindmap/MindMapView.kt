@@ -161,6 +161,7 @@ class MindMapView @JvmOverloads constructor(
 
     fun setNode(node: Node?, noCenter: Boolean = false) {
         this.currNode = node
+        node?.setupID()
         reset(noCenter)
     }
 
@@ -335,7 +336,6 @@ class MindMapView @JvmOverloads constructor(
         matrix.postTranslate(offX, offY)
 
         val scale = containerRect.width() / rect.width()
-        log.logStr("adjustCenter4SelectRect: $scale")
         // 只缩小不放大
         if (scale < 1) {
             matrix.postScale(scale, scale, containerRect.centerX(), containerRect.centerY())
@@ -344,7 +344,6 @@ class MindMapView @JvmOverloads constructor(
     }
 
     private fun showMenu(node: NodeView?) {
-        log.logStr("showInput: ${node?.name}")
         node ?: return
         removeAllViews()
         val menu = MindMapMenuView.newNode(this, node)
@@ -352,14 +351,17 @@ class MindMapView @JvmOverloads constructor(
     }
 
     private fun showInput(node: NodeView?) {
-        log.logStr("showInput: ${node?.name}")
         node ?: return
         removeAllViews()
         node.editRectF = RectF(node.contentRealRect)
-        val et = MindMapEditView.newNode(this, node)
+        val et = MindMapEditView.newNode(this, node).setOnEditDownListener { str, it ->
+            it.commitText(str)
+            updateNode(node.id) { it.name = str }
+        }
         addView(et)
         post { SoftKeyBoardHelper.show(et) }
     }
+
 
     override fun generateDefaultLayoutParams(): LayoutParams {
         return MarginLayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
@@ -383,7 +385,6 @@ class MindMapView @JvmOverloads constructor(
             val views = currStyle.layoutNode(node)
             nodeViews = views
         }
-        log.logStr("onDraw:views size: ${nodeViews?.size}")
         val views = nodeViews ?: return
         // 如果要居中，需要计算内容宽高
         if (currMode.isCenter) {
@@ -469,8 +470,18 @@ class MindMapView @JvmOverloads constructor(
         update { setNode(Node.from(newNode), true) }
     }
 
+    /**
+     * 更新Node（当当前node更改了内容需要重新绘制的情形）
+     */
+    fun updateNode(id: String, update: (Node) -> Unit) {
+        val node = currNode ?: return
+        noSelectEdit()
+        node.update(id, update)
+        update { setNode(node, true) }
+    }
+
     open class NodeView(
-        val name: String, // 标题
+        var name: String, // 标题
         val level: Int, // 层级，大多数样式都跟层级有关
         val spaceRect: RectF, // 节点占用位置
         val contentRealRect: RectF, // 节点显示区域
@@ -486,7 +497,7 @@ class MindMapView @JvmOverloads constructor(
         var editLinkPoint: LinkPoint? = null, // 编辑模式下，子节点到其父节点的连接点
 
         val id: String = "", // 节点id，
-        val fromID: String = "", // 父节点id
+        val fromID: String? = null, // 父节点id
     ) {
 
         val contentRect get() = editRectF ?: contentRealRect
@@ -500,8 +511,9 @@ class MindMapView @JvmOverloads constructor(
         /**
          * 编辑节点
          */
-        fun commitText(toString: String) {
+        fun commitText(str: String) {
             if (!isEditSelected) return
+            name = str
         }
 
         fun noSelect() {
@@ -544,12 +556,31 @@ class MindMapView @JvmOverloads constructor(
         }
     }
 
-    class Node(val name: String, var children: Array<Node>? = null) {
+    class Node(var name: String, var children: Array<Node>? = null) {
         internal var childrenHeight: Float = 0f // 子节点占用高度，用于计算父节点位置
+        internal var id: String = ""
+        internal var fromID: String? = null
 
         override fun toString(): String {
-            return "$name[${children?.joinToString()}]"
+            return "$name($id, ${children?.joinToString()?.let { "[$it]" }})"
         }
+
+        fun update(id: String, update: (Node) -> Unit) {
+            if (this.id == id) {
+                update(this)
+                return
+            }
+            children?.forEach {
+                it.update(id, update)
+            }
+        }
+
+        fun setupID(from: String? = null, index: Int = 0) {
+            this.id = MindMapIdHelper.newID(from, index)
+            this.fromID = from
+            children?.forEachIndexed { i, it -> it.setupID(this.id, i) }
+        }
+
 
         companion object {
             fun from(nodes: List<NodeView>): Node? {
@@ -560,7 +591,7 @@ class MindMapView @JvmOverloads constructor(
                 var from = ""
                 nodes.forEach {
                     nameMap[it.id] = it.name
-                    if (it.fromID.isEmpty()) {
+                    if (it.fromID.isNullOrEmpty()) {
                         from = it.name
                     } else {
                         locMap[it.fromID] = locMap.getOrDefault(it.fromID, mutableListOf()).apply { add(it.id) }

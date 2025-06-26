@@ -40,6 +40,13 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
         }
     }
 
+    private var onDown: OnEditDownListener? = null
+
+    fun setOnEditDownListener(listener: OnEditDownListener): MindMapEditView {
+        onDown = listener
+        return this
+    }
+
     init {
         val matrix = mp.matrix
         val radius = matrix.mapRadius(node.radius)
@@ -64,6 +71,13 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
             updateNewWidth(newWidth)
             post { updateNewWidthForLoc(width.toFloat()) }
         })
+        setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                onDown?.onEditDown(text?.toString() ?: "", node)
+                return@setOnEditorActionListener true
+            }
+            return@setOnEditorActionListener false
+        }
     }
 
     // 更新宽度后，需要子节点让位
@@ -83,5 +97,9 @@ class MindMapEditView(private val mp: MindMapView, private val node: MindMapView
         val lp = layoutParams ?: return
         lp.width = newWidth.toInt()
         layoutParams = lp
+    }
+
+    fun interface OnEditDownListener {
+        fun onEditDown(str: String, node: MindMapView.NodeView)
     }
 }

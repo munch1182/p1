@@ -16,7 +16,7 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         // 测量所有节点的高度，父节点高度为子节点高度和
         measureNode(node, 0)
         val list = mutableListOf<MindMapView.NodeView>()
-        layoutChildrenNode(list, 0, 0, node)
+        layoutChildrenNode(list, 0, node)
         list.reverse()
         return list.toTypedArray()
     }
@@ -35,7 +35,7 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         return sum
     }
 
-    private fun layoutChildrenNode(list: MutableList<MindMapView.NodeView>, level: Int, index: Int, currNode: MindMapView.Node, parent: MindMapView.NodeView? = null, last: MindMapView.NodeView? = null): MindMapView.NodeView {
+    private fun layoutChildrenNode(list: MutableList<MindMapView.NodeView>, level: Int, currNode: MindMapView.Node, parent: MindMapView.NodeView? = null, last: MindMapView.NodeView? = null): MindMapView.NodeView {
         val contentRect = calculateNodeContent(currNode.name, level)
         val spaceRect = RectF(0f, 0f, contentRect.width(), if (currNode.childrenHeight == 0f) contentRect.height() else currNode.childrenHeight)
         val innerPadding = nodeContentPadding(level)
@@ -44,8 +44,8 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
             currNode.name, level, spaceRect, contentRect,
             hContentPadding = innerPadding.first, vContentPadding = innerPadding.second,
             textSize = paint.textSize,
-            fromID = parent?.id ?: "",
-            id = MindMapIdHelper.newID(parent?.id, index)
+            fromID = currNode.fromID,
+            id = currNode.id
         )
         adjustNodeViewByCommon(node)
         adjustNodeViewByLocation(node, parent, last)
@@ -53,8 +53,8 @@ object MindMapFromStart2EndStyle : MindMapView.NodeStyle {
         node.newLinkPoint(parent)
 
         var lastNode: MindMapView.NodeView? = null
-        currNode.children?.forEachIndexed { i, it ->
-            lastNode = layoutChildrenNode(list, level + 1, i, it, node, lastNode)
+        currNode.children?.forEach {
+            lastNode = layoutChildrenNode(list, level + 1, it, node, lastNode)
         }
 
         list.add(node)
