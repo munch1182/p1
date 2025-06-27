@@ -48,6 +48,7 @@ dependencies {
 
     implementation(projects.lib)
     implementation(projects.libwidget)
+    implementation(projects.libscan)
 
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.fragment.ktx)
@@ -69,6 +70,4 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.6.0")
     implementation("androidx.media3:media3-ui:1.6.0")
     implementation("androidx.media3:media3-session:1.6.0")
-
-    implementation("com.quickbirdstudios:opencv-contrib:4.5.3.0")
 }

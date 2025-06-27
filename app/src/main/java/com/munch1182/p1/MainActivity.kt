@@ -21,7 +21,6 @@ import com.munch1182.lib.base.log
 import com.munch1182.lib.base.navigationHeight
 import com.munch1182.lib.base.screen
 import com.munch1182.lib.base.screenDisplay
-import com.munch1182.lib.base.startActivity
 import com.munch1182.lib.base.statusHeight
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
@@ -51,7 +50,6 @@ import com.munch1182.p1.views.ResultActivity
 import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
 import com.munch1182.p1.views.TestActivity
-import com.munch1182.p1.views.libview.MindMapActivity
 import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
@@ -62,7 +60,6 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithRv(modifier = PagePaddingModifier.noApplyWindowPadding()) { Click() }
-        startActivity<MindMapActivity>()
     }
 
     @Composable
