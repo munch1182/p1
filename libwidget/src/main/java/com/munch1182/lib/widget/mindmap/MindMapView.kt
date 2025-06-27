@@ -393,18 +393,9 @@ class MindMapView @JvmOverloads constructor(
             nodeViews = views
         }
         val views = nodeViews ?: return
-        // 如果要居中，需要计算内容宽高
+        // 如果需要计算内容宽高
+        calculateContentRectIfNeed()
         if (currMode.isCenter) {
-            if (contentRect.width() == 0f && contentRect.height() == 0f) {
-                // 因为已经计算过子节点所占高度，所以整体高度即第一个节点的高度
-                val maxHeight = views[0].spaceRect.height()
-                var maxEnd = 0f
-                views.forEach {
-                    // 宽度即最右侧节点的右侧位置
-                    maxEnd = max(maxEnd, it.spaceRect.right)
-                }
-                contentRect.set(0f, 0f, maxEnd, maxHeight)
-            }
             this@MindMapView.matrix.centerContent()
         }
         var addNode: NodeView? = null
@@ -426,6 +417,20 @@ class MindMapView @JvmOverloads constructor(
                     selectNode(it, true)
                 }
             }
+        }
+    }
+
+    private fun calculateContentRectIfNeed() {
+        val views = nodeViews ?: return
+        if (contentRect.width() == 0f && contentRect.height() == 0f) {
+            // 因为已经计算过子节点所占高度，所以整体高度即第一个节点的高度
+            val maxHeight = views[0].spaceRect.height()
+            var maxEnd = 0f
+            views.forEach {
+                // 宽度即最右侧节点的右侧位置
+                maxEnd = max(maxEnd, it.spaceRect.right)
+            }
+            contentRect.set(0f, 0f, maxEnd, maxHeight)
         }
     }
 
