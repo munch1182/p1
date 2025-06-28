@@ -183,7 +183,7 @@ object DialogHelper {
         }
     }
 
-    class DFBottom : BottomSheetDialogFragment() {
+    class DFBottom : BottomSheetDialogFragment(), ResultDialog<Boolean> {
         private var dProvider: DialogViewCtxProvider? = null
         fun inject(provider: DialogViewCtxProvider?) = this.apply { this.dProvider = provider }
 
@@ -207,6 +207,12 @@ object DialogHelper {
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
             super.onViewCreated(view, savedInstanceState)
             bind?.let { onViewCreated?.invoke(it) }
+        }
+
+        override val result: Boolean get() = false
+
+        override fun show() {
+            show(currAsFM.supportFragmentManager, null)
         }
     }
 

@@ -1,23 +1,31 @@
 package com.munch1182.lib.scan
 
-import android.util.Log
+import android.content.Context
+import android.graphics.Bitmap
+import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.core.Point
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 
-class CameraFrameHelper {
+class QrScanHelper(private var listener: OnQrCodeListener? = null) {
 
     private var dstRgb: Mat? = null
     private var m: Mat? = null
     private val center = Point()
     private var size: Size? = null
     private val wxQr by lazy { WechatQr.new() }
-    private var listener: OnQrCodeListener? = null
 
-    fun setOnQrCodeListener(listener: OnQrCodeListener): CameraFrameHelper {
-        this.listener = listener
-        return this
+
+    fun detectAndDecode(ctx: Context, resourceId: Int): List<String> {
+        val mat = Utils.loadResource(ctx, resourceId)
+        return wxQr.detectAndDecode(mat)
+    }
+
+    fun detectAndDecode(bitmap: Bitmap): List<String> {
+        val newMat = Mat()
+        Utils.bitmapToMat(bitmap, newMat)
+        return wxQr.detectAndDecode(newMat)
     }
 
     fun onCameraFrame(frame: CameraBridgeViewBaseNew.CvCameraViewFrame?): Mat {
@@ -38,7 +46,6 @@ class CameraFrameHelper {
         val rgb = dstRgb!!
 
         val result = wxQr.detectAndDecode(rgb)
-        Log.d("QrScanFragment", "onCameraFrame: ${result.joinToString()}")
         if (result.isNotEmpty()) {
             listener?.onQrCode(result)
         }
