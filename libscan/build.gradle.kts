@@ -21,4 +21,5 @@ dependencies {
 
     //noinspection UseTomlInstead
     implementation("com.quickbirdstudios:opencv-contrib:4.5.3.0")
+    implementation(projects.lib)
 }

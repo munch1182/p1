@@ -9,6 +9,7 @@ import com.munch1182.lib.helper.FileHelper.tryExists
 import java.io.Closeable
 import java.io.File
 import java.io.FileOutputStream
+import java.util.zip.ZipFile
 
 object FileHelper {
 
@@ -49,6 +50,46 @@ object FileHelper {
             file.delete()
         }
     }
+
+    fun unzip(from: File, to: File): File? {
+        if (!from.exists()) return null
+
+        var zip: ZipFile? = null
+        try {
+            zip = ZipFile(from)
+            // 遍历的是所有结构
+            zip.entries().asSequence().forEach { entry ->
+                if (!entry.isDirectory) {
+                    // 文件夹也会创建
+                    val newFile = File(to, entry.name).sureExists()
+                    val ins = zip.getInputStream(entry)
+                    val out = FileOutputStream(newFile)
+                    ins.copyTo(out)
+                    ins.closeQuietly()
+                    out.closeQuietly()
+                }
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
+        } finally {
+            zip?.closeQuietly()
+        }
+
+        return to
+    }
+
+    fun copyAssets(file: String, to: String) {
+        if (file.isEmpty() || to.isEmpty()) return
+        val toFile = File(to).sureExists()
+
+        val ins = ctx.assets.open(file)
+        val fos = FileOutputStream(toFile)
+        kotlin.runCatching { ins.copyTo(fos) }
+        ins.closeQuietly()
+        fos.closeQuietly()
+    }
 }
 
 fun Closeable.closeQuietly() {
@@ -86,7 +127,9 @@ class FileWriteHelper {
         return file
     }
 
+    // This function releases the resource by calling the complete() function
     fun release() {
+        // Call the complete() function to release the resource
         complete()
     }
 }

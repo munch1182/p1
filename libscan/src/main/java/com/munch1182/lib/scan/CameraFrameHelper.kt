@@ -5,7 +5,6 @@ import org.opencv.core.Mat
 import org.opencv.core.Point
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
-import org.opencv.wechat_qrcode.WeChatQRCode
 
 class CameraFrameHelper {
 
@@ -13,7 +12,7 @@ class CameraFrameHelper {
     private var m: Mat? = null
     private val center = Point()
     private var size: Size? = null
-    private val wxQr = WeChatQRCode()
+    private val wxQr by lazy { WechatQr.new() }
     private var listener: OnQrCodeListener? = null
 
     fun setOnQrCodeListener(listener: OnQrCodeListener): CameraFrameHelper {
