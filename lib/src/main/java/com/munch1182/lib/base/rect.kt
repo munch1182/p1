@@ -15,6 +15,9 @@ val RectF.middleWidth: Float
 
 fun Rect.toRectF() = RectF(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
 
+/**
+ * 返回matrix变换后的RectF
+ */
 fun RectF.mapByMatrix(matrix: Matrix, rect: RectF = RectF()): RectF {
     matrix.mapRect(rect, this)
     return rect

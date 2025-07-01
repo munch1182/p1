@@ -43,6 +43,7 @@ import com.munch1182.lib.base.lpW
 import com.munch1182.lib.base.str
 import com.munch1182.lib.helper.currAct
 import com.munch1182.lib.helper.currAsFM
+import com.munch1182.lib.helper.dialog.AllowDenyDialogContainer
 import com.munch1182.lib.helper.dialog.ResultDialog
 import com.munch1182.lib.helper.dialog.asAllowDenyDialog
 import com.munch1182.lib.helper.result.JudgeHelper
@@ -52,7 +53,7 @@ import com.munch1182.p1.ui.theme.PagePadding
 
 
 fun PermissionHelper.Input.permissionIntentDialogWithName(name: String) = this.dialogWhen { _, state, _ ->
-    if (state.isDeniedForever) DialogHelper.newMessage(DialogHelper.Message("请前往设置界面手动允许${name}权限")) else null
+    if (state.isDeniedForever) DialogHelper.newMessage("请前往设置界面手动允许${name}权限") else null
 }.manualIntent()
 
 fun JudgeHelper.Dialog.intentDialog(before: String?, after: String?) = this.dialogWhen { _, state ->
@@ -60,11 +61,11 @@ fun JudgeHelper.Dialog.intentDialog(before: String?, after: String?) = this.dial
         JudgeHelper.State.Before -> before
         JudgeHelper.State.After -> after
     } ?: return@dialogWhen null
-    DialogHelper.newMessage(DialogHelper.Message(msg, "前往授权", "前往"))
+    DialogHelper.newMessage(msg, "前往授权", "前往")
 }
 
 fun JudgeHelper.Dialog.intentBlueScanDialog() = this.dialogWhen { _, _ ->
-    DialogHelper.newMessage(DialogHelper.Message("蓝牙扫描附近设备，需要定位功能及权限，请打开定位功能", "权限申请", "去打开"))
+    DialogHelper.newMessage("蓝牙扫描附近设备，需要定位功能及权限，请打开定位功能", "权限申请", "去打开")
 }
 
 fun PermissionHelper.Input.permissionDialog(name: String, toUse: String, noBefore: Boolean = true, noDenied: Boolean = false) = this.dialogWhen { _, state, _ ->
@@ -73,7 +74,7 @@ fun PermissionHelper.Input.permissionDialog(name: String, toUse: String, noBefor
         PermissionHelper.State.Denied -> if (noDenied) return@dialogWhen null else "正在申请${name}相关权限, 用于${toUse}。" to "允许"
         PermissionHelper.State.DeniedForever -> "该权限已被拒绝, 需要前往设置页面手动开启${name}权限, 否则该功能无法使用。" to "去开启"
     }
-    DialogHelper.newMessage(DialogHelper.Message(msg, "权限申请", ok))
+    DialogHelper.newMessage(msg, "权限申请", ok)
 }
 
 fun PermissionHelper.Input.permissionBlueScanDialog() = this.dialogWhen { _, state, _ ->
@@ -81,23 +82,33 @@ fun PermissionHelper.Input.permissionBlueScanDialog() = this.dialogWhen { _, sta
         PermissionHelper.State.DeniedForever -> "定位权限已被拒绝, 需要前往设置页面手动开启定位权限, 否则无法扫描到蓝牙设备。" to "去开启"
         else -> "蓝牙扫描附近设备，需要定位权限，请允许定位权限" to "允许"
     }
-    DialogHelper.newMessage(DialogHelper.Message(msg, "蓝牙扫描权限", ok))
+    DialogHelper.newMessage(msg, "蓝牙扫描权限", ok)
 }.manualIntent()
 
 object DialogHelper {
 
-    private fun newDialog(msg: Message, ctx: Context = currAct) = MyWindowDialog.Builder(ctx).setTitle(msg.title).setMessage(msg.msg).setPositiveButton(msg.ok) { _, _ -> }.setNegativeButton(msg.cancel) { _, _ -> }.setCancelable(msg.isCancel).create()
+    private fun newDialog(msg: Message, ctx: Context = currAct) = MyWindowDialog.Builder(ctx).setTitle(msg.title).setMessage(msg.msg).setPositiveButton(msg.ok) { _, _ -> }.setNegativeButton(msg.cancel) { _, _ -> }.setCancelable(msg.isCancelable).create()
 
     fun newMessage(msg: Message, ctx: Context = currAct) = newDialog(msg, ctx).asAllowDenyDialog()
 
+    fun newMessage(msg: CharSequence, title: CharSequence = str(android.R.string.dialog_alert_title), ok: CharSequence = str(android.R.string.ok), cancel: CharSequence = AppHelper.getString(android.R.string.cancel), isCancelable: Boolean = true): AllowDenyDialogContainer {
+        return newMessage(Message(msg, title, ok, cancel, isCancelable))
+    }
+
     fun newProgress(progress: Progress, ctx: Context = currAct): CancelDialog {
         var cd: CancelDialog? = null
-        val dialog = MyWindowDialog.Builder(ctx).background().setView(ViewImpl.newProgress(ctx, progress) {
-            cd?.canceledByHandle()
-            cd?.dismiss()
-        }).create()
+        val dialog = MyWindowDialog.Builder(ctx).background()
+            .setView(
+                ViewImpl.newProgress(ctx, progress) {
+                    cd?.canceledByHandle()
+                    cd?.dismiss()
+                }).create()
         cd = CancelDialog(dialog)
         return cd
+    }
+
+    fun newProgress(msg: CharSequence, isCancel: Boolean = true, cancel: CharSequence = str(android.R.string.cancel)): CancelDialog {
+        return newProgress(Progress(msg, isCancel, cancel))
     }
 
     fun newBottomChose(items: Array<String>, onChose: ((Int) -> Unit)? = null): DialogFragment {
@@ -118,7 +129,7 @@ object DialogHelper {
     }
 
     data class Message(
-        val msg: CharSequence, val title: CharSequence = str(android.R.string.dialog_alert_title), val ok: CharSequence = str(android.R.string.ok), val cancel: CharSequence = AppHelper.getString(android.R.string.cancel), val isCancel: Boolean = true
+        val msg: CharSequence, val title: CharSequence = str(android.R.string.dialog_alert_title), val ok: CharSequence = str(android.R.string.ok), val cancel: CharSequence = AppHelper.getString(android.R.string.cancel), val isCancelable: Boolean = true
     )
 
     data class Progress(val msg: CharSequence, val isCancel: Boolean = true, val cancel: CharSequence = str(android.R.string.cancel))

@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -24,13 +23,13 @@ import com.munch1182.lib.base.screenDisplay
 import com.munch1182.lib.base.statusHeight
 import com.munch1182.lib.base.versionCodeCompat
 import com.munch1182.lib.base.versionName
-import com.munch1182.lib.helper.dialog.asAllowDenyDialog
 import com.munch1182.lib.helper.result.JudgeHelper.IntentCanLaunchDialogProvider
 import com.munch1182.lib.helper.result.intent
 import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.onData
 import com.munch1182.lib.helper.result.onTrue
 import com.munch1182.p1.base.BaseActivity
+import com.munch1182.p1.base.DialogHelper
 import com.munch1182.p1.base.LanguageHelper
 import com.munch1182.p1.base.str
 import com.munch1182.p1.ui.ClickButton
@@ -114,11 +113,11 @@ class MainActivity : BaseActivity() {
     }
 
     private fun developerDialog(): IntentCanLaunchDialogProvider {
-        return IntentCanLaunchDialogProvider { ctx, state ->
+        return IntentCanLaunchDialogProvider { _, state ->
             if (state.isAfter) {
                 null
             } else {
-                AlertDialog.Builder(ctx).setTitle("打开开发者选项").setMessage("请连续点击版本号直到系统提示开发者模式已打开").setPositiveButton("前往") { _, _ -> }.setNegativeButton("取消") { _, _ -> }.create().asAllowDenyDialog()
+                DialogHelper.newMessage("请前往开发者选项开启开发者模式", "开发者模式未打开", "前往")
             }
         }
     }

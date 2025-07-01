@@ -3,7 +3,6 @@ package com.munch1182.lib.helper.blue.connect
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import androidx.annotation.RequiresPermission
-import com.munch1182.lib.base.UnSupportImpl
 
 interface IBluetoothConnect {
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -34,7 +33,7 @@ sealed class BluetoothConnectState {
             BluetoothAdapter.STATE_CONNECTED -> Connected
             BluetoothAdapter.STATE_DISCONNECTING -> Disconnecting
             BluetoothAdapter.STATE_DISCONNECTED -> Disconnected
-            else -> throw UnSupportImpl()
+            else -> throw UnsupportedOperationException()
         }
     }
 

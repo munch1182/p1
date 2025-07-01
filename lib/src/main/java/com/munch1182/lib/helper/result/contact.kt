@@ -2,7 +2,6 @@ package com.munch1182.lib.helper.result
 
 import androidx.activity.result.ActivityResult
 import com.munch1182.lib.base.OnResultListener
-import com.munch1182.lib.base.UnSupportImpl
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
 import kotlin.coroutines.resume
@@ -118,7 +117,7 @@ class ContactHelper internal constructor(private val ctx: CtxWrapper) {
         fun newIntent() = IntentHelper(newICtxWrapper.apply { this@CtxWrapper += this })
         fun newJudge() = JudgeHelper(newJCtxWrapper.apply { this@CtxWrapper += this })
 
-        val contractCtx: ContractHelper.Ctx<*, *, *> get() = if (this is ContractHelper.Ctx<*, *, *>) this else throw UnSupportImpl()
+        val contractCtx: ContractHelper.Ctx<*, *, *> get() = if (this is ContractHelper.Ctx<*, *, *>) this else throw UnsupportedOperationException()
         val newPCtxWrapper get() = PCtxWrapper(PermissionHelper.Ctx(contractCtx.act, contractCtx.fm))
         val newICtxWrapper get() = ICtxWrapper(IntentHelper.Ctx(contractCtx.act, contractCtx.fm))
         val newJCtxWrapper get() = JCtxWrapper(JudgeHelper.Ctx(contractCtx.act, contractCtx.fm))

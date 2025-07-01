@@ -6,7 +6,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.munch1182.lib.base.Logger
 import com.munch1182.lib.base.OnResultListener
-import com.munch1182.lib.base.UnSupportImpl
 
 
 class ContractHelper internal constructor(private val act: FragmentActivity, private val fm: FragmentManager) {
@@ -39,7 +38,7 @@ class ContractHelper internal constructor(private val act: FragmentActivity, pri
 
         internal open fun request(l: OnResultListener<LISTENER>) {
             @Suppress("UNCHECKED_CAST")
-            val ll = l as? OnResultListener<OUTPUT> ?: throw UnSupportImpl()
+            val ll = l as? OnResultListener<OUTPUT> ?: throw UnsupportedOperationException()
             requestLaunch(ll)
         }
 

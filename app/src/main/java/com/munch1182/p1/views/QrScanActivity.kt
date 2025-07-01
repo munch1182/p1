@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -54,11 +55,13 @@ class QrScanActivity : BaseActivity() {
             helper.setQrCodeListener(null)
             DialogHelper.newBottom { v, _ ->
                 ComposeView(v) {
-                    Text(
-                        qr.joinToString("\n"), modifier = Modifier
-                            .fillMaxHeight()
-                            .padding(16.dp)
-                    )
+                    SelectionContainer {
+                        Text(
+                            qr.joinToString("\n"), modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(16.dp)
+                        )
+                    }
                 }
             }.onResult { helper.setQrCodeListener(qrListener) }.show()
         }

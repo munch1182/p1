@@ -46,7 +46,7 @@ fun Number.toBinaryStr(format: Boolean = true, fillZero: Boolean = false): Strin
             return java.lang.Double.doubleToLongBits(this).toBinaryStr(format, fillZero)
         }
 
-        else -> throw UnSupportImpl()
+        else -> throw UnsupportedOperationException()
     }
     if (format) {
         return format(str, maxWeight, fillZero)

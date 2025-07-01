@@ -9,7 +9,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.base.OnResultListener
-import com.munch1182.lib.base.UnSupportImpl
 import com.munch1182.lib.base.newLog
 import com.munch1182.lib.base.onDestroyed
 import com.munch1182.lib.helper.dialog.AllowDenyDialog
@@ -58,7 +57,7 @@ class JudgeHelper internal constructor(internal val ctx: Ctx) {
         }
 
         private suspend fun judgeCircle(state: State): Boolean {
-            val judge = judge ?: throw UnSupportImpl()
+            val judge = judge ?: throw UnsupportedOperationException()
             if (judge.onJudge(act).apply { log.logStr("state:$state: judge: $this") }) return true
             val dialogAllow = dialogCollapse(state)
             log.logStr("state:$state: dialogResult: $dialogAllow")

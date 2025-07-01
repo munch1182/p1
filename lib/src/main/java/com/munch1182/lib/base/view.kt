@@ -22,7 +22,6 @@ val lpMM = ViewGroup.LayoutParams(lpM, lpM)
 /**
  * 生成一个圆角的Drawable
  *
- * @param color Drawable颜色
  * @param tl TopLeftRadius
  * @param tr TopRightRadius
  * @param bl BottomLeftRadius
