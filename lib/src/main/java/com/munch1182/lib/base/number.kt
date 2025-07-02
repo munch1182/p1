@@ -201,15 +201,17 @@ fun ByteArray.getDouble(start: Int = 0, bigEndian: Boolean = true) =
     java.lang.Double.longBitsToDouble(getLong(start, bigEndian))
 
 fun ByteArray.getString(
-    start: Int,
-    length: Int,
+    start: Int = 0,
+    length: Int = size,
     charset: Charset = StandardCharsets.UTF_16BE
 ) = String(this.filterIndexed { index, _ -> index < start + length }.toByteArray(), charset)
 
-fun ByteArray.getStringBig(start: Int, length: Int) =
+fun ByteArray.getStringUtf8(start: Int = 0, length: Int = size) = getString(start, length, StandardCharsets.UTF_8)
+
+fun ByteArray.getStringBig(start: Int = 0, length: Int = size) =
     getString(start, length, StandardCharsets.UTF_16BE)
 
-fun ByteArray.getStringLittle(start: Int, length: Int) =
+fun ByteArray.getStringLittle(start: Int = 0, length: Int = size) =
     getString(start, length, StandardCharsets.UTF_16LE)
 //</editor-fold>
 

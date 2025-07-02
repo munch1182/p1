@@ -243,7 +243,8 @@ class BleScanVM : ViewModel() {
                 delay(350L)
                 while (_isScanning.value == true) {
                     val ignore = _ignoreNoName.value == true
-                    val newList = _devs.values.toList().filter { if (ignore) it.name != null else true }.toTypedArray()
+                    val toList = _devs.values.toList()
+                    val newList = toList.filter { if (ignore) it.name != null else true }.toTypedArray()
                     _devsArr.emit(newList)
                     delay(100L * if (ignore) 1 else 5)
                 }
