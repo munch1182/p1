@@ -23,6 +23,11 @@ fun Number.toBinaryStr(format: Boolean = true, fillZero: Boolean = false): Strin
     val str: String
     val maxWeight: Int
     when (this) {
+        is Byte -> {
+            str = Integer.toBinaryString(this.toInt())
+            maxWeight = 8 / 4
+        }
+
         is Int -> {
             str = Integer.toBinaryString(this)
             maxWeight = Int.SIZE_BITS / 4
@@ -106,8 +111,9 @@ fun Float.keep(bit: Int): Float {
 /**
  * byte转为16进制字符串
  */
-fun Byte.toHexStr() = String.format("0x%02X", this)
+fun Byte.toHexStr(justValue: Boolean = false) = if (justValue) String.format("%02X", this) else String.format("0x%02X", this)
 fun ByteArray.toHexStr() = this.joinToString { it.toHexStr() }
+fun ByteArray.toHexStrNo0xNoSep() = this.joinToString("") { String.format("%02X", it) }
 fun ByteArray.toHexStrSimple(firstEnd: Int = 8, endStart: Int = size - 4): String {
     return if (this.size > firstEnd + endStart + 2) {
         "${sub(0, firstEnd).toHexStr()}...${sub(endStart).toHexStr()}($size bytes)"

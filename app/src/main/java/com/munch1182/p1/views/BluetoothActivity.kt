@@ -37,7 +37,10 @@ import com.munch1182.lib.base.asLive
 import com.munch1182.lib.base.asStateFlow
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
+import com.munch1182.lib.base.toHexStr
+import com.munch1182.lib.base.toHexStrNo0xNoSep
 import com.munch1182.lib.helper.blue.BluetoothHelper
+import com.munch1182.lib.helper.blue.scan.BlueScanRecordHelper
 import com.munch1182.lib.helper.blue.scanResult
 import com.munch1182.lib.helper.isLocationProvider
 import com.munch1182.lib.helper.result.ifAllGranted
@@ -45,16 +48,20 @@ import com.munch1182.lib.helper.result.ifTrue
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.result.permissions
 import com.munch1182.p1.base.BaseActivity
+import com.munch1182.p1.base.DialogHelper
 import com.munch1182.p1.base.intentBlueScanDialog
 import com.munch1182.p1.base.permissionBlueScanDialog
 import com.munch1182.p1.base.permissionDialog
 import com.munch1182.p1.base.toast
 import com.munch1182.p1.ui.CheckBoxWithLabel
+import com.munch1182.p1.ui.ComposeView
 import com.munch1182.p1.ui.Rv
 import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.StateButton
 import com.munch1182.p1.ui.setContentWithScroll
 import com.munch1182.p1.ui.theme.FontManySize
+import com.munch1182.p1.ui.theme.ItemPadding
+import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.ui.theme.PagePaddingModifier
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -99,15 +106,14 @@ class BluetoothActivity : BaseActivity() {
     @Composable
     private fun Item(it: BleDev) {
         var isShow by remember { mutableStateOf(false) }
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clickable(it.hadScanRecord) {
-                    isShow = !isShow
-                    withScanPermission { bleScan.stopScan() }
-                }
-                .padding(16.dp, 8.dp, 16.dp, 8.dp)) {
-            Row {
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .clickable(it.hadScanRecord) {
+                        isShow = !isShow
+                        withScanPermission { bleScan.stopScan() }
+                    }
+                    .padding(16.dp, 8.dp)) {
                 Column(horizontalAlignment = Alignment.Start) {
                     Text(it.name ?: "N/A", fontWeight = FontWeight.Bold, color = Color.Blue)
                     Text(it.mac, color = Color.Gray, fontWeight = FontWeight.W400, fontSize = FontManySize)
@@ -122,15 +128,35 @@ class BluetoothActivity : BaseActivity() {
             if (isShow) {
                 val scanRecord = (it as? BleDev.Scanned)?.scanRecord
                 if (scanRecord == null) {
-                    Text("没有广播数据")
+                    Text("没有广播数据", modifier = PagePaddingModifier)
                 } else {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .clickable { showRecordDialog(scanRecord) }
+                            .padding(PagePadding)) {
                         Text("广播数据：", fontWeight = FontWeight.W400, fontSize = FontManySize, color = Color.Black)
                         Text(scanRecord.bytes.joinToString(separator = "") { String.format("%02X", it) }, fontWeight = FontWeight.W400, fontSize = FontManySize, color = Color.Black)
                     }
                 }
             }
         }
+    }
+
+    private fun showRecordDialog(record: ScanRecord) {
+        DialogHelper.newBottom { it, _ ->
+            ComposeView(it) {
+                val records = BlueScanRecordHelper.parseScanRecord(record.bytes).toTypedArray()
+                Rv(records, key = { it.type }, modifier = Modifier.padding(bottom = 16.dp, top = 16.dp)) {
+                    Text("${it.typeStr()}(${it.type.toHexStr(true)})", modifier = ItemPadding, fontWeight = FontWeight.Bold)
+                    Text(it.value.toHexStrNo0xNoSep(), modifier = ItemPadding)
+                    when (it) {
+                        is BlueScanRecordHelper.BlueRecord.Flags -> Text("${it.flagStr}(${it.typeStr})", modifier = ItemPadding)
+                        is BlueScanRecordHelper.BlueRecord.LocalName -> Text(it.name, modifier = ItemPadding)
+                        else -> {}
+                    }
+                }
+            }
+        }.show()
     }
 
     private fun BleDev.stateStr() = when (this) {
@@ -164,8 +190,7 @@ sealed class BleDev(val dev: BluetoothDevice) {
     class Connected(dev: BluetoothDevice) : BleDev(dev)
     class Bond(dev: BluetoothDevice) : BleDev(dev)
     class Scanned(
-        dev: BluetoothDevice, val rssi: Int, val scanRecord: ScanRecord? = null,
-        var isBond: Boolean = false, // 已绑定未连接的设备也可能被扫到
+        dev: BluetoothDevice, val rssi: Int, val scanRecord: ScanRecord? = null, var isBond: Boolean = false, // 已绑定未连接的设备也可能被扫到
         var isConnect: Boolean = false // 对应双模蓝牙经典蓝牙已连接但是ble广播仍在广播的情形
     ) : BleDev(dev)
 
