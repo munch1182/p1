@@ -30,13 +30,13 @@
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
         <activity
+            android:name=".views.AudioActivity"
+            android:exported="false" />
+        <activity
             android:name=".views.QrScanActivity"
             android:exported="false" />
         <activity
             android:name=".views.libview.MindMapActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.Audio2Activity"
             android:exported="false" />
         <activity
             android:name=".views.libview.NumberHeightViewActivity"
@@ -49,9 +49,6 @@
             android:exported="false" />
         <activity
             android:name=".views.BluetoothActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.AudioActivity"
             android:exported="false" />
         <activity
             android:name=".views.ServerActivity"

@@ -40,7 +40,7 @@ import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.noApplyWindowPadding
 import com.munch1182.p1.ui.setContentWithRv
 import com.munch1182.p1.ui.theme.PagePaddingModifier
-import com.munch1182.p1.views.Audio2Activity
+import com.munch1182.p1.views.AudioActivity
 import com.munch1182.p1.views.BluetoothActivity
 import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
@@ -66,7 +66,7 @@ class MainActivity : BaseActivity() {
         with(LocalDensity.current) { Spacer(Modifier.height(statusHeight().toDp())) }
         JumpButton("权限相关", clazz = ResultActivity::class)
         JumpButton("蓝牙相关", clazz = BluetoothActivity::class)
-        JumpButton("音频相关", clazz = Audio2Activity::class)
+        JumpButton("音频相关", clazz = AudioActivity::class)
         JumpButton("服务相关", clazz = ServerActivity::class)
         JumpButton("弹窗相关", clazz = DialogActivity::class)
         JumpButton("任务队列", clazz = TaskActivity::class)

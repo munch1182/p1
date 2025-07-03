@@ -11,7 +11,6 @@ import android.media.session.PlaybackState
 import android.os.Build
 import android.os.Handler
 import android.view.KeyEvent
-import androidx.annotation.RequiresApi
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.OnUpdateListener
 import com.munch1182.lib.base.ThreadHelper
@@ -25,7 +24,7 @@ import java.util.concurrent.Executor
 
 object AudioHelper {
 
-    val am get() = ctx.getSystemService(AudioManager::class.java) as AudioManager
+    val am get() = ctx.getSystemService(AudioManager::class.java)
 
     class FocusHelper : ARManager<AudioManager.OnAudioFocusChangeListener> by ARDefaultManager() {
 
@@ -155,68 +154,29 @@ object AudioHelper {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    @Deprecated("BlueScoHelper")
-    class InputHelper {
-
-        fun listenChanged(executor: Executor = ThreadHelper.cacheExecutor, listener: AudioManager.OnCommunicationDeviceChangedListener) {
-            am.addOnCommunicationDeviceChangedListener(executor, listener)
-        }
-
-        fun unListenChanged(listener: AudioManager.OnCommunicationDeviceChangedListener) {
-            am.removeOnCommunicationDeviceChangedListener(listener)
-        }
-
-        /**
-         * @see android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
-         *
-         * 打开蓝牙的sco通道，即可通过蓝牙设备录音
-         * 但是此时蓝牙设备播放/暂停按键会自动关闭该通道(形同蓝牙耳机按键挂断通话)
-         */
-        fun setRecordFrom(type: Int): Boolean? {
-            if (am.communicationDevice?.type == type) return true
-            return am.availableCommunicationDevices.firstOrNull { it.type == type }?.let { am.setCommunicationDevice(it) }
-        }
-
-        fun resetRecordFrom() {
-            am.clearCommunicationDevice()
-        }
-
-        fun currRecordFrom(): Int? = am.communicationDevice?.type
-    }
-
     class BlueScoHelper {
-        private val receiver by lazy {
-            BlueScoAudioReceiver().apply {
-                add {
-                    if (it == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
-                        scoListener?.onUpdate(true)
-                    } else if (it == AudioManager.SCO_AUDIO_STATE_DISCONNECTED) {
-                        scoListener?.onUpdate(false)
-                    }
-                }
-            }
-        }
         private val communicateListener = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            AudioManager.OnCommunicationDeviceChangedListener { scoListener?.onUpdate(it?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) }
+            AudioManager.OnCommunicationDeviceChangedListener { scoListener?.onUpdate(it) }
         } else {
             null
         }
-        private var scoListener: OnUpdateListener<Boolean>? = null
+        private var scoListener: OnUpdateListener<AudioDeviceInfo?>? = null
 
-        fun setBlueScoConnectListener(executor: Executor = ThreadHelper.cacheExecutor, l: OnUpdateListener<Boolean>? = null) {
+        fun addBlueDeviceChangeListener(executor: Executor = ThreadHelper.cacheExecutor, l: OnUpdateListener<AudioDeviceInfo?>) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (l == null) {
-                    am.removeOnCommunicationDeviceChangedListener(communicateListener!!)
-                } else {
-                    am.addOnCommunicationDeviceChangedListener(executor, communicateListener!!)
-                }
-            } else {
-                receiver.registerIfNot()
+                am.addOnCommunicationDeviceChangedListener(executor, communicateListener!!)
             }
             this.scoListener = l
         }
 
+        fun removeBlueDeviceChangeListener() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                am.removeOnCommunicationDeviceChangedListener(communicateListener!!)
+            }
+            scoListener = null
+        }
+
+        @Suppress("DEPRECATION")
         fun startBlueSco(): Boolean {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }?.let { am.setCommunicationDevice(it) } == true
@@ -226,12 +186,14 @@ object AudioHelper {
             }
         }
 
+        @Suppress("DEPRECATION")
         fun isBlueScoOn(): Boolean {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 am.communicationDevice?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
             } else am.isBluetoothScoOn
         }
 
+        @Suppress("DEPRECATION")
         fun stopBlueSco() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 am.clearCommunicationDevice()
