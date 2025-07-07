@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="@dimen/bird_stat_sys_battery_width"
+    android:height="@dimen/bird_stat_sys_battery_height"
+    android:viewportWidth="30"
+    android:viewportHeight="10">
+
+    <path
+        android:fillType="evenOdd"
+        android:strokeWidth="1"
+        android:pathData="M 0 0 H 19 V 10 H 0 V 0 Z" />
+
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="nonZero"
+        android:pathData="M27.1538462,0.333333333 L2,0.333333333 C1.07952542,0.333333333 0.333333333,1.07952542 0.333333333,2 L0.333333333,8 C0.333333333,8.92047458 1.07952542,9.66666667 2,9.66666667 L27.1538462,9.66666667 C28.0743207,9.66666667 28.8205128,8.92047458 28.8205128,8 L28.8205128,2 C28.8205128,1.07952542 28.0743207,0.333333333 27.1538462,0.333333333 Z M27.1538462,1 C27.7061309,1 28.1538462,1.44771525 28.1538462,2 L28.1538462,8 C28.1538462,8.55228475 27.7061309,9 27.1538462,9 L2,9 C1.44771525,9 1,8.55228475 1,8 L1,2 C1,1.44771525 1.44771525,1 2,1 L27.1538462,1 Z"
+        android:strokeWidth="1"
+        android:strokeColor="#00000000" />
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M 29.3205128 3.33333333 L 29.3205128 3.33333333 Q 29.8205128 3.33333333 29.8205128 3.83333333 L 29.8205128 6.16666666 Q 29.8205128 6.66666666 29.3205128 6.66666666 L 29.3205128 6.66666666 Q 28.8205128 6.66666666 28.8205128 6.16666666 L 28.8205128 3.83333333 Q 28.8205128 3.33333333 29.3205128 3.33333333 Z"
+        android:strokeWidth="1"
+        android:strokeColor="@android:color/white" />
+</vector>

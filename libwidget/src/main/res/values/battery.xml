@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="bird_stat_sys_battery_width">20dp</dimen>
+    <dimen name="bird_stat_sys_battery_height">10dp</dimen>
+    <color name="bird_battery_warning_color">#FF5722</color>
+    <color name="bird_battery_low_color">#FF9800</color>
+    <color name="bird_battery_normal_color">#4CAF50</color>
+</resources>

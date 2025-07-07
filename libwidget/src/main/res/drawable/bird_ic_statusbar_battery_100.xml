@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="@dimen/bird_stat_sys_battery_width"
+    android:height="@dimen/bird_stat_sys_battery_height"
+    android:viewportWidth="30"
+    android:viewportHeight="10">
+    <path
+        android:fillColor="@color/bird_battery_normal_color"
+        android:fillType="evenOdd"
+        android:pathData="M 2.339743607 1.66666667 L 26.706410233 1.66666667 Q 27.37307692 1.66666667 27.37307692 2.333333357 L 27.37307692 7.666666653 Q 27.37307692 8.33333334 26.706410233 8.33333334 L 2.339743607 8.33333334 Q 1.67307692 8.33333334 1.67307692 7.666666653 L 1.67307692 2.333333357 Q 1.67307692 1.66666667 2.339743607 1.66666667 Z"
+        android:strokeWidth="1"
+        android:strokeColor="#00000000" />
+</vector>

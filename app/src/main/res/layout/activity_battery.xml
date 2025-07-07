@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".views.libview.BatteryActivity">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="30dp">
+
+        <com.munch1182.lib.widget.BatteryView
+            android:id="@+id/battery"
+            android:layout_gravity="center"
+            android:layout_width="20dp"
+            android:layout_height="10dp" />
+    </FrameLayout>
+
+    <Button
+        android:id="@+id/change_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="changeLevel"
+        tools:ignore="HardcodedText" />
+
+</LinearLayout>
