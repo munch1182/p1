@@ -1,5 +1,6 @@
 package com.munch1182.p1.views
 
+import android.Manifest
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
@@ -15,20 +16,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.util.fastFirstOrNull
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.munch1182.lib.AppHelper
+import com.munch1182.lib.base.ThreadHelper
 import com.munch1182.lib.base.asLive
+import com.munch1182.lib.base.asStateFlow
+import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
+import com.munch1182.lib.helper.result.onGranted
+import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.sound.AudioHelper
+import com.munch1182.lib.helper.sound.RecordHelper
+import com.munch1182.lib.helper.sound.calculateDB
 import com.munch1182.p1.R
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.DialogHelper
+import com.munch1182.p1.base.permissionIntentDialogWithName
 import com.munch1182.p1.base.toast
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.ComposeListView
@@ -38,6 +50,12 @@ import com.munch1182.p1.ui.setContentWithRv
 import com.munch1182.p1.ui.theme.FontManySize
 import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.ui.theme.PagePaddingHalf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
 
 class AudioActivity : BaseActivity() {
 
@@ -51,6 +69,19 @@ class AudioActivity : BaseActivity() {
 
     @Composable
     private fun Views() {
+        Ops()
+        Split()
+        Db()
+    }
+
+    @Composable
+    private fun Db() {
+        val db by recordVM.db.collectAsState()
+        Text("DB：$db")
+    }
+
+    @Composable
+    private fun Ops() {
         val focus by audioVM.isFocus.observeAsState(false)
         val listenMB by audioVM.listenMB.observeAsState(false)
         val isRecording by recordVM.isRecording.observeAsState(false)
@@ -60,15 +91,15 @@ class AudioActivity : BaseActivity() {
         Split()
 
         ClickButton("输入设备") {
-            showSelectDevicesView(audioVM.collectInputDevs(), audioVM.input) { audioVM.setInputDevs(it) }
+            showSelectDevicesView(audioVM.collectInputDevs(), recordVM.input) { recordVM.setInputDevs(it) }
         }
         ClickButton("输出设备") {
-            showSelectDevicesView(audioVM.collectOutputDevs(), audioVM.output) { audioVM.setOutputDevs(it) }
+            showSelectDevicesView(audioVM.collectOutputDevs(), recordVM.output) { recordVM.setOutputDevs(it) }
         }
 
         Split()
 
-        StateButton(if (isRecording) "结束录音" else "开始录音", isRecording) { recordVM.toggleRecord() }
+        StateButton(if (isRecording) "结束录音" else "开始录音", isRecording) { withRecordPermission { recordVM.toggleRecord() } }
     }
 
     private fun showSelectDevicesView(devs: Array<out AudioDeviceInfo>?, routed: AudioDeviceInfo?, chose: (AudioDeviceInfo?) -> Unit) {
@@ -130,22 +161,6 @@ class AudioActivity : BaseActivity() {
         }
     }
 
-    private fun KeyEvent.toStr(): String {
-        val action = when (action) {
-            KeyEvent.ACTION_DOWN -> "按下"
-            KeyEvent.ACTION_UP -> "抬起"
-            else -> action.toString()
-        }
-        val name = when (keyCode) {
-            KeyEvent.KEYCODE_MEDIA_PLAY -> "播放"
-            KeyEvent.KEYCODE_MEDIA_PAUSE -> "暂停"
-            KeyEvent.KEYCODE_MEDIA_NEXT -> "下一首"
-            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> "上一首"
-            KeyEvent.KEYCODE_HEADSETHOOK -> "挂断"
-            else -> keyCode.toString()
-        }
-        return "按键：$name: $action"
-    }
 
     private fun Int.toAudiTypeStr(): String {
         val name = when (this) {
@@ -169,6 +184,10 @@ class AudioActivity : BaseActivity() {
         }
         return "$name($this)"
     }
+
+    private fun withRecordPermission(any: () -> Unit) {
+        permission(Manifest.permission.RECORD_AUDIO).permissionIntentDialogWithName("录音").onGranted(any)
+    }
 }
 
 class AudioVM : ViewModel() {
@@ -177,34 +196,19 @@ class AudioVM : ViewModel() {
     private var _listenMB = MutableLiveData(false)
     private val focusHelper by lazy { AudioHelper.FocusHelper() }
     private val mbHelper by lazy { AudioHelper.MediaButtonHelper() }
-    private val bleScoHelper by lazy { AudioHelper.BlueScoHelper() }
     private var player: MediaPlayer? = null
-    private var _input: AudioDeviceInfo? = null
-    private var _output: AudioDeviceInfo? = null
 
-
-    val input get() = _input
-    val output get() = _output
     val isFocus = _isFocus.asLive()
     val listenMB = _listenMB.asLive()
 
     init {
-        bleScoHelper.addBlueDeviceChangeListener {
-            log.logStr("onBlueDeviceChange: ${it?.type}")
+        mbHelper.add {
+            log.logStr(it.toStr())
         }
-    }
-
-    fun setInputDevs(dev: AudioDeviceInfo?) {
-        _input = dev
-    }
-
-    fun setOutputDevs(dev: AudioDeviceInfo?) {
-        _output = dev
     }
 
     override fun onCleared() {
         super.onCleared()
-        bleScoHelper.removeBlueDeviceChangeListener()
         player?.release()
         player = null
         focusHelper.clear()
@@ -245,13 +249,159 @@ class AudioVM : ViewModel() {
     }
 
     private fun fakePlay() = MediaPlayer.create(AppHelper, R.raw.lapple).apply { isLooping = true }
+
+    private fun KeyEvent.toStr(): String {
+        val action = when (action) {
+            KeyEvent.ACTION_DOWN -> "按下"
+            KeyEvent.ACTION_UP -> "抬起"
+            else -> action.toString()
+        }
+        val name = when (keyCode) {
+            KeyEvent.KEYCODE_MEDIA_PLAY -> "播放"
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> "暂停"
+            KeyEvent.KEYCODE_MEDIA_NEXT -> "下一首"
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> "上一首"
+            KeyEvent.KEYCODE_HEADSETHOOK -> "挂断"
+            else -> keyCode.toString()
+        }
+        return "按键：$name: $action"
+    }
+
 }
 
 class RecordVM : ViewModel() {
 
+    private val log = log()
     private var _isRecording = MutableLiveData(false)
+    private val _db = MutableStateFlow(0.0)
+    private var _input: AudioDeviceInfo? = null
+    private var _output: AudioDeviceInfo? = null
+    private var _toIsRecording = false
+
     val isRecording = _isRecording.asLive()
+    val db = _db.asStateFlow()
+    val input get() = _input
+    val output get() = _output
+
+
+    // RecordHelper必须在有权限之后创建，所以对其的所有访问都应在有权限之后
+    private val recordHelper by lazy { RecordHelper() }
+    private var recordJob: Job? = null
+    private val communicationListener by lazy {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AudioManager.OnCommunicationDeviceChangedListener {
+                log.logStr("onCommunicationDeviceChanged: ${it?.type}")
+                if (it?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                    startRecordImpl()
+                } else {
+                    stopRecordImpl()
+                }
+            }
+        } else {
+            null
+        }
+    }
+
+    init {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AudioHelper.am.addOnCommunicationDeviceChangedListener(ThreadHelper.newSingleExecutors, communicationListener!!)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        log.logStr("onCleared")
+        stopRecord()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            kotlin.runCatching { communicationListener?.let { AudioHelper.am.removeOnCommunicationDeviceChangedListener(it) } }
+        }
+    }
 
     fun toggleRecord() {
+        _toIsRecording = !(_isRecording.value ?: false)
+        if (_isRecording.value == true) stopRecord() else startRecord()
+    }
+
+    private fun startRecord() {
+        log.logStr("startRecord")
+        if (_input?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+            startBleSco()
+        } else {
+            startRecordImpl()
+        }
+    }
+
+    private fun startRecordImpl() {
+        log.logStr("startRecordImpl")
+        recordHelper.start()
+        _isRecording.postValue(recordHelper.isRecording)
+        if (recordHelper.isRecording) {
+            viewModelScope.launchIO {
+                log.logStr("startRecordLoop")
+                kotlin.runCatching { recordLoop() }
+                log.logStr("RecordLoop Over")
+            }
+        }
+    }
+
+    private fun stopRecordImpl() {
+        log.logStr("stopRecordImpl")
+        recordHelper.stop()
+        recordJob?.cancel()
+        recordJob = null
+        _isRecording.postValue(recordHelper.isRecording)
+    }
+
+    private fun stopRecord() {
+        log.logStr("stopRecord")
+        if (_input?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+            stopBleSco()
+        } else {
+            stopRecordImpl()
+        }
+
+    }
+
+    private suspend fun recordLoop() {
+        withContext(SupervisorJob().apply { recordJob = this } + Dispatchers.IO) {
+            val byte = recordHelper.newBuffer
+            while (true) {
+                delay(40L)
+                val read = recordHelper.record(byte) ?: break
+                val db = byte.calculateDB(read)
+                _db.emit(db)
+            }
+        }
+    }
+
+    fun setInputDevs(dev: AudioDeviceInfo?) {
+        if (dev == _input) return
+        _input = dev
+    }
+
+
+    private fun stopBleSco() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (AudioHelper.am.communicationDevice?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                log.logStr("clearCommunicationDevice")
+                AudioHelper.am.clearCommunicationDevice()
+            }
+        }
+    }
+
+    private fun startBleSco() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (AudioHelper.am.communicationDevice?.type != AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                AudioHelper.am.availableCommunicationDevices.fastFirstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }?.let {
+                    log.logStr("setCommunicationDevice: ${it.type}")
+                    AudioHelper.am.setCommunicationDevice(it)
+                }
+            }
+        }
+    }
+
+    fun setOutputDevs(dev: AudioDeviceInfo?) {
+        if (dev == _output) return
+        _output = dev
     }
 }

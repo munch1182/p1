@@ -22,4 +22,6 @@ suspend fun <T> withUI(
 object ThreadHelper {
 
     val cacheExecutor = Executors.newCachedThreadPool()
+
+    val newSingleExecutors = Executors.newSingleThreadExecutor()
 }
