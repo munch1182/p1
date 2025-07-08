@@ -21,6 +21,11 @@ fun interface OnConnectStateChangeListener {
     fun onConnectStateChange(mac: String, state: BluetoothConnectState)
 }
 
+interface IBluetoothConnectCallback {
+    fun addConnectListener(l: OnConnectedListener): IBluetoothConnectCallback
+    fun removeConnectListener(l: OnConnectedListener): IBluetoothConnectCallback
+}
+
 sealed class BluetoothConnectState {
     data object Connecting : BluetoothConnectState()
     data object Connected : BluetoothConnectState()

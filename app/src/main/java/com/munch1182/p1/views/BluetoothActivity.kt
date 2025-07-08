@@ -11,10 +11,13 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -32,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import com.munch1182.lib.base.asLive
 import com.munch1182.lib.base.asStateFlow
@@ -40,8 +44,11 @@ import com.munch1182.lib.base.log
 import com.munch1182.lib.base.toHexStr
 import com.munch1182.lib.base.toHexStrNo0xNoSep
 import com.munch1182.lib.helper.blue.BluetoothHelper
+import com.munch1182.lib.helper.blue.connect
+import com.munch1182.lib.helper.blue.connect.LeConnector
 import com.munch1182.lib.helper.blue.scan.BlueScanRecordHelper
 import com.munch1182.lib.helper.blue.scanResult
+import com.munch1182.lib.helper.dialog.onResult
 import com.munch1182.lib.helper.isLocationProvider
 import com.munch1182.lib.helper.result.ifAllGranted
 import com.munch1182.lib.helper.result.ifTrue
@@ -60,17 +67,21 @@ import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.StateButton
 import com.munch1182.p1.ui.setContentWithScroll
 import com.munch1182.p1.ui.theme.FontManySize
+import com.munch1182.p1.ui.theme.FontTitleSize
 import com.munch1182.p1.ui.theme.ItemPadding
 import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.ui.theme.PagePaddingModifier
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 class BluetoothActivity : BaseActivity() {
 
-    private val bleScan by viewModels<BleScanVM>()
+    private val log = log()
+    private val ble by viewModels<BleVM>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentWithScroll(Modifier) { Views() }
@@ -86,22 +97,23 @@ class BluetoothActivity : BaseActivity() {
     @SuppressLint("MissingPermission")
     @Composable
     private fun Operate() {
-        val isScanning by bleScan.isScanning.observeAsState(false)
-        val isIgnoreName by bleScan.ignoreNoName.observeAsState(false)
+        val isScanning by ble.isScanning.observeAsState(false)
+        val isIgnoreName by ble.ignoreNoName.observeAsState(false)
         Row(modifier = PagePaddingModifier) {
-            StateButton(if (isScanning) "停止扫描" else "开始扫描", isScanning) { withScanPermission { bleScan.toggleScan() } }
+            StateButton(if (isScanning) "停止扫描" else "开始扫描", isScanning) { withScanPermission { ble.toggleScan() } }
 
-            CheckBoxWithLabel("忽略没有名称的蓝牙", isIgnoreName) { bleScan.toggleIgnoreName() }
+            CheckBoxWithLabel("忽略没有名称的蓝牙", isIgnoreName) { ble.toggleIgnoreName() }
         }
     }
 
     @SuppressLint("MissingPermission")
     @Composable
     private fun Devs() {
-        val devs by bleScan.devs.collectAsState()
+        val devs by ble.devs.collectAsState()
         Rv(devs, key = { it.mac }) { Item(it) }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @SuppressLint("MissingPermission")
     @Composable
     private fun Item(it: BleDev) {
@@ -109,11 +121,15 @@ class BluetoothActivity : BaseActivity() {
         Column(Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
-                    .clickable(it.hadScanRecord) {
+                    .combinedClickable(enabled = it.hadScanRecord, onClick = {
                         isShow = !isShow
-                        withScanPermission { bleScan.stopScan() }
-                    }
-                    .padding(16.dp, 8.dp)) {
+                        withScanPermission { ble.stopScan() }
+                    }, onLongClick = {
+                        withScanPermission { ble.stopScan() }
+                        withConnectPermission { showConnectView(it) }
+                    })
+                    .padding(16.dp, 8.dp)
+            ) {
                 Column(horizontalAlignment = Alignment.Start) {
                     Text(it.name ?: "N/A", fontWeight = FontWeight.Bold, color = Color.Blue)
                     Text(it.mac, color = Color.Gray, fontWeight = FontWeight.W400, fontSize = FontManySize)
@@ -184,6 +200,32 @@ class BluetoothActivity : BaseActivity() {
             .permission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION) // 定位打开此权限才会判断为true
             .permissionBlueScanDialog().ifAllGranted().requestAll { if (it) canScan() else toast("没有权限去扫描蓝牙！") }
     }
+
+    @SuppressLint("MissingPermission")
+    private fun showConnectView(dev: BleDev) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            DialogHelper.newBottom {
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(top = PagePadding), horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(dev.name, modifier = Modifier, fontWeight = FontWeight.Bold, fontSize = FontTitleSize)
+                    Text(dev.mac, modifier = Modifier, fontSize = FontManySize)
+                    BluetoothHelper.connect(dev.mac) {
+                        BluetoothHelper.gattOps(
+                            it, arrayOf(LeConnector.GattOp.FindServices { l ->
+                                l?.forEach { a -> log.logStr("服务：${a.uuid}") }
+                                true
+                            })
+                        )
+                    }
+                }
+            }.onResult {
+
+            }.show()
+        }
+    }
 }
 
 sealed class BleDev(val dev: BluetoothDevice) {
@@ -228,7 +270,7 @@ sealed class BleDev(val dev: BluetoothDevice) {
     }
 }
 
-class BleScanVM : ViewModel() {
+class BleVM : ViewModel() {
     private val log = log()
     private val _isScanning = MutableLiveData(false)
     private val _devs = linkedMapOf<String, BleDev>()
@@ -288,5 +330,9 @@ class BleScanVM : ViewModel() {
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun stopScan() {
         if (_isScanning.value == true) toggleScan()
+    }
+
+    fun connect(dev: BleDev) {
+        log.logStr("connect ${dev.mac}")
     }
 }

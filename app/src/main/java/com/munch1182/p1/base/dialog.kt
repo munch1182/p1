@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +49,7 @@ import com.munch1182.lib.helper.dialog.ResultDialog
 import com.munch1182.lib.helper.dialog.asAllowDenyDialog
 import com.munch1182.lib.helper.result.JudgeHelper
 import com.munch1182.lib.helper.result.PermissionHelper
+import com.munch1182.p1.ui.ComposeView
 import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.theme.PagePadding
 
@@ -97,12 +99,11 @@ object DialogHelper {
 
     fun newProgress(progress: Progress, ctx: Context = currAct): CancelDialog {
         var cd: CancelDialog? = null
-        val dialog = MyWindowDialog.Builder(ctx).background()
-            .setView(
-                ViewImpl.newProgress(ctx, progress) {
-                    cd?.canceledByHandle()
-                    cd?.dismiss()
-                }).create()
+        val dialog = MyWindowDialog.Builder(ctx).background().setView(
+            ViewImpl.newProgress(ctx, progress) {
+                cd?.canceledByHandle()
+                cd?.dismiss()
+            }).create()
         cd = CancelDialog(dialog)
         return cd
     }
@@ -122,6 +123,10 @@ object DialogHelper {
 
     fun newBottom(vp: DialogViewCtxProvider): DFBottom {
         return DFBottom().inject(vp)
+    }
+
+    fun newBottom(content: @Composable (DialogInterface?) -> Unit): DFBottom {
+        return DFBottom().inject { it, dialog -> ComposeView(it) { content(dialog) } }
     }
 
     fun <VB : ViewBinding> newBottom(inflater: (LayoutInflater, ViewGroup?, Boolean) -> VB, onViewCreated: VB.() -> Unit): DFBottom {

@@ -46,3 +46,9 @@ suspend fun BluetoothHelper.find(owner: LifecycleOwner, mac: String, timeout: Lo
     find(mac, timeout, find)
     owner.lifecycle.onResume { if (!it) stopScan() }
 }
+
+@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+fun BluetoothHelper.connect(mac: String, onConnected: (String) -> Unit) {
+    addConnectListener { if (it == mac) onConnected(it) }
+    startConnect(mac)
+}
