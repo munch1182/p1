@@ -5,12 +5,14 @@ import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.media.SoundPool
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
@@ -19,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -55,16 +60,26 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.properties.Delegates
 
 class AudioActivity : BaseActivity() {
 
+    private val log = log()
     private val audioVM by viewModels<AudioVM>()
     private val recordVM by viewModels<RecordVM>()
+    private val pool by lazy { SoundPool.Builder().build() }
+    private var soundId by Delegates.notNull<Int>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentWithRv { Views() }
+        pool.setOnLoadCompleteListener { soundPool, sampleId, status ->
+            log.logStr("loadComplete $soundPool $sampleId $status")
+        }
+        soundId = pool.load(this, R.raw.key_tone, 1)
+        recordVM.onPlay { playSound() }.onStop { playSound() }
     }
 
     @Composable
@@ -85,21 +100,53 @@ class AudioActivity : BaseActivity() {
         val focus by audioVM.isFocus.observeAsState(false)
         val listenMB by audioVM.listenMB.observeAsState(false)
         val isRecording by recordVM.isRecording.observeAsState(false)
+        var inputType by remember { mutableStateOf("") }
+        var outputType by remember { mutableStateOf("") }
         StateButton(if (focus) "清除音频焦点" else "获取音频焦点", focus) { audioVM.toggleFocus() }
         StateButton(if (listenMB) "停止监听按键" else "监听媒体按键", listenMB) { audioVM.toggleListen() }
 
         Split()
 
-        ClickButton("输入设备") {
-            showSelectDevicesView(audioVM.collectInputDevs(), recordVM.input) { recordVM.setInputDevs(it) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            ClickButton("输入设备") {
+                showSelectDevicesView(audioVM.collectInputDevs(), recordVM.input) {
+                    recordVM.setInputDevs(it)
+                    inputType = it?.type?.toAudiTypeStr() ?: ""
+                }
+            }
+            Text(inputType, modifier = Modifier.padding(horizontal = PagePaddingHalf))
         }
-        ClickButton("输出设备") {
-            showSelectDevicesView(audioVM.collectOutputDevs(), recordVM.output) { recordVM.setOutputDevs(it) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            ClickButton("输出设备") {
+                showSelectDevicesView(audioVM.collectOutputDevs(), recordVM.output) {
+                    recordVM.setOutputDevs(it)
+                    outputType = it?.type?.toAudiTypeStr() ?: ""
+                }
+            }
+            Text(outputType, modifier = Modifier.padding(horizontal = PagePaddingHalf))
         }
 
         Split()
+        ClickButton("播放音效") { playSound() }
+        StateButton(if (isRecording) "结束录音" else "开始录音", isRecording) {
+            withRecordPermission {
+                if (!isRecording) {
+                    recordVM.toggleRecord()
+                } else {
+                    recordVM.toggleRecord()
+                }
+            }
+        }
 
-        StateButton(if (isRecording) "结束录音" else "开始录音", isRecording) { withRecordPermission { recordVM.toggleRecord() } }
+    }
+
+    private fun playSound() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            log.logStr("playSound: $soundId, ${AudioHelper.am.communicationDevice?.type}")
+        } else {
+            log.logStr("playSound: $soundId")
+        }
+        pool.play(soundId, 1f, 1f, 1, 0, 1f)
     }
 
     private fun showSelectDevicesView(devs: Array<out AudioDeviceInfo>?, routed: AudioDeviceInfo?, chose: (AudioDeviceInfo?) -> Unit) {
@@ -202,9 +249,7 @@ class AudioVM : ViewModel() {
     val listenMB = _listenMB.asLive()
 
     init {
-        mbHelper.add {
-            log.logStr(it.toStr())
-        }
+        mbHelper.add { log.logStr(it.toStr()) }
     }
 
     override fun onCleared() {
@@ -284,6 +329,10 @@ class RecordVM : ViewModel() {
     val output get() = _output
 
 
+    private var onStart: (() -> Unit)? = null
+    private var onStop: (() -> Unit)? = null
+
+
     // RecordHelper必须在有权限之后创建，所以对其的所有访问都应在有权限之后
     private val recordHelper by lazy { RecordHelper() }
     private var recordJob: Job? = null
@@ -308,6 +357,22 @@ class RecordVM : ViewModel() {
         }
     }
 
+    fun onPlay(any: () -> Unit): RecordVM {
+        this.onStart = {
+            log.logStr("onPlay")
+            any()
+        }
+        return this
+    }
+
+    fun onStop(any: () -> Unit): RecordVM {
+        this.onStop = {
+            log.logStr("onStop")
+            any()
+        }
+        return this
+    }
+
     override fun onCleared() {
         super.onCleared()
         log.logStr("onCleared")
@@ -323,7 +388,7 @@ class RecordVM : ViewModel() {
     }
 
     private fun startRecord() {
-        log.logStr("startRecord")
+        log.logStr("startRecord: ${_input?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO}")
         if (_input?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
             startBleSco()
         } else {
@@ -342,6 +407,9 @@ class RecordVM : ViewModel() {
                 log.logStr("RecordLoop Over")
             }
         }
+        viewModelScope.launch(Dispatchers.Main) {
+            onStart?.invoke()
+        }
     }
 
     private fun stopRecordImpl() {
@@ -350,10 +418,11 @@ class RecordVM : ViewModel() {
         recordJob?.cancel()
         recordJob = null
         _isRecording.postValue(recordHelper.isRecording)
+        onStop?.invoke()
     }
 
     private fun stopRecord() {
-        log.logStr("stopRecord")
+        log.logStr("stopRecord: ${_input?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO}")
         if (_input?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
             stopBleSco()
         } else {
