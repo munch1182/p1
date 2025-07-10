@@ -11,8 +11,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.helper.ClipboardHelper
+import com.munch1182.lib.helper.SoftKeyBoardHelper
 import com.munch1182.p1.base.BaseActivity
+import com.munch1182.p1.helper.NetVideoHelper
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.Split
 import com.munch1182.p1.ui.setContentWithRv
@@ -35,8 +38,8 @@ class VideoSpiderActivity : BaseActivity() {
         }, maxLines = 20, minLines = 10, modifier = Modifier.fillMaxWidth())
 
         ClickButton("确定") {
-            url = parse(input) ?: ""
-            if (url.isNotEmpty()) videoUrl = parseVideoUrl(url) ?: ""
+            url = NetVideoHelper.getFirstUrl(input) ?: ""
+            SoftKeyBoardHelper.hide(window)
         }
 
         if (url.isNotEmpty()) {
@@ -46,25 +49,16 @@ class VideoSpiderActivity : BaseActivity() {
         }
 
         LaunchedEffect(null) {
-            delay(320L)
-            input = ClipboardHelper.copyFrom2Str() ?: ""
+            launchIO {
+                delay(320L)
+                input = ClipboardHelper.copyFrom2Str() ?: ""
+            }
+        }
+        if (url.isNotEmpty()) {
+            LaunchedEffect(url) {
+                launchIO { if (url.isNotEmpty()) videoUrl = NetVideoHelper.parseVideoUrl(url) ?: "null" }
+            }
         }
     }
 
-    private fun parse(str: String): String? {
-        return parseUrl(str).firstOrNull()
-    }
-
-    private fun parseVideoUrl(url: String): String? {
-        return url
-    }
-
-    private fun parseUrl(text: String): List<String> {
-        val regex = """\b((?:https?|ftp|file)://|www\.)[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]""".toRegex()
-
-        return regex.findAll(text).map { match ->
-            // 为 www 开头的网址自动添加 https:// 协议
-            if (match.value.startsWith("www.")) "https://${match.value}" else match.value
-        }.filter { !it.contains(",") }.toList()
-    }
 }
