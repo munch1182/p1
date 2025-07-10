@@ -5,6 +5,8 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import android.view.inputmethod.InputMethodManager
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.munch1182.lib.base.ctx
 import kotlin.math.abs
 
@@ -72,6 +74,21 @@ class SoftKeyBoardHelper(private val rootView: View) {
 
     fun unListen() {
         rootView.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+    }
+
+    fun listen(owner: LifecycleOwner): SoftKeyBoardHelper {
+        owner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                super.onResume(owner)
+                listen()
+            }
+
+            override fun onPause(owner: LifecycleOwner) {
+                super.onPause(owner)
+                unListen()
+            }
+        })
+        return this
     }
 
     fun interface KeyBoardChangeListener {

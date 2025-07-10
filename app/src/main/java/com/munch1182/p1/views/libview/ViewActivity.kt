@@ -19,5 +19,6 @@ class ViewActivity : BaseActivity() {
         JumpButton("NumberHeightView", clazz = NumberHeightViewActivity::class)
         JumpButton("MindMapView", clazz = MindMapActivity::class)
         JumpButton("BatteryView", clazz = BatteryActivity::class)
+        JumpButton("AiChat", clazz = AiChatActivity::class)
     }
 }

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#e3e3e3"
+    android:orientation="vertical"
+    tools:context=".views.libview.AiChatActivity">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp" />
+
+    <LinearLayout
+        android:id="@+id/input_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <EditText
+            android:id="@+id/input"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_ai_chat_edit"
+            android:hint="输入内容"
+            android:imeOptions="actionSend"
+            android:importantForAutofill="no"
+            android:paddingStart="16dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="4dp"
+            android:textSize="14sp"
+            tools:ignore="HardcodedText,LabelFor,TextFields" />
+
+        <FrameLayout
+            android:id="@+id/send"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?selectableItemBackground">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:src="@drawable/send_24"
+                tools:ignore="ContentDescription" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <View
+        android:id="@+id/bottom_space"
+        android:layout_width="0dp"
+        android:layout_height="0dp" />
+</LinearLayout>

@@ -51,6 +51,7 @@ import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
 import com.munch1182.p1.views.TestActivity
 import com.munch1182.p1.views.VideoSpiderActivity
+import com.munch1182.p1.views.libview.AiChatActivity
 import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
@@ -61,7 +62,7 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithRv(modifier = PagePaddingModifier.noApplyWindowPadding()) { Click() }
-        startActivity<VideoSpiderActivity>()
+        startActivity<AiChatActivity>()
     }
 
     @Composable
