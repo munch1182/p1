@@ -44,6 +44,7 @@ import com.munch1182.p1.ui.theme.PagePaddingModifier
 import com.munch1182.p1.views.AudioActivity
 import com.munch1182.p1.views.BluetoothActivity
 import com.munch1182.p1.views.DialogActivity
+import com.munch1182.p1.views.JumpThirdAppActivity
 import com.munch1182.p1.views.LanguageActivity
 import com.munch1182.p1.views.QrScanActivity
 import com.munch1182.p1.views.ResultActivity
@@ -51,7 +52,6 @@ import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
 import com.munch1182.p1.views.TestActivity
 import com.munch1182.p1.views.VideoSpiderActivity
-import com.munch1182.p1.views.libview.AiChatActivity
 import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
@@ -62,7 +62,7 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithRv(modifier = PagePaddingModifier.noApplyWindowPadding()) { Click() }
-        startActivity<AiChatActivity>()
+        startActivity<JumpThirdAppActivity>()
     }
 
     @Composable
@@ -77,6 +77,7 @@ class MainActivity : BaseActivity() {
         JumpButton("扫码相关", clazz = QrScanActivity::class)
         JumpButton("视频相关", clazz = VideoSpiderActivity::class)
         JumpButton("View相关", clazz = ViewActivity::class)
+        JumpButton("调起相关", clazz = JumpThirdAppActivity::class)
         ClickButton("语言切换") { intent(LanguageActivity::class.java).onData { recreateIfLangNeed(it) } }
         JumpButton("测试页面", clazz = TestActivity::class)
         ClickButton("开发者选项") { toDeveloperSettings() }
