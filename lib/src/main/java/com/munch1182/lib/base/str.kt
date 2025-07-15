@@ -10,7 +10,7 @@ fun String.withColor(color: String, start: Int = 0, length: Int = this.length): 
     return SpannableString(this).apply { setSpan(ForegroundColorSpan(color.toColorInt()), start, length, Spannable.SPAN_INCLUSIVE_INCLUSIVE) }
 }
 
-fun newRandom(count: Int = 1): String {
+fun newRandomStr(count: Int = 1): String {
     val sb = StringBuilder()
     repeat(count) { sb.append(Random.nextInt(0x4e00, 0x9fa5).toChar()) }
     return sb.toString()

@@ -12,13 +12,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import com.munch1182.lib.base.asStateFlow
 import com.munch1182.lib.base.dp2PX
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
 import com.munch1182.lib.base.newCornerDrawable
-import com.munch1182.lib.base.newRandom
+import com.munch1182.lib.base.newRandomStr
 import com.munch1182.lib.base.statusHeight
 import com.munch1182.lib.base.withUI
 import com.munch1182.lib.helper.SoftKeyBoardHelper
@@ -38,10 +39,12 @@ class AiChatActivity : BaseActivity() {
     private val softHelper by lazy { SoftKeyBoardHelper(window.decorView) }
     private val log = log()
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         bind.send.setOnClickListener { send() }
+
         val adapter = bind.rv.setup(this)
 
         softHelper.listen(this).setKeyBoardChangeListener {
@@ -55,8 +58,8 @@ class AiChatActivity : BaseActivity() {
                 when (it) {
                     null -> {}
                     is AiChatData.Ask -> adapter.addAsk(it)
-                    is AiChatData.Answer -> adapter.addAnswer(it)
-                    is AiChatData.Over -> adapter.answerOver()
+                    is AiChatData.Answer -> adapter.addAnswer(it, bind.rv)
+                    is AiChatData.Over -> adapter.answerOver(bind.rv)
                 }
             }
         }
@@ -75,12 +78,12 @@ class AiChatActivity : BaseActivity() {
 
     private fun RecyclerView.setup(ctx: Context): AiAdapter {
         layoutManager = LinearLayoutManager(ctx)
-        val aiAdapter = AiAdapter()
+        val aiAdapter = AiAdapter(ctx)
         adapter = aiAdapter
         return aiAdapter
     }
 
-    private class AiAdapter : RecyclerView.Adapter<AiAdapter.VH>() {
+    private class AiAdapter(private val ctx: Context) : RecyclerView.Adapter<AiAdapter.VH>() {
         class VH(val bind: ItemAichatBinding) : RecyclerView.ViewHolder(bind.root) {
             val tv get() = bind.content
 
@@ -99,6 +102,17 @@ class AiChatActivity : BaseActivity() {
                     }
                 }
             }
+        }
+
+        private val bottomScroller = object : LinearSmoothScroller(ctx) {
+            override fun getVerticalSnapPreference(): Int {
+                return SNAP_TO_END
+            }
+        }
+
+        private fun scroll2Bottom(rv: RecyclerView) {
+            bottomScroller.targetPosition = itemCount - 1
+            rv.layoutManager?.startSmoothScroll(bottomScroller)
         }
 
         private val list = mutableListOf<AiChatData.AiReceive>()
@@ -143,21 +157,27 @@ class AiChatActivity : BaseActivity() {
             withUI { notifyItemInserted(list.size) }
         }
 
-        suspend fun addAnswer(it: AiChatData.Answer) {
+        suspend fun addAnswer(it: AiChatData.Answer, rv: RecyclerView) {
             val last = list.lastOrNull()
             var index = list.size
             if (last != null && last.isSame(it)) {
                 index = list.size - 1
                 list[index] = last.addAnswer(it)
-                withUI { notifyItemChanged(index, true) }
+                withUI {
+                    notifyItemChanged(index, true)
+                    rv.post { scroll2Bottom(rv) }
+                }
             } else {
                 list.add(it)
-                withUI { notifyItemInserted(index) }
+                withUI {
+                    notifyItemInserted(index)
+                    rv.post { scroll2Bottom(rv) }
+                }
             }
         }
 
-        fun answerOver() {
-
+        fun answerOver(rv: RecyclerView) {
+            scroll2Bottom(rv)
         }
 
         sealed class ViewType(val type: Int) {
@@ -214,11 +234,12 @@ class AiChatVM : ViewModel() {
 
             delay(Random.nextLong(100L, 300L) * 2L)
             val newId = id.getAndIncrement()
-            val count = Random.nextInt(100, 500)
+            val count = Random.nextInt(30, 100)
             repeat(count) {
-                val answer = newRandom()
+                val answer = newRandomStr()
                 _data.emit(AiChatData.Answer(newId, answer))
-                delay(Random.nextLong(100L, 200L))
+                // todo 在增加数据使得item变高之后才滑动，导致上下抖动
+                delay(Random.nextLong(200L, 300L))
             }
             _data.emit(AiChatData.Over)
         }
