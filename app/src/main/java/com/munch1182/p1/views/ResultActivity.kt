@@ -56,7 +56,7 @@ class ResultActivity : BaseActivity() {
             permission(Manifest.permission.CAMERA).permissionDialog("相机", "拍摄照片").manualIntent().request(callback)
         }
         ClickButton("请求跳转") {
-            intent(WebContentActivity.url(currAct)).request(callback)
+            intent(WebContentActivity.url(currAct, "https://www.baidu.com")).request(callback)
         }
         ClickButton("悬浮窗权限") {
             judge { Settings.canDrawOverlays(it) }.intent(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).wPName()).intentDialog("请在接下来的页面中选择本应用，并选择允许，以便使用跨应用相关功能。", "请在接下来的页面中选择本应用，并选择允许，否则无法使用跨应用相关功能。").request(callback)

@@ -52,6 +52,7 @@ import com.munch1182.p1.views.ServerActivity
 import com.munch1182.p1.views.TaskActivity
 import com.munch1182.p1.views.TestActivity
 import com.munch1182.p1.views.VideoSpiderActivity
+import com.munch1182.p1.views.WebContentActivity
 import com.munch1182.p1.views.libview.ViewActivity
 
 class MainActivity : BaseActivity() {
@@ -62,7 +63,7 @@ class MainActivity : BaseActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentWithRv(modifier = PagePaddingModifier.noApplyWindowPadding()) { Click() }
-        startActivity<JumpThirdAppActivity>()
+        startActivity<VideoSpiderActivity>()
     }
 
     @Composable
@@ -76,6 +77,7 @@ class MainActivity : BaseActivity() {
         JumpButton("任务队列", clazz = TaskActivity::class)
         JumpButton("扫码相关", clazz = QrScanActivity::class)
         JumpButton("视频相关", clazz = VideoSpiderActivity::class)
+        JumpButton("JS相关", clazz = WebContentActivity::class)
         JumpButton("View相关", clazz = ViewActivity::class)
         JumpButton("调起相关", clazz = JumpThirdAppActivity::class)
         ClickButton("语言切换") { intent(LanguageActivity::class.java).onData { recreateIfLangNeed(it) } }

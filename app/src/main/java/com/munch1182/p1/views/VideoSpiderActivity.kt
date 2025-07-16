@@ -1,64 +1,41 @@
 package com.munch1182.p1.views
 
+import android.annotation.SuppressLint
 import android.os.Bundle
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.helper.ClipboardHelper
-import com.munch1182.lib.helper.SoftKeyBoardHelper
 import com.munch1182.p1.base.BaseActivity
+import com.munch1182.p1.base.bind
+import com.munch1182.p1.databinding.ActivityVideoSpiderBinding
 import com.munch1182.p1.helper.NetVideoHelper
-import com.munch1182.p1.ui.ClickButton
-import com.munch1182.p1.ui.Split
-import com.munch1182.p1.ui.setContentWithRv
-import kotlinx.coroutines.delay
 
 class VideoSpiderActivity : BaseActivity() {
+
+    private val bind by bind(ActivityVideoSpiderBinding::inflate)
+
+    @SuppressLint("SetTextI18n", "SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentWithRv { Views() }
-    }
-
-    @Composable
-    private fun Views() {
-        var input by remember { mutableStateOf("") }
-        var url by remember { mutableStateOf("") }
-        var videoUrl by remember { mutableStateOf("") }
-        TextField(input, {
-            url = ""
-            input = it
-        }, maxLines = 20, minLines = 10, modifier = Modifier.fillMaxWidth())
-
-        ClickButton("确定") {
-            url = NetVideoHelper.getFirstUrl(input) ?: ""
-            SoftKeyBoardHelper.hide(window)
-        }
-
-        if (url.isNotEmpty()) {
-            Split()
-            Text("网址: $url")
-            if (videoUrl.isNotEmpty()) Text("视频地址：$videoUrl")
-        }
-
-        LaunchedEffect(null) {
-            launchIO {
-                delay(320L)
-                input = ClipboardHelper.copyFrom2Str() ?: ""
-            }
-        }
-        if (url.isNotEmpty()) {
-            LaunchedEffect(url) {
-                launchIO { if (url.isNotEmpty()) videoUrl = NetVideoHelper.parseVideoUrl(url) ?: "null" }
+        bind.web.settings.javaScriptEnabled = true
+        bind.confirm.setOnClickListener {
+            val input = bind.edit.text.toString()
+            if (input.isEmpty()) return@setOnClickListener
+            val shareUrl = NetVideoHelper.getFirstUrl(input)
+            bind.res.text = "url: $shareUrl"
+            shareUrl ?: return@setOnClickListener
+            lifecycleScope.launchIO {
+                val url = NetVideoHelper.parseVideoUrl(shareUrl, bind.web)
+                bind.res.post { bind.res.text = "url: $shareUrl\nres: $url" }
             }
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        bind.edit.postDelayed({
+            val str = ClipboardHelper.copyFrom2Str()
+            bind.edit.setText(str)
+        }, 300L)
+    }
 }

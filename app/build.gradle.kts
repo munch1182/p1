@@ -71,4 +71,7 @@ dependencies {
 
     // https://jsoup.org/
     implementation("org.jsoup:jsoup:1.21.1")
+
+    implementation(libs.okhttp)
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:5.1.0"))
 }
