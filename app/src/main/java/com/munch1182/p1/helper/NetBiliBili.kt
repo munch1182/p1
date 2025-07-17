@@ -31,14 +31,7 @@ internal class NetBiliBili(private val url: String) : NetParse {
 
     override suspend fun parse(): String? {
         log.logStr("parse: url: $url")
-        val doc = try {
-            Jsoup.connect(url).timeout(3000).get()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            log.logStr("err: $e")
-            return null
-        } ?: return null
-        log.logStr("--------------------")
+        val doc = Jsoup.connect(url).timeout(3000).get()
 
         val text = doc.html()
         val title = "title=\"(.*?)\"".toRegex().find(text)?.value ?: doc.title()

@@ -17,6 +17,7 @@ object NetVideoHelper {
         val parser: NetParse? = when {
             NetBiliBili.isUrl(url) -> NetBiliBili(url)
             NetDouYin.isUrl(url) -> NetDouYin(url, web)
+            NetXHS.isUrl(url) -> NetXHS(url)
             else -> null
         }
         return parser?.parse()
