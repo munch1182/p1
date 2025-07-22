@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
     tools:context=".views.VideoSpiderActivity">
 
     <WebView
@@ -17,7 +16,9 @@
         android:layout_height="match_parent"
         android:background="@color/white"
         android:orientation="vertical"
-        android:paddingTop="56dp">
+        android:paddingStart="16dp"
+        android:paddingTop="56dp"
+        android:paddingEnd="16dp">
 
         <EditText
             android:id="@+id/edit"
@@ -25,10 +26,10 @@
             android:layout_height="200dp"
             android:background="@drawable/bg_et"
             android:gravity="top|start"
-            android:textSize="16sp"
             android:hint="请输入"
             android:importantForAutofill="no"
             android:padding="8dp"
+            android:textSize="16sp"
             tools:ignore="HardcodedText,TextFields" />
 
         <Button

@@ -18,6 +18,7 @@ object NetVideoHelper {
             NetBiliBili.isUrl(url) -> NetBiliBili(url)
             NetDouYin.isUrl(url) -> NetDouYin(url, web)
             NetXHS.isUrl(url) -> NetXHS(url)
+            NetKS.isUrl(url) -> NetKS(url, web)
             else -> null
         }
         return parser?.parse()
