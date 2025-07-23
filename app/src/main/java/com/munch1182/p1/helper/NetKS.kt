@@ -2,6 +2,7 @@ package com.munch1182.p1.helper
 
 import android.webkit.WebView
 import com.munch1182.lib.base.log
+import com.munch1182.p1.helper.NetVideoHelper.ParseResult
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -24,7 +25,7 @@ class NetKS(private val url: String, private val web: WebView) : NetVideoHelper.
         )
     }
 
-    override suspend fun parse(): String? {
+    override suspend fun parse(): ParseResult? {
 
         log.logStr("parse: url: $url")
         val req = Request.Builder().url(url).method("HEAD", null).headers(headers).build()
@@ -53,7 +54,7 @@ class NetKS(private val url: String, private val web: WebView) : NetVideoHelper.
             val url = "\"photoUrl\":(.*?),".toRegex().find(json)?.value?.replace("\"photoUrl\":", "")?.replace(",", "")?.removePrefix("\"")?.removeSuffix("\"")?.replace("\\u002F", "/")
             log.logStr("url: $url")
 
-            return url
+            return ParseResult(id, url)
         }
         return null
     }

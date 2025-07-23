@@ -2,6 +2,7 @@ package com.munch1182.p1.helper
 
 import com.google.gson.Gson
 import com.munch1182.lib.base.Loglog
+import com.munch1182.p1.helper.NetVideoHelper.ParseResult
 import org.jsoup.Jsoup
 
 class NetXHS(private val url: String) : NetVideoHelper.NetParse {
@@ -20,7 +21,7 @@ class NetXHS(private val url: String) : NetVideoHelper.NetParse {
         class Consumer(val originVideoKey: String)
     }
 
-    override suspend fun parse(): String? {
+    override suspend fun parse(): ParseResult? {
         val doc = Jsoup.connect(url).timeout(3000).get().html()
         val info = "window.__INITIAL_STATE__=(.*?)</script>".toRegex().find(doc)?.value
 
@@ -34,7 +35,7 @@ class NetXHS(private val url: String) : NetVideoHelper.NetParse {
             if (itemNode.type == "video") {
                 val durl = "https://sns-video-bd.xhscdn.com/${key}"
                 Loglog.logStr("$title: $durl")
-                return durl
+                return ParseResult(title, durl)
             }
         }
         return null

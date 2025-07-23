@@ -53,7 +53,8 @@
             android:id="@+id/open_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="visible">
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/download"
@@ -63,11 +64,13 @@
                 tools:ignore="HardcodedText" />
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/play"
+                android:id="@+id/convert"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="播放"
-                tools:ignore="HardcodedText" />
+                android:text="转换"
+                android:visibility="gone"
+                tools:ignore="HardcodedText"
+                tools:visibility="visible" />
         </LinearLayout>
     </LinearLayout>
 

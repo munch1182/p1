@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.munch1182.lib.base.log
 import com.munch1182.p1.helper.NetVideoHelper.NetParse
+import com.munch1182.p1.helper.NetVideoHelper.ParseResult
 import org.jsoup.Jsoup
 
 internal class NetBiliBili(private val url: String) : NetParse {
@@ -29,7 +30,7 @@ internal class NetBiliBili(private val url: String) : NetParse {
         var title: String? = null
     }
 
-    override suspend fun parse(): String? {
+    override suspend fun parse(): ParseResult? {
         log.logStr("parse: url: $url")
         val doc = Jsoup.connect(url).timeout(3000).get()
 
@@ -42,7 +43,9 @@ internal class NetBiliBili(private val url: String) : NetParse {
             val windowPlayInfo = Gson().fromJson(json, WindowPlayInfo::class.java)
             windowPlayInfo?.title = title
             log.logStr("parse: $windowPlayInfo")
-            return windowPlayInfo?.url
+            val audio = windowPlayInfo?.data?.dash?.audio?.lastOrNull()?.baseUrl
+            val video = windowPlayInfo?.data?.dash?.video?.lastOrNull()?.baseUrl
+            return ParseResult(windowPlayInfo.title, audio ?: video, audio != null)
         }
         return null
     }

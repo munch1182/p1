@@ -13,7 +13,7 @@ object NetVideoHelper {
     }
 
     @WorkerThread
-    suspend fun parseVideoUrl(url: String, web: WebView): String? {
+    suspend fun parseVideoUrl(url: String, web: WebView): ParseResult? {
         val parser: NetParse? = when {
             NetBiliBili.isUrl(url) -> NetBiliBili(url)
             NetDouYin.isUrl(url) -> NetDouYin(url, web)
@@ -38,7 +38,12 @@ object NetVideoHelper {
         }.filter { !it.contains(",") }.toList()
     }
 
+    class ParseResult(val title: String?, val url: String?, val isVideo: Boolean = false) {
+
+        val isSuccess get() = url != null
+    }
+
     internal fun interface NetParse {
-        suspend fun parse(): String?
+        suspend fun parse(): ParseResult?
     }
 }

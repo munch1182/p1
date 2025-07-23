@@ -5,6 +5,7 @@ import android.webkit.WebViewClient
 import androidx.annotation.WorkerThread
 import com.google.gson.Gson
 import com.munch1182.lib.base.log
+import com.munch1182.p1.helper.NetVideoHelper.ParseResult
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -31,7 +32,7 @@ internal class NetDouYin(private val url: String, private val web: WebView) : Ne
         )
     }
 
-    override suspend fun parse(): String? {
+    override suspend fun parse(): ParseResult? {
         log.logStr("parse: url: $url")
         val req = Request.Builder().url(url).method("HEAD", null).headers(headers).build()
         log.logStr("req: ${req.url}, $headers")
@@ -83,7 +84,7 @@ internal class NetDouYin(private val url: String, private val web: WebView) : Ne
             val title = data.aweme_detail.desc
             val videUrl = data.aweme_detail.video.play_addr.url_list[0]
             log.logStr("$title: $videUrl")
-            return videUrl
+            return ParseResult(title, videUrl)
         } catch (e: Exception) {
             e.printStackTrace()
         }
