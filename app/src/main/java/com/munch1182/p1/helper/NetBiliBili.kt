@@ -25,7 +25,7 @@ internal class NetBiliBili(private val url: String) : NetParse {
             return "($title: acceptQuality:[${data?.acceptQuality?.joinToString()}], url: (${data?.dash?.video?.size}, ${data?.dash?.audio?.size}))"
         }
 
-        val url get() = data?.dash?.video?.firstOrNull()?.baseUrl
+        val url get() = data?.dash?.audio?.lastOrNull()?.baseUrl ?: data?.dash?.video?.lastOrNull()?.baseUrl
         var title: String? = null
     }
 

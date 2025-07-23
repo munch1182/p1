@@ -50,7 +50,7 @@ class NetKS(private val url: String, private val web: WebView) : NetVideoHelper.
 
             log.logStrSplit(json)
 
-            val url = "\"photoUrl\":(.*?),".toRegex().find(json)?.value?.replace("\"photoUrl\":", "")?.replace(",", "")?.removePrefix("\"")?.removeSuffix("\"")
+            val url = "\"photoUrl\":(.*?),".toRegex().find(json)?.value?.replace("\"photoUrl\":", "")?.replace(",", "")?.removePrefix("\"")?.removeSuffix("\"")?.replace("\\u002F", "/")
             log.logStr("url: $url")
 
             return url

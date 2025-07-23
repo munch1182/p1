@@ -45,7 +45,30 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            tools:text="123123" />
+            android:ellipsize="end"
+            android:maxLines="2"
+            tools:text="1231asdaaaaaaaaaaaaaaaaaasdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd23" />
+
+        <LinearLayout
+            android:id="@+id/open_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/download"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="下载"
+                tools:ignore="HardcodedText" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/play"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="播放"
+                tools:ignore="HardcodedText" />
+        </LinearLayout>
     </LinearLayout>
 
 

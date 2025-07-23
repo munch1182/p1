@@ -21,7 +21,12 @@ object NetVideoHelper {
             NetKS.isUrl(url) -> NetKS(url, web)
             else -> null
         }
-        return parser?.parse()
+        return try {
+            parser?.parse()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     private fun parseUrl(text: String): List<String> {
