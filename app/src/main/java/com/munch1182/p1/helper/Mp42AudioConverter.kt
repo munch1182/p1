@@ -6,12 +6,15 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
 import androidx.annotation.WorkerThread
+import com.munch1182.lib.base.log
 import kotlinx.coroutines.isActive
 import java.io.File
 import java.io.OutputStream
 import kotlin.coroutines.coroutineContext
 
 object Mp42AudioConverter {
+
+    private val log = log()
 
     private suspend fun convertStreaming(ous: OutputStream, any: MediaExtractor.() -> Unit): MediaFormat? {
         val extractor = MediaExtractor()
@@ -20,16 +23,19 @@ object Mp42AudioConverter {
             any(extractor)
 
             val (audioFormat, audioTrackIndex) = findAudio(extractor)
+            log.logStr("find ${audioTrackIndex}, $audioFormat")
             extractor.selectTrack(audioTrackIndex)
 
             val mime = audioFormat.getString(MediaFormat.KEY_MIME) ?: throw Exception("Invalid audio format")
+            log.logStr("mime: $mime")
             val decoder = MediaCodec.createDecoderByType(mime)
             decoder.configure(audioFormat, null, null, 0)
             try {
                 decoder.start()
 
                 val info = MediaCodec.BufferInfo()
-
+                val ofmt = decoder.outputFormat
+                log.logStr("ofmt: $ofmt")
                 var sawInputEOS = false
                 var sawOutputEOS = false
                 while (!sawOutputEOS && coroutineContext.isActive) {
@@ -51,6 +57,7 @@ object Mp42AudioConverter {
                         }
                     }
 
+
                     val outputBufferIndex = decoder.dequeueOutputBuffer(info, 1000L)
                     if (outputBufferIndex >= 0) {
                         if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
@@ -71,10 +78,11 @@ object Mp42AudioConverter {
 
                 }
 
-
+                log.logStr("convert over")
                 format = audioFormat
             } catch (e: Exception) {
                 e.printStackTrace()
+                log.logStr("convert exception: $e")
             } finally {
                 try {
                     decoder.stop()
@@ -84,6 +92,7 @@ object Mp42AudioConverter {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            log.logStr("convert exception2: $e")
         } finally {
             extractor.release()
         }

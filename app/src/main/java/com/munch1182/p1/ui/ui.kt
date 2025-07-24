@@ -107,8 +107,8 @@ fun ComponentActivity.setContentWithScroll(modifier: Modifier = Modifier.padding
 }
 
 @Composable
-fun ClickButton(text: String, modifier: Modifier = Modifier, colors: ButtonColors = ButtonDefaults.buttonColors(), onClick: () -> Unit) {
-    Button(onClick, modifier = modifier, colors = colors) { Text(text) }
+fun ClickButton(text: String, modifier: Modifier = Modifier, enable: Boolean = true, colors: ButtonColors = ButtonDefaults.buttonColors(), onClick: () -> Unit) {
+    Button(onClick, modifier = modifier, enabled = enable, colors = colors) { Text(text) }
 }
 
 @Composable
@@ -156,7 +156,7 @@ fun <T> Rv(list: Array<T>, modifier: Modifier = Modifier, key: ((T) -> Any)? = n
 
 @Composable
 fun StateButton(text: String, state: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    ClickButton(text, modifier, colors = ButtonDefaults.buttonColors(if (state) Color.Red else Color.Unspecified), onClick)
+    ClickButton(text, modifier, colors = ButtonDefaults.buttonColors(if (state) Color.Red else Color.Unspecified), onClick = onClick)
 }
 
 @Composable

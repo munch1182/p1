@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".views.VideoSpiderActivity">
+    tools:context=".views.video.VideoSpiderActivity">
 
     <WebView
         android:id="@+id/web"
@@ -46,7 +46,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:ellipsize="end"
-            android:maxLines="2"
             tools:text="1231asdaaaaaaaaaaaaaaaaaasdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd23" />
 
         <LinearLayout
@@ -63,14 +62,6 @@
                 android:text="下载"
                 tools:ignore="HardcodedText" />
 
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/convert"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="转换"
-                android:visibility="gone"
-                tools:ignore="HardcodedText"
-                tools:visibility="visible" />
         </LinearLayout>
     </LinearLayout>
 

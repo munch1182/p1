@@ -32,13 +32,19 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="tiramisu">
         <activity
+            android:name=".views.video.VideoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".views.video.VideoDecoderActivity"
+            android:exported="false" />
+        <activity
             android:name=".views.JumpThirdAppActivity"
             android:exported="false" />
         <activity
             android:name=".views.libview.AiChatActivity"
             android:exported="false" />
         <activity
-            android:name=".views.VideoSpiderActivity"
+            android:name=".views.video.VideoSpiderActivity"
             android:exported="false" />
         <activity
             android:name=".views.libview.BatteryActivity"
