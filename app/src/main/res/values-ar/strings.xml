@@ -1,3 +1,7 @@
 <resources>
     <string name="curr_lang">اللغة الحالية</string>
+    <string name="about">حول</string>
+    <string name="dialog_about">نافذة ذات الصلة</string>
+    <string name="permission_about">إذن ارتباط</string>
+    <string name="language_about">ارتباط اللغة</string>
 </resources>

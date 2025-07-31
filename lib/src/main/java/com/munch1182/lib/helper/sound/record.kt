@@ -1,9 +1,13 @@
 package com.munch1182.lib.helper.sound
 
 import android.annotation.SuppressLint
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.media.audiofx.AcousticEchoCanceler
+import android.media.audiofx.AudioEffect
+import android.media.audiofx.NoiseSuppressor
 import androidx.lifecycle.LifecycleOwner
 import com.munch1182.lib.base.onDestroyed
 import java.nio.ByteBuffer
@@ -27,9 +31,7 @@ import kotlin.math.sqrt
  * RequiresPermission(Manifest.permission.RECORD_AUDIO)
  */
 @SuppressLint("MissingPermission")
-class RecordHelper(
-    val sampleRate: Int = 44100, val channel: Int = AudioFormat.CHANNEL_IN_MONO, val format: Int = AudioFormat.ENCODING_PCM_16BIT
-) {
+class RecordHelper(val sampleRate: Int = 44100, val channel: Int = AudioFormat.CHANNEL_IN_MONO, val format: Int = AudioFormat.ENCODING_PCM_16BIT) {
 
     /**
      * @see newBuffer
@@ -44,13 +46,15 @@ class RecordHelper(
 
     private val ar by lazy {
         AudioRecord(
-            MediaRecorder.AudioSource.MIC, //手机麦克风输入音源
+            MediaRecorder.AudioSource.MIC, // 手机麦克风输入音源，VOICE_COMMUNICATION会降噪但是声音会变小
             sampleRate, // 采样率，目前44100Hz是唯一可以保证兼容所有Android手机的采样率
             channel, // 单声道双声道
             format, // 数据位宽，16BIT兼容所有Android手机
             buffSize // 音频缓冲区的大小, 调用方法算，否则缓冲区可能不够用会报错
         )
     }
+    private val noise by lazy { NoiseSuppressor.create(ar.audioSessionId) }
+    private val acoustic by lazy { AcousticEchoCanceler.create(ar.audioSessionId) }
 
     val isRecording: Boolean get() = ar.recordingState == AudioRecord.RECORDSTATE_RECORDING
 
@@ -58,17 +62,43 @@ class RecordHelper(
         if (isRecording) stop() else start()
     }
 
-    fun start() {
-        if (isRecording) return
-        if (ar.state == AudioRecord.STATE_INITIALIZED) {
-            kotlin.runCatching { ar.startRecording() }
+    val preferredDevice = ar.preferredDevice
+    fun setPreferredDevice(dev: AudioDeviceInfo?) = ar.setPreferredDevice(dev)
+
+    // 降噪
+    fun enableNoise(enable: Boolean): Boolean {
+        if (!NoiseSuppressor.isAvailable()) return false
+        return try {
+            noise?.setEnabled(enable) == AudioEffect.SUCCESS
+        } catch (e: Exception) {
+            false
         }
     }
 
-    fun stop() {
+    // 回声消除
+    fun enableAcoustic(enable: Boolean): Boolean {
+        if (!AcousticEchoCanceler.isAvailable()) return false
+        return try {
+            acoustic?.setEnabled(enable) == AudioEffect.SUCCESS
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun start(): Boolean {
+        if (isRecording) return true
+        if (ar.state == AudioRecord.STATE_INITIALIZED) {
+            kotlin.runCatching { ar.startRecording() }
+        }
+        return isRecording
+    }
+
+    fun stop(): Boolean {
         if (isRecording) {
             kotlin.runCatching { ar.stop() }
+            return ar.recordingState == AudioRecord.RECORDSTATE_STOPPED
         }
+        return true
     }
 
     val newBuffer: ByteArray get() = ByteArray(buffSize)
@@ -109,8 +139,7 @@ fun ShortArray.calculateDB(read: Int): Double {
 }
 
 fun RecordHelper.wavHeader(dataSize: Long) = wavHeader(
-    sampleRate, if (channel == AudioFormat.CHANNEL_IN_MONO) 1 else 2,
-    if (format == AudioFormat.ENCODING_PCM_16BIT) 16 else 8, dataSize
+    sampleRate, if (channel == AudioFormat.CHANNEL_IN_MONO) 1 else 2, if (format == AudioFormat.ENCODING_PCM_16BIT) 16 else 8, dataSize
 )
 
 /**

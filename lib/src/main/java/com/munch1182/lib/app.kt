@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.os.Bundle
 import androidx.startup.Initializer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
 
 class LibContextInitializer : Initializer<AppHelper> {
     override fun create(context: Context): AppHelper {
@@ -17,7 +20,8 @@ class LibContextInitializer : Initializer<AppHelper> {
 }
 
 
-object AppHelper : ContextWrapper(null) {
+@OptIn(DelicateCoroutinesApi::class)
+object AppHelper : ContextWrapper(null), CoroutineScope by GlobalScope {
 
     fun manualInit(app: Application) {
         attachBaseContext(app)

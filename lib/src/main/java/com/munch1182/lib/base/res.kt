@@ -5,8 +5,12 @@ import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.TypedValue
 import androidx.annotation.ArrayRes
+import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
+import androidx.annotation.StringRes
+import com.munch1182.lib.AppHelper
 
 @get:ColorInt
 val colorPrimary: Int get() = getAttrArrayFromTheme(android.R.attr.colorPrimary) { getColor(0, Color.WHITE) }
@@ -23,6 +27,8 @@ fun <T> getAttrArrayFromTheme(attrId: Int, get: TypedArray.() -> T): T {
 fun getStrArray(@ArrayRes arrayId: Int): Array<out String>? {
     return runCatching { ctx.resources.getStringArray(arrayId) }.getOrNull()
 }
+
+fun str(@StringRes str: Int) = ctx.getString(str)
 
 /**
  * 使用integer-array数组时，使用此方法获取数组
@@ -56,3 +62,18 @@ fun Uri.getPath(proj: Array<String>, columnName: String): String? {
 }
 
 fun Uri.getMediaPath() = getPath(arrayOf(MediaStore.Images.Media.DATA), MediaStore.Images.Media.DATA)
+
+val Number.dp2PX
+    get() = TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_DIP, this.toFloat(), AppHelper.resources.displayMetrics
+    )
+val Number.sp2Px
+    get() = TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_SP, this.toFloat(), AppHelper.resources.displayMetrics
+    )
+
+fun getIcon(@AttrRes resId: Int): Drawable? {
+    return getAttrArrayFromTheme(resId) { getDrawable(0) }
+}
+
+val backIcon get() = getIcon(resId = android.R.attr.homeAsUpIndicator)

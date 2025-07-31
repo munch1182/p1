@@ -1,14 +1,17 @@
 package com.munch1182.p1.base
 
-import android.content.Context
 import com.munch1182.lib.AppHelper
+import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
 import com.munch1182.lib.helper.LanguageHelperImpl
+import com.munch1182.lib.helper.SPHelper
 import com.munch1182.lib.helper.toLocale
+import kotlinx.coroutines.runBlocking
 import java.util.Locale
 
 object LanguageHelper : LanguageHelperImpl {
 
+    private val languageDataHelper = SPHelper("LanguageDataHelper")
     private var _curr: Locale
     private val log = log(false)
 
@@ -29,10 +32,10 @@ object LanguageHelper : LanguageHelperImpl {
     }
 
     private fun save(lang: String) {
-        AppHelper.getSharedPreferences("LANG", Context.MODE_PRIVATE).edit().putString(KEY_LANG_STR, lang).apply()
+        AppHelper.launchIO { languageDataHelper.put(KEY_LANG_STR, lang) }
     }
 
     private fun load(): String? {
-        return AppHelper.getSharedPreferences("LANG", Context.MODE_PRIVATE).getString(KEY_LANG_STR, null)
+        return runBlocking { languageDataHelper.get(KEY_LANG_STR, "").takeIf { it?.isNotEmpty() == true } }
     }
 }

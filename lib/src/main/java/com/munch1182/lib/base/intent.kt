@@ -8,11 +8,19 @@ import android.provider.Settings
 
 fun Intent.wPName() = setData(Uri.fromParts("package", ctx.packageName, null))
 
-fun shareTextIntent(text: String): Intent = Intent.createChooser(
+fun shareTextIntent(text: String, title: String? = null): Intent = Intent.createChooser(
     Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, text)
-    }, null
+    }, title
+)
+
+fun shareImage(uri: Uri, title: String? = null): Intent = Intent.createChooser(
+    Intent(Intent.ACTION_SEND).apply {
+        type = "image/*"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }, title
 )
 
 fun appSetting() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).wPName()
