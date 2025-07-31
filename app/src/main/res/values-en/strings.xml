@@ -1,3 +1,7 @@
 <resources>
     <string name="curr_lang">CURRENT LANGUAGE</string>
+    <string name="about">about</string>
+    <string name="dialog_about">dialog</string>
+    <string name="permission_about">permission</string>
+    <string name="language_about">language</string>
 </resources>

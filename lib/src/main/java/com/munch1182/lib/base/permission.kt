@@ -21,7 +21,8 @@ fun checkPermission(permission: String): Boolean {
  * 但实践中有些权限需要请求之前解释（比如蓝牙相关的定位权限），还需要处理当权限永久拒绝后的跳转设置打开权限处理
  * 所以此方法也可以用于权限被永久拒绝的判断：即在权限实际请求后此方法返回true即被永久拒绝
  *
- * 但是，当权限请求被取消时（通过点击系统权限请求框外），此方法仍会返回false，根据上诉判断此时会被判断为永久拒绝，此为bug，且无法修复。目前只能置之不理。
+ * 但是，当权限请求被取消时（通过点击系统权限请求框外），此方法仍会返回false，根据上诉判断此时会被判断为永久拒绝，此为bug，且无法修复。
+ * 目前处理办法为：不要提及永久拒绝相关的概念。
  */
 fun Activity.checkPermissionRationale(permission: String) =
     ActivityCompat.shouldShowRequestPermissionRationale(this, permission)

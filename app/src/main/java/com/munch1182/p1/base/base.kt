@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import androidx.viewbinding.ViewBinding
+import com.munch1182.lib.base.log
+import com.munch1182.lib.helper.SPHelper
 import com.munch1182.lib.helper.currAsFM
 import com.munch1182.lib.helper.dialog.DialogContainer
 
@@ -14,14 +16,23 @@ import com.munch1182.lib.helper.dialog.DialogContainer
 fun str(id: Int) = stringResource(id)
 
 abstract class BaseActivity : FragmentActivity() {
+    protected val log by lazy { log() }
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LanguageHelper.attachBaseContext(newBase))
     }
 }
 
-fun DialogContainer.show() = show(currAsFM.supportFragmentManager)
+fun DialogContainer.show() = show(currAsFM.supportFragmentManager, "DialogContainer")
 
 fun <VB : ViewBinding> Activity.bind(inflater: (LayoutInflater) -> VB): Lazy<VB> {
     return lazy { inflater(layoutInflater).apply { setContentView(root) } }
+}
+
+val DataHelper = SPHelper(Key.KEY_NAME)
+
+object Key {
+    const val KEY_NAME = "p1.data"
+
+    const val KEY_LAUNCHER = "p1.launcher"
 }

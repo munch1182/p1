@@ -4,19 +4,34 @@ import android.util.Log
 import androidx.lifecycle.LifecycleOwner
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlin.math.min
+
+interface ILog {
+    fun logStr(str: String)
+}
 
 // 对此页面的更改以复制即用为原则
-open class Logger(val tag: String, var enable: Boolean = true) {
+open class Logger(val tag: String, var enable: Boolean = true) : ILog {
 
     constructor(any: Any, enable: Boolean = true) : this(any::class.java.simpleName, enable)
 
-    fun logStr(str: String) {
+    override fun logStr(str: String) {
         if (!isLogEnable) return
         val thread = Thread.currentThread()
         val trace = thread.stackTrace
         val threadName = thread.name
 
         Log.d(actualLogTag, "$str\t[thread($threadName)/${trace.dumpStackInfo()}]")
+    }
+
+    fun logStrSplit(str: String, size: Int = 300) {
+        var index = 0
+        val length = str.length
+        while (index < str.length) {
+            val min = min(index + size, length)
+            logStr(str.substring(index, min))
+            index += size
+        }
     }
 
     fun log(vararg any: Any?) {

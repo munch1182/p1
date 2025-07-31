@@ -1,91 +1,79 @@
 package com.munch1182.p1
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import androidx.appcompat.app.AlertDialog
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.munch1182.lib.base.isInDeveloperMode
-import com.munch1182.lib.base.log
-import com.munch1182.lib.base.navigationHeight
-import com.munch1182.lib.base.screen
-import com.munch1182.lib.base.screenDisplay
+import androidx.lifecycle.lifecycleScope
+import com.munch1182.lib.base.launchIO
+import com.munch1182.lib.base.startActivity
 import com.munch1182.lib.base.statusHeight
-import com.munch1182.lib.base.versionCodeCompat
-import com.munch1182.lib.base.versionName
-import com.munch1182.lib.helper.result.JudgeHelper.IntentCanLaunchDialogProvider
-import com.munch1182.lib.helper.result.asAllowDenyDialog
 import com.munch1182.lib.helper.result.intent
-import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.onData
-import com.munch1182.lib.helper.result.onTrue
 import com.munch1182.p1.base.BaseActivity
-import com.munch1182.p1.base.LanguageHelper
+import com.munch1182.p1.base.DataHelper
+import com.munch1182.p1.base.Key
 import com.munch1182.p1.base.str
+import com.munch1182.p1.measure.MeasureHelper
 import com.munch1182.p1.ui.ClickButton
-import com.munch1182.p1.ui.JumpButton
 import com.munch1182.p1.ui.PageTheme
 import com.munch1182.p1.ui.RvPage
-import com.munch1182.p1.ui.setContentWithRv
-import com.munch1182.p1.ui.theme.PagePadding
-import com.munch1182.p1.views.BluetoothActivity
+import com.munch1182.p1.ui.noApplyWindowPadding
+import com.munch1182.p1.ui.setContentWithScroll
+import com.munch1182.p1.ui.theme.PagePaddingModifier
+import com.munch1182.p1.views.AboutActivity
+import com.munch1182.p1.views.AudioActivity
 import com.munch1182.p1.views.DialogActivity
 import com.munch1182.p1.views.LanguageActivity
-import com.munch1182.p1.views.RecordActivity
 import com.munch1182.p1.views.ResultActivity
-import com.munch1182.p1.views.ServerActivity
-import com.munch1182.p1.views.TaskActivity
-import com.munch1182.p1.views.libview.ViewActivity
+import com.munch1182.p1.views.ScanActivity
+import com.munch1182.p1.views.SettingActivity
+import com.munch1182.lib.base.str as strRes
 
 class MainActivity : BaseActivity() {
 
-    private val log = log()
+    private val names: Array<Pair<Int, () -> Unit>> by lazy {
+        arrayOf(
+            R.string.permission_about to { startActivity<ResultActivity>() },
+            R.string.dialog_about to { startActivity<DialogActivity>() },
+            R.string.scan_about to { startActivity<ScanActivity>() },
+            R.string.audio_about to { startActivity<AudioActivity>() },
+            R.string.language_about to { intent(LanguageActivity::class.java).onData { recreateIfLangNeed(it) } },
+            R.string.setting to { SettingActivity.startNames(names.map { it.first }) },
+            R.string.about to { startActivity<AboutActivity>() },
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        MeasureHelper.measureNow("MainActivity app created")
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        setContentWithRv { Click() }
-        //startActivity<RecordActivity>()
+        MeasureHelper.measureNow("MainActivity installSplashScreen")
+        setContentWithScroll(PagePaddingModifier.noApplyWindowPadding()) { Views(names) }
+        MeasureHelper.measureNow("MainActivity setContent")
+
+        lifecycleScope.launchIO {
+            val name = DataHelper.get(Key.KEY_LAUNCHER, "")?.takeIf { it.isNotEmpty() }
+            name?.let { n -> names.firstOrNull { strRes(it.first) == n }?.second?.invoke() }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        MeasureHelper.measureEnd()
     }
 
     @Composable
-    private fun Click() {
-        JumpButton("权限相关", clazz = ResultActivity::class)
-        JumpButton("蓝牙相关", clazz = BluetoothActivity::class)
-        JumpButton("录音相关", clazz = RecordActivity::class)
-        JumpButton("服务相关", clazz = ServerActivity::class)
-        JumpButton("Dialog相关", clazz = DialogActivity::class)
-        JumpButton("任务队列", clazz = TaskActivity::class)
-        JumpButton("View相关", clazz = ViewActivity::class)
-        ClickButton("语言切换") {
-            intent(Intent(this, LanguageActivity::class.java)).onData { recreateIfLangNeed(it) }
-        }
-        ClickButton("开发者选项") { toDeveloperSettings() }
-        JumpButton("设置界面", intent = Intent(Settings.ACTION_SETTINGS))
-        JumpButton("关于界面", intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
-        MainInfo()
-    }
-
-    @Composable
-    private fun MainInfo() {
-        Column(
-            modifier = Modifier.padding(top = PagePadding), horizontalAlignment = Alignment.Start
-        ) {
-            val isPreMode = LocalInspectionMode.current
-            Text(if (isPreMode) "0.1.0(1)" else "$versionName($versionCodeCompat)")
-            Text(if (isPreMode) "1080(1080) x 2400(80 + 2320)" else screenStr())
-            Text("CURR SDK: ${Build.VERSION.SDK_INT}")
-            Text(if (isPreMode) "当前语言：zh" else "${str(R.string.curr_lang)}: ${LanguageHelper.curr}")
-        }
+    private fun Views(names: Array<Pair<Int, () -> Unit>>) {
+        with(LocalDensity.current) { Spacer(Modifier.height(statusHeight().toDp())) }
+        LazyColumn { items(names) { ClickButton(str(it.first), onClick = it.second) } }
     }
 
     private fun recreateIfLangNeed(data: Intent) {
@@ -95,33 +83,10 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun screenStr(): String {
-        val sc = screen()
-        val sd = screenDisplay()
-        val equalsHeight = sc.height() == (sd.heightPixels + statusHeight())
-        val navHeight = if (equalsHeight) 0 else navigationHeight()
-        return "${sc.width()}(${sd.widthPixels}) x ${sc.height()}(${statusHeight()} + ${sd.heightPixels} + $navHeight)"
-    }
-
-    private fun toDeveloperSettings() {
-        val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        judge { isInDeveloperMode() }.intent(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS)).dialogWhen(developerDialog()).onTrue { intent(devIntent).request {} }
-    }
-
-    private fun developerDialog(): IntentCanLaunchDialogProvider {
-        return IntentCanLaunchDialogProvider { ctx, state ->
-            if (state.isAfter) {
-                null
-            } else {
-                AlertDialog.Builder(ctx).setTitle("打开开发者选项").setMessage("请连续点击版本号直到系统提示开发者模式已打开").setPositiveButton("前往") { _, _ -> }.setNegativeButton("取消") { _, _ -> }.create().asAllowDenyDialog()
-            }
-        }
-    }
-
     @Preview(showBackground = true)
     @Composable
     fun ClickPreview() {
-        PageTheme { RvPage { Click() } }
+        PageTheme { RvPage(PagePaddingModifier) { Views(names) } }
     }
 }
 

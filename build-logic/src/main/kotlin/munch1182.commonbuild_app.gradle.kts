@@ -28,19 +28,16 @@ android {
 
 
     buildTypes {
+        val sign = signingConfigs.findByName(signName)
         release {
-            if (signingConfig == null) {
-                signingConfig = signingConfigs.findByName(signName)
-            }
+            if (sign != null) signingConfig = signingConfigs.findByName(signName)
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
         }
         debug {
-            if (signingConfig == null) {
-                signingConfig = signingConfigs.findByName(signName)
-            }
+            if (sign != null) signingConfig = signingConfigs.findByName(signName)
         }
     }
 

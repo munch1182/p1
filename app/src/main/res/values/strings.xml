@@ -1,4 +1,11 @@
 <resources>
     <string name="app_name" translatable="false">p1</string>
     <string name="curr_lang">当前语言</string>
+    <string name="about">关于</string>
+    <string name="dialog_about">弹窗相关</string>
+    <string name="permission_about">权限相关</string>
+    <string name="language_about">语言相关</string>
+    <string name="scan_about">扫码相关</string>
+    <string name="audio_about">音频相关</string>
+    <string name="setting">设置</string>
 </resources>

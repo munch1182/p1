@@ -1,3 +1,7 @@
 <resources>
     <string name="curr_lang">當前語言</string>
+    <string name="about">關於</string>
+    <string name="dialog_about">彈窗相關</string>
+    <string name="permission_about">許可權相關</string>
+    <string name="language_about">語言相關</string>
 </resources>

@@ -1,18 +1,25 @@
 package com.munch1182.lib.base
 
 import android.content.Context
+import android.content.DialogInterface
 import android.view.LayoutInflater
 import android.view.View
 import androidx.activity.ComponentDialog
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @FunctionalInterface
 fun interface OnResultListener<T> {
     fun onResult(result: T)
 }
 
-suspend fun <T> resCollapse() = suspendCoroutine { c -> OnResultListener<T> { c.resume(it) } }
+@FunctionalInterface
+fun interface OnUpdateListener<T> {
+    fun onUpdate(update: T)
+}
+
+@FunctionalInterface
+fun interface OnChangeListener<T> {
+    fun onUpdate(curr: T, prev: T)
+}
 
 @FunctionalInterface
 fun interface DialogProvider {
@@ -37,4 +44,9 @@ fun interface OnStateChangeListener<T> {
 @FunctionalInterface
 fun interface OnStateValueChangeListener<STATE, VALUE> {
     fun onStateChange(state: STATE, value: VALUE)
+}
+
+@FunctionalInterface
+fun interface DialogViewCtxProvider {
+    fun onCreateView(ctx: Context, dialog: DialogInterface?): View?
 }

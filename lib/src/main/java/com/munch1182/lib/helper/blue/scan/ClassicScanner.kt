@@ -9,34 +9,30 @@ import android.content.IntentFilter
 import android.os.Build
 import androidx.annotation.RequiresPermission
 import com.munch1182.lib.base.newLog
-import com.munch1182.lib.helper.blue.BluetoothHelper
-import com.munch1182.lib.helper.blue.IBluetoothAdapter
+import com.munch1182.lib.helper.blue.BluetoothHelperHelper
 
-class ClassicScanner(private val l: BluetoothScanListener? = null) : IBluetoothScan, IBluetoothAdapter by BluetoothHelper {
+class ClassicScanner : BaseScanner() {
 
-    private val log = BluetoothHelper.log.newLog("ClassicScanner")
-
-    private val receiver = BluetoothFoundReceiver(l)
+    private val receiver = BluetoothFoundReceiver(scanDispatchCallback)
 
     @RequiresPermission(android.Manifest.permission.BLUETOOTH_SCAN)
     override fun startScan() {
         log.logStr("Start Scan")
-        l?.preScanStart()
-        receiver.register(BluetoothHelper.ctx)
+        scanDispatchCallback.onPreScanStart()
+        receiver.register(BluetoothHelperHelper.ctx)
         adapter?.startDiscovery()
     }
 
     @RequiresPermission(android.Manifest.permission.BLUETOOTH_SCAN)
     override fun stopScan() {
         log.logStr("Stop Scan")
-        l?.preScanStop()
-        receiver.unregister(BluetoothHelper.ctx)
+        scanDispatchCallback.onPreScanStop()
         adapter?.cancelDiscovery()
     }
 
     class BluetoothFoundReceiver(private val l: BluetoothScanListener?) : BroadcastReceiver() {
 
-        private val log = BluetoothHelper.log.newLog("FondReceiver")
+        private val log = BluetoothHelperHelper.log.newLog("FondReceiver")
 
         fun register(context: Context) {
             log.logStr("Register")
@@ -47,7 +43,8 @@ class ClassicScanner(private val l: BluetoothScanListener? = null) : IBluetoothS
             })
         }
 
-        fun unregister(context: Context) {
+        // 由stopScan的广播自动取消注册
+        private fun unregister(context: Context) {
             log.logStr("Unregister")
             context.unregisterReceiver(this)
         }
@@ -64,6 +61,7 @@ class ClassicScanner(private val l: BluetoothScanListener? = null) : IBluetoothS
                 BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
                     log.logStr("Found: action: $action")
                     l?.onScanStop()
+                    unregister(BluetoothHelperHelper.ctx)
                 }
 
                 BluetoothDevice.ACTION_FOUND -> {

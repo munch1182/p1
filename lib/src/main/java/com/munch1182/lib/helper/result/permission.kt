@@ -12,47 +12,46 @@ import com.munch1182.lib.base.asPermissionCheck
 import com.munch1182.lib.base.asPermissionCheckRationale
 import com.munch1182.lib.base.newLog
 import com.munch1182.lib.base.onDestroyed
+import com.munch1182.lib.helper.dialog.AllowDenyDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class PermissionHelper internal constructor(private val act: FragmentActivity, private val fm: FragmentManager) {
+class PermissionHelper internal constructor(internal val ctx: Ctx) {
 
     companion object {
-        fun init(act: FragmentActivity) = PermissionHelper(act, act.supportFragmentManager)
-        fun init(frag: Fragment) = PermissionHelper(frag.requireActivity(), frag.childFragmentManager)
+        fun init(act: FragmentActivity) = PermissionHelper(Ctx(act, act.supportFragmentManager))
+        fun init(frag: Fragment) = PermissionHelper(Ctx(frag.requireActivity(), frag.childFragmentManager))
         internal val log = ContractHelper.log.newLog("permission")
     }
 
-    fun permission(permission: Array<String>) = Dialog(Ctx(act, fm).apply { input = permission })
+    fun permission(permission: Array<String>) = Input(ctx.apply { input = permission })
 
-    class Dialog internal constructor(private val ctx: Ctx) : Req by Request(ctx) {
+    class Input internal constructor(ctx: Ctx) : Request(ctx) {
         // 不建议在[State.Before]时显示弹窗，否则需要解释[State.Before]的弹窗和[State.DeniedForever]的弹窗前后依次出现的语境
         fun dialogWhen(dp: PermissionCanRequestDialogProvider?) = Intent(ctx.apply { this.dp = dp })
     }
 
-    class Intent internal constructor(private val ctx: Ctx) : Req by Request(ctx) {
+    class Intent internal constructor(ctx: Ctx) : Request(ctx) {
         fun manualIntent(intent: android.content.Intent = appSetting()) = Request(ctx.apply { this.intent = intent })
     }
 
-    interface Req {
-        fun request(l: OnResultListener<Map<String, Result>>)
-    }
-
-    class Request internal constructor(private val ctx: Ctx) : Req {
-        override fun request(l: OnResultListener<Map<String, Result>>) = ctx.requestPermission(l)
-    }
+    open class Request internal constructor(internal val ctx: Ctx) : ContractHelper.Request<Array<String>, Map<String, Boolean>, Map<String, Result>>(ctx)
 
     internal open class Ctx internal constructor(
         act: FragmentActivity, fm: FragmentManager,
         var dp: PermissionCanRequestDialogProvider? = null, var intent: android.content.Intent? = null
-    ) : ContractHelper.Ctx<Array<String>, Map<String, Boolean>>(act, fm, ActivityResultContracts.RequestMultiplePermissions()) {
+    ) : ContractHelper.Ctx<Array<String>, Map<String, Boolean>, Map<String, Result>>(act, fm, ActivityResultContracts.RequestMultiplePermissions()) {
 
-        override fun request(l: OnResultListener<Map<String, Boolean>>) = PermissionIntentFragment.get(fm).launch(input!!, l)
+        constructor(ctx: Ctx) : this(ctx.act, ctx.fm, ctx.dp, ctx.intent) {
+            this.input = ctx.input
+        }
 
-        internal fun requestPermission(l: OnResultListener<Map<String, Result>>) {
+        override fun requestLaunch(l: OnResultListener<Map<String, Boolean>>) = PermissionIntentFragment.get(fm).launch(input!!, l)
+
+        override fun request(l: OnResultListener<Map<String, Result>>) {
             act.lifecycleScope.launch(Dispatchers.IO) {
                 var res = requestCircle(State.Before)
                 res = needToIntent(res)
@@ -84,7 +83,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
             log.logStr("state:$state: dialogResult: $dialogAllow")
             if (!dialogAllow) return res.apply { log.logStr("now: dialog denied") }
             log.logStr("start intent: $intent")
-            suspendCoroutine { c -> IntentHelper(act, fm).intent(intent).request { c.resume(it) } }
+            suspendCoroutine { c -> IntentHelper(IntentHelper.Ctx(act, fm)).intent(intent).request { c.resume(it) } }
             log.logStr("start intent back")
             val (_, newRes) = dispatchPermissionResult(state)
             log.logStr("state:$state: dispatchPermissionResult: $newRes")
@@ -98,7 +97,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
                 val dialog = dp?.onCreateDialog(act, state, permission)
                     ?: return@withContext state.isBefore.apply { log.logStr("dialog result $this as state is $state") }
                 suspendCoroutine { c ->
-                    dialog.lifecycle.onDestroyed { c.resume(dialog.result?.isAllow ?: false) }
+                    dialog.lifecycle.onDestroyed { c.resume(dialog.result.isAllow) }
                     log.logStr("request dialog for ${permission.joinToString()} when $state")
                     dialog.show()
                 }
@@ -106,7 +105,7 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
         }
 
         private suspend fun requestCollapse(): Map<String, Boolean> {
-            return withContext(Dispatchers.Main) { suspendCoroutine { c -> request { c.resume(it) } } }
+            return withContext(Dispatchers.Main) { suspendCoroutine { c -> requestLaunch { c.resume(it) } } }
         }
 
         private fun dispatchPermissionResult(state: State): Pair<MutableList<String>, HashMap<String, Result>> {
@@ -125,6 +124,8 @@ class PermissionHelper internal constructor(private val act: FragmentActivity, p
             }
             return request to result
         }
+
+        override fun toString() = "$contract <- (${this.input?.joinToString()})"
     }
 
     @FunctionalInterface

@@ -23,10 +23,6 @@ fun Context.findAct(): Activity? {
     return null
 }
 
-fun toast(msg: String) {
-    Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
-}
-
 inline fun <reified ACT : Activity> Context.startActivity() {
     startActivity(Intent(this, ACT::class.java))
 }
@@ -43,3 +39,7 @@ val versionCodeCompat: Long
 val packInfo: PackageInfo get() = ctx.packageManager.getPackageInfo(ctx.packageName, PackageManager.GET_CONFIGURATIONS)
 
 val wm: WindowManager get() = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+fun Activity.toast(msg: String) {
+    runOnUiThread { Toast.makeText(this, msg, Toast.LENGTH_SHORT).show() }
+}

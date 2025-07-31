@@ -19,22 +19,29 @@ class ContractHelper internal constructor(private val act: FragmentActivity, pri
 
     fun <I, O> contract(contract: ActivityResultContract<I, O>) = Input(Ctx(act, fm, contract))
 
-    class Input<I, O> internal constructor(private val ctx: Ctx<I, O>) {
+    class Input<I, O> internal constructor(private val ctx: Ctx<I, O, O>) {
         fun input(input: I?) = Request(ctx.apply { ctx.input = input })
     }
 
-    class Request<I, O> internal constructor(private val ctx: Ctx<I, O>) {
-        fun request(l: OnResultListener<O>) = ctx.request(l)
+    open class Request<I, O, O2> internal constructor(private val ctx: Ctx<I, O, O2>) {
+        fun request(l: OnResultListener<O2>) = ctx.request(l)
     }
 
-    internal open class Ctx<I, O> internal constructor(
+    internal open class Ctx<INPUT, OUTPUT, LISTENER> internal constructor(
         internal val act: FragmentActivity,
         internal val fm: FragmentManager,
-        internal val contract: ActivityResultContract<I, O>,
-        internal var input: I? = null,
+        internal val contract: ActivityResultContract<INPUT, OUTPUT>,
+        internal var input: INPUT? = null,
     ) {
 
-        internal open fun request(l: OnResultListener<O>) = ContractFragment.get(fm, contract).launch(input, l)
+        internal open fun requestLaunch(l: OnResultListener<OUTPUT>) = ContractFragment.get(fm, contract).launch(input, l)
+
+        internal open fun request(l: OnResultListener<LISTENER>) {
+            @Suppress("UNCHECKED_CAST")
+            val ll = l as? OnResultListener<OUTPUT> ?: throw UnsupportedOperationException()
+            requestLaunch(ll)
+        }
+
         override fun toString() = "$contract <- ($input)"
     }
 }

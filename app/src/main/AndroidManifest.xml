@@ -4,29 +4,16 @@
 
     <uses-feature
         android:name="android.hardware.camera"
-        android:required="false" />
-
-    <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.CAMERA" />
-
-    <!-- webActivity -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- ResultActivity -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
-    <!-- RecordActivity -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
-    <!-- BluetoothActivity -->
+        android:required="false" /> <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.CAMERA" /> <!-- webActivity -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- ResultActivity -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" /> <!-- RecordActivity -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" /> <!-- BluetoothActivity -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    <!--<uses-permission
-        android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation"
-        tools:targetApi="s" />-->
 
     <application
         android:name=".App"
@@ -42,23 +29,13 @@
         android:theme="@style/Theme.P1.AppCompat"
         tools:targetApi="tiramisu">
         <activity
-            android:name=".views.BluetoothActivity"
+            android:name=".views.SettingActivity"
             android:exported="false" />
         <activity
-            android:name=".views.RecordActivity"
+            android:name=".views.AudioActivity"
             android:exported="false" />
         <activity
-            android:name=".views.ServerActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.libview.SwapMenuLayoutActivity"
-            android:exported="false"
-            android:theme="@style/Theme.P1.AppCompat" />
-        <activity
-            android:name=".views.libview.ViewActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.WebContentActivity"
+            android:name=".views.ScanActivity"
             android:exported="false" />
         <activity
             android:name=".views.ResultActivity"
@@ -70,7 +47,7 @@
             android:name=".views.LanguageActivity"
             android:exported="false" />
         <activity
-            android:name=".views.TaskActivity"
+            android:name=".views.AboutActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
@@ -81,9 +58,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <service android:name=".views.BindServer" /> <!-- 分享文件， RecordActivity -->
+        </activity> <!-- 分享文件， RecordActivity -->
         <!-- https://developer.android.google.cn/training/secure-file-sharing/setup-sharing?hl=zh-cn -->
         <provider
             android:name="androidx.core.content.FileProvider"
