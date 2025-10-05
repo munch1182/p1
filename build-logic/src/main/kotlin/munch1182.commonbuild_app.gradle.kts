@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     kotlin("android") // kotlinOptions
@@ -27,44 +29,30 @@ android {
     }
 
 
+    // .gradle/android/signingReport
     buildTypes {
         release {
-            if (signingConfig == null) {
-                signingConfig = signingConfigs.findByName(signName)
-            }
+            signingConfig = signingConfigs.findByName(signName)
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+        debug {
+            signingConfig = signingConfigs.findByName(signName)
+        }
     }
-
-
-//    afterEvaluate {
-//        tasks.named("assembleRelease") {
-//            finalizedBy("renameApk")
-//        }
-//    }
-
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget("11")
     }
 }
-//
-//val renameApk by tasks.registering(Copy::class) {
-//    val destDir = rootProject.file("apk")
-//    val date = SimpleDateFormat("yyyyMMddHHmm").format(Date())
-//    from("release/app-release.apk")
-//    into(destDir)
-//
-//    val dc = android.defaultConfig
-//    val name = "${dc.versionName}_${dc.versionCode}_${date}.apk"
-//    println("name:${name}")
-//    rename { name }
-//}
+
