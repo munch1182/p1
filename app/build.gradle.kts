@@ -14,6 +14,18 @@ android {
     }
 
     setAPkRename()
+
+    flavorDimensions += "blue"
+    productFlavors {
+        create("zkeg") {
+            dimension = "blue"
+            applicationIdSuffix = ".zkeg"
+            versionNameSuffix = "-zkeg"
+        }
+        create("p1") {
+            dimension = "blue"
+        }
+    }
 }
 
 dependencies {

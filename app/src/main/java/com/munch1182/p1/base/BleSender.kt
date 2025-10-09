@@ -11,7 +11,6 @@ import com.munch1182.lib.bluetooth.le.CommandExecutionResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.coroutineContext
 
@@ -41,17 +40,6 @@ object BleSender : BleCommandSender<Byte>(AppHelper) {
     }
 }
 
-suspend fun BLEConnector.initBlue(): IniResult {
-    val services = runCatching { discoverServices().takeIf { it.isSuccess } }.getOrNull() ?: return IniResult.NoDiscoverServices
-    val service = services.services.find { it.uuid.startsWith("0000fff0") } ?: return IniResult.NoFindUUIDService
-    val writer = service.characteristics.find { it.uuid.startsWith("0000b03f") } ?: return IniResult.NoFindUUIDWrite
-    val notify = service.characteristics.find { it.uuid.startsWith("0000b03e") } ?: return IniResult.NoFindUUIDNotify
-    val notifyUUID = notify.descriptors.find { it.uuid.startsWith("00002902") } ?: return IniResult.NoFindUUIDNotifyUUID
-    val result = setCharacteristicNotification(notify, true, notifyUUID.uuid)
-    if (!result) return IniResult.NoSetNotify
-    BleSender.register(this, writer)
-    return IniResult.Success
-}
 
 sealed class IniResult {
     object Success : IniResult()
@@ -77,10 +65,6 @@ sealed class IniResult {
     }
 }
 
-
-private fun UUID.startsWith(any: String): Boolean {
-    return toString().lowercase().startsWith(any.lowercase())
-}
 
 class BleWriteRef(val job: Job, val connector: BLEConnector, val write: BluetoothGattCharacteristic)
 
