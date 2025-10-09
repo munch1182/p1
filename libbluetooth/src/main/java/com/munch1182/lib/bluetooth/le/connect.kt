@@ -11,12 +11,14 @@ import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothStatusCodes
 import android.os.Build
 import com.munch1182.lib.AppHelper
+import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
 import com.munch1182.lib.bluetooth.BluetoothIBluetoothEnv
 import com.munch1182.lib.bluetooth.IBluetoothEnv
 import com.munch1182.lib.bluetooth.le.BleConnectManager.disconnect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -26,7 +28,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -45,7 +46,8 @@ object BleConnectManager {
      * 多次重复连接不会重复执行；如果需要新连接，需要先调用[disconnect]
      */
     fun connect(dev: BluetoothDevice, scope: CoroutineScope): Flow<BLEConnector.ConnectState> {
-        val connector = manager.getOrPut(dev.address) { BLEConnector(dev, scope) }
+        val connector = BLEConnector(dev, scope)
+        manager[dev.address] = connector
         connector.connect()
         return connector.state
     }
@@ -63,9 +65,10 @@ object BleConnectManager {
 }
 
 @SuppressLint("MissingPermission")
-class BLEConnector(private val dev: BluetoothDevice, private val scope: CoroutineScope) : IBluetoothEnv by BluetoothIBluetoothEnv {
+class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) : IBluetoothEnv by BluetoothIBluetoothEnv {
 
     private val log = log()
+    private var innerScope = CoroutineScope(scope.coroutineContext + SupervisorJob() + Dispatchers.IO)
     private var _gatt: BluetoothGatt? = null
     private val _data = MutableSharedFlow<ByteArray>()
     private val _state = MutableStateFlow<ConnectState>(ConnectState.Disconnected)
@@ -81,24 +84,24 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
 
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            scope.launch {
+            innerScope.launch {
                 val newState = when (newState) {
                     BluetoothProfile.STATE_CONNECTING -> ConnectState.Connecting
                     BluetoothProfile.STATE_DISCONNECTING -> ConnectState.Disconnecting
                     BluetoothProfile.STATE_CONNECTED -> ConnectState.Connected
                     BluetoothProfile.STATE_DISCONNECTED -> ConnectState.Disconnected
                     else -> {
-                        log.logStr("onConnectionStateChange: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}, newState: $newState")
+                        log.logStr("onConnectionStateChange(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}, newState: $newState")
                         return@launch
                     }
                 }
-                log.logStr("onConnectionStateChange: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}, newState: $newState")
+                log.logStr("onConnectionStateChange(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}, newState: $newState")
                 when (newState) {
-                    ConnectState.Connecting -> _state.value = ConnectState.Connecting
-                    ConnectState.Disconnecting -> _state.value = ConnectState.Disconnecting
-                    ConnectState.Connected -> _state.value = ConnectState.Connected
+                    ConnectState.Connecting -> _state.emit(ConnectState.Connecting)
+                    ConnectState.Disconnecting -> _state.emit(ConnectState.Disconnecting)
+                    ConnectState.Connected -> _state.emit(ConnectState.Connected)
                     ConnectState.Disconnected -> {
-                        _state.value = ConnectState.Disconnected
+                        _state.emit(ConnectState.Disconnected)
                         handleDisconnect()
                     }
                 }
@@ -106,82 +109,71 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            scope.launch {
-                log.logStr("onServicesDiscovered: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}")
+            innerScope.launch {
+                log.logStr("onServicesDiscovered(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}")
                 val result = ServicesDiscoveryResult(gatt.services ?: emptyList(), status)
                 completePendingOp(
-                    GattOpKey.DiscoverServices,
-                    if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Service discovery failed with status: $status")
+                    GattOpKey.DiscoverServices, if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Service discovery failed with status: $status")
                 )
             }
         }
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
-            scope.launch { _data.emit(value) }
+            // log.logStr("onCharacteristicChanged(${dev.address}):  value: ${value.toHexString()}")
+            innerScope.launch { _data.emit(value) }
         }
 
-        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-            scope.launch {
-                log.logStr("onCharacteristicRead: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}")
+        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray, status: Int) {
+            innerScope.launch {
+                log.logStr("onCharacteristicRead(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}")
                 val result = CharacteristicOperationResult(characteristic, status)
                 completePendingOp(
-                    GattOpKey.ReadCharacteristic(characteristic.uuid),
-                    if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Characteristic read failed with status: $status")
+                    GattOpKey.ReadCharacteristic(characteristic.uuid), if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Characteristic read failed with status: $status")
                 )
             }
         }
 
         override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-            scope.launch {
-                log.logStr("onCharacteristicWrite: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}")
-                val result = CharacteristicOperationResult(characteristic, status)
-                completePendingOp(
-                    GattOpKey.WriteCharacteristic(characteristic.uuid),
-                    if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Characteristic write failed with status: $status")
-                )
-            }
+            log.logStr("onCharacteristicWrite(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}")
+            // 不能等待此回调，因为此回调可能比结果的回调更晚到达，导致结果被忽略
         }
 
-        override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-            scope.launch {
-                log.logStr("onDescriptorRead: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}")
+        override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int, value: ByteArray) {
+            innerScope.launch {
+                log.logStr("onDescriptorRead(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}")
                 val result = DescriptorOperationResult(descriptor, status)
                 completePendingOp(
-                    GattOpKey.ReadDescriptor(descriptor.uuid),
-                    if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Descriptor read failed with status: $status")
+                    GattOpKey.ReadDescriptor(descriptor.uuid), if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Descriptor read failed with status: $status")
                 )
             }
         }
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-            scope.launch {
-                log.logStr("onDescriptorWrite: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}")
+            innerScope.launch {
+                log.logStr("onDescriptorWrite(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}")
                 val result = DescriptorOperationResult(descriptor, status)
                 completePendingOp(
-                    GattOpKey.WriteDescriptor(descriptor.uuid),
-                    if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Descriptor write failed with status: $status")
+                    GattOpKey.WriteDescriptor(descriptor.uuid), if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Descriptor write failed with status: $status")
                 )
             }
         }
 
         override fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) {
-            scope.launch {
-                log.logStr("onReadRemoteRssi: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}, rssi: $rssi")
+            innerScope.launch {
+                log.logStr("onReadRemoteRssi(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}, rssi: $rssi")
                 val result = RemoteRssiResult(rssi = rssi, status = status)
                 completePendingOp(
-                    GattOpKey.ReadRemoteRssi,
-                    if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Read remote RSSI failed with status: $status")
+                    GattOpKey.ReadRemoteRssi, if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("Read remote RSSI failed with status: $status")
                 )
             }
         }
 
         override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
-            scope.launch {
-                log.logStr("onMtuChanged: ${dev.address}, status: ${status == BluetoothGatt.GATT_SUCCESS}, mtu: $mtu")
+            innerScope.launch {
+                log.logStr("onMtuChanged(${dev.address}):  status: ${status == BluetoothGatt.GATT_SUCCESS}, mtu: $mtu")
                 val result = MtuChangeResult(mtu = mtu, status = status)
                 completePendingOp(
-                    GattOpKey.RequestMtu,
-                    if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("MTU change failed with status: $status")
+                    GattOpKey.RequestMtu, if (status == BluetoothGatt.GATT_SUCCESS) result else BluetoothException("MTU change failed with status: $status")
                 )
             }
         }
@@ -191,11 +183,15 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
 
     fun connect() {
         if (_gatt != null) return
-        scope.launch {
+        innerScope.cancel()
+        innerScope = CoroutineScope(scope.coroutineContext + SupervisorJob() + Dispatchers.IO)
+        innerScope.launch {
             try {
-                log.logStr("connect: ${dev.address}")
+                log.logStr("connect(${dev.address}): ")
                 _state.value = ConnectState.Connecting
-                _gatt = withContext(Dispatchers.Main) { dev.connectGatt(AppHelper, false, gattCallback) }
+                _gatt = dev.connectGatt(
+                    AppHelper, false, gattCallback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK
+                )
             } catch (e: Exception) {
                 _state.value = ConnectState.Disconnected
                 _errors.send(BluetoothException("Connection failed: ${e.message}"))
@@ -204,16 +200,13 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
     }
 
     fun disconnect() {
-        scope.launch {
+        innerScope.launchIO {
             try {
-                log.logStr("disconnect: ${dev.address}")
-                _state.emit(ConnectState.Disconnected)
-                withContext(Dispatchers.IO) {
-                    _gatt?.disconnect()
-                    _gatt?.close()
-                    _gatt = null
-                    scope.cancel()
+                log.logStr("disconnect(${dev.address}): ")
+                if (_state.value == ConnectState.Disconnected || _state.value == ConnectState.Connecting) {
+                    _state.emit(ConnectState.Disconnected)
                 }
+                _gatt?.disconnect()
             } catch (e: Exception) {
                 _errors.send(e)
             }
@@ -223,54 +216,57 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
     /**
      * 发现设备服务并返回发现的结果
      */
-    suspend fun discoverServices(timeoutMs: Long = 10000): ServicesDiscoveryResult =
-        executeGattOperation(GattOpKey.DiscoverServices, timeoutMs) {
-            _gatt?.discoverServices() ?: false
-        }
+    suspend fun discoverServices(timeoutMs: Long = 10000): ServicesDiscoveryResult = executeGattOperation(GattOpKey.DiscoverServices, timeoutMs) {
+        _gatt?.discoverServices() ?: false
+    }
 
-    suspend fun readCharacteristic(characteristic: BluetoothGattCharacteristic, timeoutMs: Long = 5000): CharacteristicOperationResult =
-        executeGattOperation(GattOpKey.ReadCharacteristic(characteristic.uuid), timeoutMs) {
-            _gatt?.readCharacteristic(characteristic) ?: false
-        }
+    suspend fun readCharacteristic(characteristic: BluetoothGattCharacteristic, timeoutMs: Long = 5000): CharacteristicOperationResult = executeGattOperation(GattOpKey.ReadCharacteristic(characteristic.uuid), timeoutMs) {
+        _gatt?.readCharacteristic(characteristic) ?: false
+    }
 
-    suspend fun writeCharacteristic(characteristic: BluetoothGattCharacteristic, data: ByteArray? = null, timeoutMs: Long = 5000): CharacteristicOperationResult =
-        executeGattOperation(GattOpKey.WriteCharacteristic(characteristic.uuid), timeoutMs) {
-            data?.let { characteristic.value = it }
-            _gatt?.writeCharacteristic(characteristic) ?: false
+    /**
+     * 直接写入数据，不会监听[BluetoothGattCallback.onCharacteristicWrite]，因为该回调可能比[BluetoothGattCallback.onCharacteristicChanged]更晚回调导致该结果被忽略
+     */
+    @Suppress("DEPRECATION")
+    fun writeCharacteristic(characteristic: BluetoothGattCharacteristic, data: ByteArray, timeoutMs: Long = 5000): Boolean {
+        val gatt = _gatt ?: return false
+        // log.logStr("write data(${dev.address}): ${data.toHexStrCompact()}")
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gatt.writeCharacteristic(characteristic, data, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT) == BluetoothStatusCodes.SUCCESS
+        } else {
+            data.let { characteristic.value = it }
+            gatt.writeCharacteristic(characteristic)
         }
+    }
 
-    suspend fun readDescriptor(descriptor: BluetoothGattDescriptor, timeoutMs: Long = 5000): DescriptorOperationResult =
-        executeGattOperation(GattOpKey.ReadDescriptor(descriptor.uuid), timeoutMs) {
-            _gatt?.readDescriptor(descriptor) ?: false
-        }
+    suspend fun readDescriptor(descriptor: BluetoothGattDescriptor, timeoutMs: Long = 5000): DescriptorOperationResult = executeGattOperation(GattOpKey.ReadDescriptor(descriptor.uuid), timeoutMs) {
+        _gatt?.readDescriptor(descriptor) ?: false
+    }
 
     @Suppress("DEPRECATION")
-    suspend fun writeDescriptor(descriptor: BluetoothGattDescriptor, value: ByteArray, timeoutMs: Long = 5000): DescriptorOperationResult =
-        executeGattOperation(GattOpKey.WriteDescriptor(descriptor.uuid), timeoutMs) {
-            runCatching {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    (_gatt?.writeDescriptor(descriptor, value) ?: 0) == BluetoothStatusCodes.SUCCESS
-                } else {
-                    descriptor.value = value
-                    _gatt?.writeDescriptor(descriptor)
-                }
-            }.getOrNull() ?: false
-        }
+    suspend fun writeDescriptor(descriptor: BluetoothGattDescriptor, value: ByteArray, timeoutMs: Long = 5000): DescriptorOperationResult = executeGattOperation(GattOpKey.WriteDescriptor(descriptor.uuid), timeoutMs) {
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                (_gatt?.writeDescriptor(descriptor, value) ?: 0) == BluetoothStatusCodes.SUCCESS
+            } else {
+                descriptor.value = value
+                _gatt?.writeDescriptor(descriptor)
+            }
+        }.getOrNull() ?: false
+    }
 
-    suspend fun readRemoteRssi(timeoutMs: Long = 5000): RemoteRssiResult =
-        executeGattOperation(GattOpKey.ReadRemoteRssi, timeoutMs) {
-            _gatt?.readRemoteRssi() ?: false
-        }
+    suspend fun readRemoteRssi(timeoutMs: Long = 5000): RemoteRssiResult = executeGattOperation(GattOpKey.ReadRemoteRssi, timeoutMs) {
+        _gatt?.readRemoteRssi() ?: false
+    }
 
-    suspend fun requestMtu(mtu: Int, timeoutMs: Long = 5000): MtuChangeResult =
-        executeGattOperation(GattOpKey.RequestMtu, timeoutMs) { _gatt?.requestMtu(mtu) ?: false }
+    suspend fun requestMtu(mtu: Int, timeoutMs: Long = 5000): MtuChangeResult = executeGattOperation(GattOpKey.RequestMtu, timeoutMs) { _gatt?.requestMtu(mtu) ?: false }
 
     suspend fun setCharacteristicNotification(characteristic: BluetoothGattCharacteristic, enable: Boolean, descriptorUuid: UUID, timeoutMs: Long = 3000): Boolean = withTimeoutOrNull(timeoutMs) {
         if (!(_gatt?.setCharacteristicNotification(characteristic, enable) ?: true)) {
-            log.logStr("setCharacteristicNotification: ${dev.address}, enable: $enable, result: false")
+            log.logStr("setCharacteristicNotification(${dev.address}):  enable: $enable, result: false")
             return@withTimeoutOrNull false
         }
-        log.logStr("setCharacteristicNotification: ${dev.address}, enable: $enable, result: true")
+        log.logStr("setCharacteristicNotification(${dev.address}):  enable: $enable, result: true")
 
         val descriptor = characteristic.getDescriptor(descriptorUuid) ?: return@withTimeoutOrNull true
         val value = when {
@@ -278,7 +274,7 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
             else -> BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
         }
         val result = writeDescriptor(descriptor, value, timeoutMs)
-        log.logStr("writeDescriptor: ${dev.address}, enable: $enable, result: ${result.isSuccess}")
+        log.logStr("writeDescriptor(${dev.address}):  enable: $enable, result: ${result.isSuccess}")
         result.status == BluetoothGatt.GATT_SUCCESS
     } ?: throw TimeoutException("Set characteristic notification timed out")
 
@@ -300,11 +296,8 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
     private fun <T> completePendingOperation(key: GattOpKey, result: Result<T>) {
         val continuation = pendingGattOperations.remove(key) as? Continuation<T>
         continuation?.let { cont ->
-            scope.launch {
-                result.fold(
-                    onSuccess = { cont.resume(it) },
-                    onFailure = { cont.resumeWithException(it) }
-                )
+            innerScope.launch {
+                result.fold(onSuccess = { cont.resume(it) }, onFailure = { cont.resumeWithException(it) })
             }
         }
     }
@@ -326,6 +319,8 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
             continuation.resumeWithException(BluetoothException("Disconnected during operation"))
         }
         pendingGattOperations.clear()
+
+        innerScope.cancel()
     }
 
     // endregion
@@ -356,7 +351,8 @@ class BLEConnector(private val dev: BluetoothDevice, private val scope: Coroutin
     private sealed class GattOpKey {
         object DiscoverServices : GattOpKey()
         data class ReadCharacteristic(val uuid: UUID) : GattOpKey()
-        data class WriteCharacteristic(val uuid: UUID) : GattOpKey()
+
+        // data class WriteCharacteristic(val uuid: UUID) : GattOpKey()
         data class ReadDescriptor(val uuid: UUID) : GattOpKey()
         data class WriteDescriptor(val uuid: UUID) : GattOpKey()
         object ReadRemoteRssi : GattOpKey()

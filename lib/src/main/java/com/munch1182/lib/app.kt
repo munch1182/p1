@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.startup.Initializer
 import com.munch1182.lib.helper.ActivityCurrHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlin.coroutines.CoroutineContext
 
 /**
  * StartUp 初始化
@@ -27,10 +30,14 @@ class LibContextInitializer : Initializer<AppHelper> {
  * [AppHelper.manualInit]
  * [Application.onCreate]
  */
-object AppHelper : ContextWrapper(null) {
+object AppHelper : ContextWrapper(null), CoroutineScope {
 
+    private val job by lazy { Job() }
     fun manualInit(app: Application) {
         attachBaseContext(app)
         ActivityCurrHelper.register(app)
     }
+
+
+    override val coroutineContext: CoroutineContext get() = job
 }

@@ -1,5 +1,6 @@
 package com.munch1182.lib.base
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -22,6 +23,10 @@ fun shareImage(uri: Uri, title: String? = null): Intent = Intent.createChooser(
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }, title
 )
+
+fun copyText(text: String) {
+    clipManager.setPrimaryClip(ClipData.newPlainText("text", text))
+}
 
 fun appSetting() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).wPName()
 fun locSetting() = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)

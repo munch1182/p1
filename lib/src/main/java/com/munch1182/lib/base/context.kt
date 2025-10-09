@@ -36,10 +36,10 @@ val versionName: String? get() = packInfo.versionName
 
 val versionCodeCompat: Long
     get() = packInfo.let {
-        @Suppress("DEPRECATION")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.longVersionCode else it.versionCode.toLong()
+        @Suppress("DEPRECATION") if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.longVersionCode else it.versionCode.toLong()
     }
 
 val packInfo: PackageInfo get() = ctx.packageManager.getPackageInfo(ctx.packageName, PackageManager.GET_CONFIGURATIONS)
 
 val wm: WindowManager get() = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+val clipManager get() = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager

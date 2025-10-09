@@ -7,8 +7,6 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,15 +18,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -36,9 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.style.TextAlign
@@ -122,13 +118,7 @@ fun ScrollPage(modifier: Modifier = Modifier, content: @Composable ColumnScope.(
  * 基础按钮 - 90%场景使用
  */
 @Composable
-fun ClickButton(
-    text: String,
-    modifier: Modifier = Modifier,
-    enable: Boolean = true,
-    colors: ButtonColors = ButtonDefaults.buttonColors(),
-    onClick: () -> Unit
-) {
+fun ClickButton(text: String, modifier: Modifier = Modifier, enable: Boolean = true, colors: ButtonColors = ButtonDefaults.buttonColors(), onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = modifier,
@@ -143,19 +133,11 @@ fun ClickButton(
  * 状态按钮 - 显示不同状态的按钮
  */
 @Composable
-fun StateButton(
-    text: String,
-    state: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
+fun StateButton(text: String, state: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     ClickButton(
-        text = text,
-        modifier = modifier,
-        colors = ButtonDefaults.buttonColors(
+        text = text, modifier = modifier, colors = ButtonDefaults.buttonColors(
             containerColor = if (state) Color.Red else MaterialTheme.colorScheme.primary
-        ),
-        onClick = onClick
+        ), onClick = onClick
     )
 }
 
@@ -163,15 +145,16 @@ fun StateButton(
  * 页面跳转按钮 - 快速跳转到其他Activity
  */
 @Composable
-fun JumpButton(
-    text: String,
-    modifier: Modifier = Modifier,
-    clazz: KClass<out Activity>
-) {
+fun JumpButton(text: String, modifier: Modifier = Modifier, clazz: KClass<out Activity>) {
     val intent = if (LocalInspectionMode.current) null else Intent(currAct, clazz.java)
     ClickButton(text, modifier) {
         intent?.let { currAct.startActivity(it) }
     }
+}
+
+@Composable
+fun ClickIcon(icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    IconButton(onClick) { Icon(painter = rememberVectorPainter(icon), null, modifier = modifier) }
 }
 
 // ==================== 表单组件 ====================
@@ -180,15 +163,9 @@ fun JumpButton(
  * 带标签的复选框 - 常用表单组件
  */
 @Composable
-fun CheckBoxLabel(
-    label: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
+fun CheckBoxLabel(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.clickable { onCheckedChange(!checked) }
-    ) {
+        verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onCheckedChange(!checked) }) {
         Checkbox(checked = checked, onCheckedChange = onCheckedChange)
         Text(label)
     }
@@ -198,27 +175,18 @@ fun CheckBoxLabel(
  * 单选组 - 简化表单选择
  */
 @Composable
-fun RadioGroup(
-    options: List<String>,
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit
-) {
+fun RadioGroup(options: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit) {
     Column {
         options.forEachIndexed { index, text ->
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
+                verticalAlignment = Alignment.CenterVertically, modifier = Modifier
                     .clickable { onSelected(index) }
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
+                    .padding(vertical = 8.dp)) {
                 RadioButton(
-                    selected = index == selectedIndex,
-                    onClick = { onSelected(index) }
-                )
+                    selected = index == selectedIndex, onClick = { onSelected(index) })
                 Text(
-                    text = text,
-                    modifier = Modifier.padding(start = 8.dp)
+                    text = text, modifier = Modifier.padding(start = 8.dp)
                 )
             }
         }
@@ -260,56 +228,13 @@ fun DividerWithSpacer() {
  * 空状态提示
  */
 @Composable
-fun EmptyMsg(
-    isEmpty: Boolean,
-    message: String = "暂无数据",
-    content: @Composable () -> Unit
-) {
+fun EmptyMsg(isEmpty: Boolean, message: String = "暂无数据", content: @Composable () -> Unit) {
     if (isEmpty) {
         Text(
-            text = message,
-            modifier = PagePaddingModifier,
-            textAlign = TextAlign.Center,
-            color = Color.Gray
+            text = message, modifier = PagePaddingModifier, textAlign = TextAlign.Center, color = Color.Gray
         )
     } else {
         content()
-    }
-}
-
-// ==================== 特殊效果 ====================
-
-/**
- * 圆形背景点击区域
- */
-@Composable
-fun CircleClickArea(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit
-) {
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .clickable(onClick = onClick),
-        content = content
-    )
-}
-
-/**
- * 展开/收起箭头
- */
-@Composable
-fun ExpandArrow(
-    isExpanded: Boolean,
-    onToggle: () -> Unit
-) {
-    CircleClickArea(onClick = onToggle) {
-        Icon(
-            imageVector = Icons.Default.ArrowDropDown,
-            contentDescription = "展开收起",
-            modifier = Modifier.rotate(if (isExpanded) 180f else 0f)
-        )
     }
 }
 
@@ -325,11 +250,9 @@ fun createComposeView(ctx: Context, content: @Composable () -> Unit): View {
 /**
  * 移除底部padding的修饰符
  */
-fun Modifier.paddingNoBottom(horizontal: Dp, top: Dp) =
-    padding(start = horizontal, end = horizontal, top = top)
+fun Modifier.paddingNoBottom(horizontal: Dp, top: Dp) = padding(start = horizontal, end = horizontal, top = top)
 
 /**
  * 移除顶部padding的修饰符
  */
-fun Modifier.paddingNoTop(horizontal: Dp, bottom: Dp) =
-    padding(start = horizontal, end = horizontal, bottom = bottom)
+fun Modifier.paddingNoTop(horizontal: Dp, bottom: Dp) = padding(start = horizontal, end = horizontal, bottom = bottom)
