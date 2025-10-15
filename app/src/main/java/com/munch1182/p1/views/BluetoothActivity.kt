@@ -85,6 +85,8 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.update
 
@@ -248,11 +250,14 @@ class BluetoothVM : ViewModel() {
     fun startScan() {
         _uiState.update { it.copy(isScanning = true, devices = emptyList()) }
         viewModelScope.launchIO(scanJob.newContext) {
-            leScanFlow().sample(100L).filter(_uiState.value.predicate).collect { scanResult ->
-                val newDevice = BlueDev.Scan(scanResult)
-                devs[newDevice.mac] = newDevice
-                _uiState.emit(_uiState.value.copy(devices = devs.values.toList()))
-            }
+            leScanFlow()
+                .filter(_uiState.value.predicate)
+                .onEach { devs[it.device.address] = BlueDev.Scan(it) }
+                .sample(650L)
+                .map { devs.values.toList() }
+                .collect {
+                    _uiState.emit(_uiState.value.copy(devices = it))
+                }
         }
     }
 

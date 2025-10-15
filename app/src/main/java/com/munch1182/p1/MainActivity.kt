@@ -9,6 +9,7 @@ import com.munch1182.p1.ui.RvPage
 import com.munch1182.p1.ui.setContentWithScroll
 import com.munch1182.p1.views.AboutActivity
 import com.munch1182.p1.views.BluetoothActivity
+import com.munch1182.p1.views.NetPhoneActivity
 import com.munch1182.p1.views.ResultActivity
 
 class MainActivity : BaseActivity() {
@@ -17,6 +18,7 @@ class MainActivity : BaseActivity() {
         arrayOf(
             "权限相关" to { startActivity<ResultActivity>() },
             "蓝牙相关" to { startActivity<BluetoothActivity>() },
+            "网络电话" to { startActivity<NetPhoneActivity>() },
             "关于" to { startActivity<AboutActivity>() }
         )
     }

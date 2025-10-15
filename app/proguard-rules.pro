@@ -19,3 +19,42 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-dontwarn com.munch1182.lib.AppHelper
+-dontwarn com.munch1182.lib.base.ContextKt
+-dontwarn com.munch1182.lib.base.DialogViewCtxProvider
+-dontwarn com.munch1182.lib.base.IntentKt
+-dontwarn com.munch1182.lib.base.JudgeKt
+-dontwarn com.munch1182.lib.base.LogKt
+-dontwarn com.munch1182.lib.base.Logger
+-dontwarn com.munch1182.lib.base.PhonestateKt
+-dontwarn com.munch1182.lib.base.ReRunJob
+-dontwarn com.munch1182.lib.base.ScreenKt
+-dontwarn com.munch1182.lib.base.ThreadKt
+-dontwarn com.munch1182.lib.bluetooth.le.BLEConnector$ConnectState$Connected
+-dontwarn com.munch1182.lib.bluetooth.le.BLEConnector$ConnectState$Disconnected
+-dontwarn com.munch1182.lib.bluetooth.le.BLEConnector$ConnectState
+-dontwarn com.munch1182.lib.bluetooth.le.BLEConnector$ServicesDiscoveryResult
+-dontwarn com.munch1182.lib.bluetooth.le.BLEConnector
+-dontwarn com.munch1182.lib.bluetooth.le.BleCommand
+-dontwarn com.munch1182.lib.bluetooth.le.BleCommandSender$Config
+-dontwarn com.munch1182.lib.bluetooth.le.BleCommandSender
+-dontwarn com.munch1182.lib.bluetooth.le.BleConnectManager
+-dontwarn com.munch1182.lib.bluetooth.le.BlueScanRecordHelper$BlueRecord
+-dontwarn com.munch1182.lib.bluetooth.le.BlueScanRecordHelper
+-dontwarn com.munch1182.lib.bluetooth.le.CommandResult
+-dontwarn com.munch1182.lib.bluetooth.le.ScanKt
+-dontwarn com.munch1182.lib.helper.ActivityCurrHelper
+-dontwarn com.munch1182.lib.helper.ActivityKt
+-dontwarn com.munch1182.lib.helper.AllowDeniedDialog
+-dontwarn com.munch1182.lib.helper.DialogKt
+-dontwarn com.munch1182.lib.helper.ResultDialog
+-dontwarn com.munch1182.lib.helper.result.ExtendKt
+-dontwarn com.munch1182.lib.helper.result.PermissionsIntentHelper
+-dontwarn com.munch1182.lib.helper.result.ResultHelper$JudgeHelper
+-dontwarn com.munch1182.lib.helper.result.ResultHelper$PermissionDialogTime$BeforeRequest
+-dontwarn com.munch1182.lib.helper.result.ResultHelper$PermissionDialogTime$Denied
+-dontwarn com.munch1182.lib.helper.result.ResultHelper$PermissionDialogTime$NeverAsk
+-dontwarn com.munch1182.lib.helper.result.ResultHelper$PermissionDialogTime
+-dontwarn com.munch1182.lib.helper.result.ResultHelper$PermissionsResultHelper
+-dontwarn com.munch1182.lib.helper.result.ResultHelper

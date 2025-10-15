@@ -25,6 +25,7 @@ import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.onIntent
 import com.munch1182.p1.base.onPermission
 import com.munch1182.p1.ui.ClickButton
+import com.munch1182.p1.ui.VSpacer
 import com.munch1182.p1.ui.setContentWithRv
 
 class ResultActivity : BaseActivity() {
@@ -36,18 +37,18 @@ class ResultActivity : BaseActivity() {
     @Composable
     private fun Views() {
         var result by remember { mutableStateOf("") }
-        ClickButton("设置界面") {
-            startActivity(appSetting())
-        }
+        ClickButton("设置界面") { startActivity(appSetting()) }
+        VSpacer()
         val callback: (Any) -> Unit = { result = it.toString() }
-
         ClickButton("相机权限") {
+            callback("")
             permission(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
                 .onPermission("相机" to "拍摄视频", "麦克风" to "录音和音频通话")
                 .manualIntent()
                 .request(callback)
         }
         ClickButton("蓝牙权限") {
+            callback("")
             val permission = mutableListOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 permission.addAll(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))

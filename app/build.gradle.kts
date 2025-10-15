@@ -10,7 +10,7 @@ android {
 
     buildFeatures {
         compose = true
-        dataBinding = true
+        viewBinding = true
     }
 
     setAPkRename()
@@ -22,7 +22,7 @@ android {
             applicationIdSuffix = ".zkeg"
             versionNameSuffix = "-zkeg"
         }
-        create("p1") {
+        create("core") {
             dimension = "blue"
         }
     }
@@ -46,9 +46,18 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
+    implementation(libs.androidx.compose.material.icons)
 
     implementation(libs.androidx.core.splash)
+    implementation(libs.androidx.constraintlayout)
 
+    implementation(platform(libs.okhttp.bom))
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+
+    // https://github.com/GetStream/webrtc-android
+    //noinspection UseTomlInstead
+    implementation("io.getstream:stream-webrtc-android:1.3.10")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -57,4 +66,5 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
 }

@@ -4,9 +4,9 @@ import java.io.File
 import java.util.Properties
 
 object AppVersion {
-    const val COMPILE_SDK = 35
+    const val COMPILE_SDK = 36
     const val MIN_SDK = 26
-    const val TARGET_SDK = 35
+    const val TARGET_SDK = 36
 
     // 所以所有对外版本必须提交后交付
     fun versionCode() = GitVersion.commitCount()?.toIntOrNull() ?: 0
@@ -25,7 +25,7 @@ private fun find(file: File): Properties? {
 
 fun Project.sign(file: File, sc: SigningConfig) {
     kotlin.runCatching {
-        val prop = find(file) ?: return;
+        val prop = find(file) ?: return
         sc.storeFile(file(prop.getProperty("keyFile") ?: return))
         sc.storePassword(prop.getProperty("storePassword"))
         sc.keyAlias(prop.getProperty("keyAlias"))

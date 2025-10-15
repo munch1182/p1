@@ -20,13 +20,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
@@ -72,14 +70,10 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
     private var _gatt: BluetoothGatt? = null
     private val _data = MutableSharedFlow<ByteArray>()
     private val _state = MutableStateFlow<ConnectState>(ConnectState.Disconnected)
-    private val _errors = Channel<Throwable>(Channel.BUFFERED)
-
     private val pendingGattOperations = ConcurrentHashMap<GattOpKey, Continuation<*>>()
 
-    // Public flows
     val data: Flow<ByteArray> = _data.asSharedFlow()
     val state: Flow<ConnectState> = _state.asStateFlow()
-    val errors: Flow<Throwable> = _errors.receiveAsFlow()
     val gatt: BluetoothGatt? get() = _gatt
 
     private val gattCallback = object : BluetoothGattCallback() {
@@ -192,9 +186,8 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
                 _gatt = dev.connectGatt(
                     AppHelper, false, gattCallback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK
                 )
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _state.value = ConnectState.Disconnected
-                _errors.send(BluetoothException("Connection failed: ${e.message}"))
             }
         }
     }
@@ -207,8 +200,9 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
                     _state.emit(ConnectState.Disconnected)
                 }
                 _gatt?.disconnect()
-            } catch (e: Exception) {
-                _errors.send(e)
+            } finally {
+                runCatching { _gatt?.close() }
+                _gatt = null
             }
         }
     }
