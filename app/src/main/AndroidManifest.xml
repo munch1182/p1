@@ -35,6 +35,9 @@
         android:theme="@style/Theme.P1.AppCompat"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".views.ScanActivity"
+            android:exported="false" />
+        <activity
             android:name=".views.NetPhoneActivity"
             android:exported="false" />
         <activity

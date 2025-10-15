@@ -31,6 +31,7 @@ android {
 dependencies {
     implementation(projects.lib)
     implementation(projects.libui)
+    implementation(projects.libscan)
     implementation(projects.libbluetooth)
 
     implementation(libs.androidx.core.ktx)
@@ -58,6 +59,8 @@ dependencies {
     // https://github.com/GetStream/webrtc-android
     //noinspection UseTomlInstead
     implementation("io.getstream:stream-webrtc-android:1.3.10")
+
+    implementation(libs.androidx.camera.view)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

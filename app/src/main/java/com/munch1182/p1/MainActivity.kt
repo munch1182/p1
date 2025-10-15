@@ -11,12 +11,14 @@ import com.munch1182.p1.views.AboutActivity
 import com.munch1182.p1.views.BluetoothActivity
 import com.munch1182.p1.views.NetPhoneActivity
 import com.munch1182.p1.views.ResultActivity
+import com.munch1182.p1.views.ScanActivity
 
 class MainActivity : BaseActivity() {
 
     private val items: Array<Pair<Any, () -> Unit>> by lazy {
         arrayOf(
             "权限相关" to { startActivity<ResultActivity>() },
+            "扫码相关" to { startActivity<ScanActivity>() },
             "蓝牙相关" to { startActivity<BluetoothActivity>() },
             "网络电话" to { startActivity<NetPhoneActivity>() },
             "关于" to { startActivity<AboutActivity>() }

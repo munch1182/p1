@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothStatusCodes
 import android.os.Build
+import android.os.Handler
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
@@ -44,6 +45,8 @@ object BleConnectManager {
      * 多次重复连接不会重复执行；如果需要新连接，需要先调用[disconnect]
      */
     fun connect(dev: BluetoothDevice, scope: CoroutineScope): Flow<BLEConnector.ConnectState> {
+        val oldConnector = manager[dev.address]
+        if (oldConnector != null) return oldConnector.state
         val connector = BLEConnector(dev, scope)
         manager[dev.address] = connector
         connector.connect()
@@ -175,16 +178,16 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
 
     // region Public API
 
-    fun connect() {
+    fun connect(handler: Handler? = null) {
         if (_gatt != null) return
         innerScope.cancel()
         innerScope = CoroutineScope(scope.coroutineContext + SupervisorJob() + Dispatchers.IO)
         innerScope.launch {
             try {
-                log.logStr("connect(${dev.address}): ")
+                log.logStr("connect(${dev.address}) ")
                 _state.value = ConnectState.Connecting
                 _gatt = dev.connectGatt(
-                    AppHelper, false, gattCallback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK
+                    AppHelper, false, gattCallback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK, handler
                 )
             } catch (_: Exception) {
                 _state.value = ConnectState.Disconnected

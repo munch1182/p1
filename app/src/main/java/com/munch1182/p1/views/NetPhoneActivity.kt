@@ -63,15 +63,15 @@ class NetPhoneActivity : BaseActivity() {
     }
 
     private fun destroy() {
-        runCatching { eglBase.release() }
-        runCatching { peerConnectionFactory.dispose() }
         runCatching { videoCapturer?.dispose() }
         runCatching { surfaceTextureHelper?.dispose() }
         runCatching { localVideoTrack?.dispose() }
         runCatching { localAudioTrack?.dispose() }
-        runCatching { socket?.close(1000, null) }
         runCatching { localPeerConnection?.dispose() }
         runCatching { remotePeerConnection?.dispose() }
+        runCatching { socket?.close(1000, null) }
+        runCatching { peerConnectionFactory.dispose() }
+        runCatching { eglBase.release() }
     }
 
     @OptIn(ExperimentalUuidApi::class)

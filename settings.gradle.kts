@@ -37,10 +37,12 @@ rootProject.name = "p1"
 include(":app")
 include(":lib")
 include(":libbluetooth")
+include(":libui")
+include(":libscan")
 
 // 能够以代码的方式引入module
 // 示例：
 // implementation(project(":lib))
 // implementation(projects.lib)
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-include(":libui")
+
