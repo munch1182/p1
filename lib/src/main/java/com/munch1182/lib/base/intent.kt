@@ -4,8 +4,15 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+
+fun <T> Intent.getParcelableCompat(name: String, clazz: Class<T>): T? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    getParcelableExtra(name, clazz)
+} else {
+    @Suppress("DEPRECATION") getParcelableExtra(name)
+}
 
 fun Intent.wPName() = setData(Uri.fromParts("package", ctx.packageName, null))
 

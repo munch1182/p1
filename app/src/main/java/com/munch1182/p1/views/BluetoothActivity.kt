@@ -53,6 +53,7 @@ import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.locSetting
 import com.munch1182.lib.base.toHexStr
 import com.munch1182.lib.base.toast
+import com.munch1182.lib.bluetooth.BluetoothReceiver
 import com.munch1182.lib.bluetooth.le.BLEConnector
 import com.munch1182.lib.bluetooth.le.BleConnectManager
 import com.munch1182.lib.bluetooth.le.BlueScanRecordHelper
@@ -63,6 +64,7 @@ import com.munch1182.lib.helper.result.ifAll
 import com.munch1182.lib.helper.result.isOk
 import com.munch1182.lib.helper.result.manualIntent
 import com.munch1182.lib.helper.result.permissions
+import com.munch1182.p1.App
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.BleSender
 import com.munch1182.p1.base.DialogHelper
@@ -96,11 +98,21 @@ import kotlinx.coroutines.flow.update
 
 class BluetoothActivity : BaseActivity() {
 
+    private val blueState by lazy { BluetoothReceiver() }
     private val vm by viewModels<BluetoothVM>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentWithScroll { Views() }
+        blueState.register(handler = App.instance.appHandler)
+        blueState.add {
+            
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        blueState.unregister()
     }
 
     @Composable
