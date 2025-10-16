@@ -25,7 +25,7 @@ import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.onIntent
 import com.munch1182.p1.base.onPermission
 import com.munch1182.p1.ui.ClickButton
-import com.munch1182.p1.ui.VSpacer
+import com.munch1182.p1.ui.SpacerV
 import com.munch1182.p1.ui.setContentWithRv
 
 class ResultActivity : BaseActivity() {
@@ -38,7 +38,7 @@ class ResultActivity : BaseActivity() {
     private fun Views() {
         var result by remember { mutableStateOf("") }
         ClickButton("设置界面") { startActivity(appSetting()) }
-        VSpacer()
+        SpacerV()
         val callback: (Any) -> Unit = { result = it.toString() }
         ClickButton("相机权限") {
             callback("")
@@ -59,7 +59,7 @@ class ResultActivity : BaseActivity() {
                     .manualIntent()
                     .ifAll()
                     .judge({ isGpsOpen() }, locSetting())
-                    .onIntent("请前往位置界面打开位置，以扫描附加蓝牙设备")
+                    .onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备")
                     .isOk()
                     .permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
                     .onPermission("定位" to "扫描附加蓝牙设备")

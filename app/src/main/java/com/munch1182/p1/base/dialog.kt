@@ -1,7 +1,6 @@
 package com.munch1182.p1.base
 
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,8 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.munch1182.lib.base.DialogViewCtxProvider
 import com.munch1182.lib.helper.AllowDeniedDialog
+import com.munch1182.lib.helper.ResultDialog
 import com.munch1182.lib.helper.currAsFM
 import com.munch1182.lib.helper.result.ResultHelper
 
@@ -22,20 +21,38 @@ object DialogHelper {
         return MessageDialog(ctx!!, title, msg, ok, cancel)
     }
 
-    fun newBottom(isCancel: Boolean = true, content: @Composable (DialogInterface?) -> Unit): DFBottom {
-        return DFBottom(isCancel).inject { it, dialog -> ComposeView(it).apply { setContent({ content(dialog) }) } }
+    fun newBottom(isCancel: Boolean = true, content: @Composable () -> Unit): DFBottom<Boolean> {
+        return DFBottom(true, isCancel).inject { ctx, _ -> ComposeView(ctx).apply { setContent({ content() }) } }
     }
 
-    open class DFBottom(private val isCancel: Boolean = true) : BottomSheetDialogFragment(), AllowDeniedDialog {
-        private var dProvider: DialogViewCtxProvider? = null
-        fun inject(provider: DialogViewCtxProvider?) = this.apply { this.dProvider = provider }
+    fun <RESULT> newBottom(result: RESULT, isCancel: Boolean = true, content: @Composable (SimpleData<RESULT>) -> Unit): DFBottom<RESULT> {
+        return DFBottom(result, isCancel).inject { ctx, result -> ComposeView(ctx).apply { setContent({ content(result) }) } }
+    }
+
+    @FunctionalInterface
+    fun interface ResultDialogViewProvide<RESULT> {
+        fun onCreateView(ctx: Context, result: SimpleData<RESULT>): View?
+    }
+
+    class SimpleData<T>(private var _data: T) {
+        fun update(newData: T) {
+            _data = newData
+        }
+
+        val data get() = _data
+    }
+
+    open class DFBottom<RESULT>(result: RESULT, private val isCancel: Boolean = true) : BottomSheetDialogFragment(), ResultDialog<RESULT> {
+        private val _result = SimpleData(result)
+        private var dProvider: ResultDialogViewProvide<RESULT>? = null
+        fun inject(provider: ResultDialogViewProvide<RESULT>?) = this.apply { this.dProvider = provider }
 
         private var vbInflater: ((LayoutInflater, ViewGroup?, Boolean) -> ViewBinding)? = null
         private var bind: ViewBinding? = null
         private var onViewCreated: ((ViewBinding) -> Unit)? = null
 
         @Suppress("UNCHECKED_CAST")
-        fun <VB : ViewBinding> inject(inflater: (LayoutInflater, ViewGroup?, Boolean) -> VB, onViewCreated: (VB) -> Unit): DFBottom {
+        fun <VB : ViewBinding> inject(inflater: (LayoutInflater, ViewGroup?, Boolean) -> VB, onViewCreated: (VB) -> Unit): DFBottom<RESULT> {
             this.vbInflater = inflater
             this.onViewCreated = { onViewCreated.invoke(it as VB) }
             return this
@@ -44,7 +61,7 @@ object DialogHelper {
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
             val bind = bind ?: vbInflater?.invoke(inflater, container, false)?.apply { bind = this }
             if (bind != null) return bind.root
-            return (container?.context ?: context)?.let { dProvider?.onCreateView(it, dialog) } ?: super.onCreateView(inflater, container, savedInstanceState)
+            return (container?.context ?: context)?.let { dProvider?.onCreateView(it, _result) } ?: super.onCreateView(inflater, container, savedInstanceState)
         }
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -54,7 +71,7 @@ object DialogHelper {
             isCancelable = isCancel
         }
 
-        override val result: Boolean get() = false
+        override val result: RESULT get() = _result.data
 
         override fun show() {
             show(currAsFM.supportFragmentManager, null)
@@ -63,9 +80,7 @@ object DialogHelper {
 }
 
 private class MessageDialog(
-    ctx: Context, title: String, msg: String,
-    ok: String = ctx.getString(android.R.string.ok), cancel: String = ctx.getString(android.R.string.cancel),
-    isCancelable: Boolean = true
+    ctx: Context, title: String, msg: String, ok: String = ctx.getString(android.R.string.ok), cancel: String = ctx.getString(android.R.string.cancel), isCancelable: Boolean = true
 ) : AlertDialog(ctx), AllowDeniedDialog {
     private var _result = false
     override val result get() = _result

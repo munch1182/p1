@@ -96,15 +96,14 @@ fun Items(modifier: Modifier = Modifier, content: @Composable LazyItemScope.() -
 
 @Composable
 fun <T> RvPage(items: Array<T>, modifier: Modifier = Modifier, key: ((T) -> Any)? = null, content: @Composable LazyItemScope.(T) -> Unit) {
-    LazyColumn(modifier = modifier) {
-        items(items.size, key = { key?.invoke(items[it]) ?: it }) { content(items[it]) }
-    }
+    RvPageIter(items, modifier, key) { _, t -> content(t) }
 }
 
 @Composable
-fun <T> RvPage(items: () -> Array<T>, modifier: Modifier = Modifier, key: ((T) -> Any)? = null, content: @Composable LazyItemScope.(T) -> Unit) {
-    val item = items()
-    RvPage(items = item, modifier = modifier, key = key, content = content)
+fun <T> RvPageIter(items: Array<T>, modifier: Modifier = Modifier, key: ((T) -> Any)? = null, content: @Composable LazyItemScope.(Int, T) -> Unit) {
+    LazyColumn(modifier = modifier) {
+        items(items.size, key = { key?.invoke(items[it]) ?: it }) { content(it, items[it]) }
+    }
 }
 
 @Composable
@@ -199,7 +198,7 @@ fun RadioGroup(options: List<String>, selectedIndex: Int, onSelected: (Int) -> U
  * 垂直间距
  */
 @Composable
-fun VSpacer(height: Dp = PagePadding) {
+fun SpacerV(height: Dp = PagePadding) {
     Spacer(Modifier.height(height))
 }
 
@@ -207,7 +206,7 @@ fun VSpacer(height: Dp = PagePadding) {
  * 水平间距
  */
 @Composable
-fun HSpacer(width: Dp = PagePadding) {
+fun SpacerH(width: Dp = PagePadding) {
     Spacer(Modifier.width(width))
 }
 
@@ -218,7 +217,7 @@ fun HSpacer(width: Dp = PagePadding) {
 fun DividerWithSpacer() {
     Column {
         HorizontalDivider()
-        VSpacer()
+        SpacerV()
     }
 }
 

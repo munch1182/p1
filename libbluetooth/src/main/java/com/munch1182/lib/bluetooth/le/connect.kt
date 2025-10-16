@@ -184,7 +184,7 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
         innerScope = CoroutineScope(scope.coroutineContext + SupervisorJob() + Dispatchers.IO)
         innerScope.launch {
             try {
-                log.logStr("connect(${dev.address}) ")
+                log.logStr("connect(${dev.address})")
                 _state.value = ConnectState.Connecting
                 _gatt = dev.connectGatt(
                     AppHelper, false, gattCallback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK, handler
@@ -198,7 +198,7 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
     fun disconnect() {
         innerScope.launchIO {
             try {
-                log.logStr("disconnect(${dev.address}): ")
+                log.logStr("disconnect(${dev.address})")
                 if (_state.value == ConnectState.Disconnected || _state.value == ConnectState.Connecting) {
                     _state.emit(ConnectState.Disconnected)
                 }
