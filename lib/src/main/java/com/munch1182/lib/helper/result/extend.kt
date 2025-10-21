@@ -25,42 +25,21 @@ fun Map<String, PermissionResult>.isAllGranted() = this.values.all { it.isGrante
 fun ResultHelper.PermissionsResultHelper.manualIntent(intent: Intent = appSetting()) = PermissionsIntentHelper(this, intent)
 
 /**
- * 如果当前请求的结果[any]返回true，则执行下一个请求，否则不会执行下一个请求也不会回调
- */
-suspend fun ResultHelper.PermissionsResultHelper.ifAny(any: (Map<String, PermissionResult>) -> Boolean): ResultHelper {
-    val result = suspendCancellableCoroutine { ctx -> request { ctx.resume(it) } }
-    return ResultHelper(fm.takeIf { any(result) })
-}
-
-/**
  * 如果当前请求的结果返回true，则执行下一个请求，否则不会执行下一个请求也不会回调
  *
  * @see [isAllGranted]
  */
-suspend fun ResultHelper.PermissionsResultHelper.ifAll() = ifAny { it.isAllGranted() }
+fun ResultHelper.PermissionsResultHelper.ifAll() = ifAny { it.isAllGranted() }
 
-/**
- * 如果当前请求的结果[any]返回true，则执行下一个请求，否则不会执行下一个请求也不会回调
- */
-suspend fun PermissionsIntentHelper.ifAny(any: (Map<String, PermissionResult>) -> Boolean): ResultHelper {
-    val result = suspendCancellableCoroutine { ctx -> request { ctx.resume(it) } }
-    return ResultHelper(helper.fm.takeIf { any(result) })
+fun PermissionsIntentHelper.ifAny(any: (Map<String, PermissionResult>) -> Boolean) = ContactResultHelper(helper.fm).addTask {
+    val result = suspendCancellableCoroutine { ctx -> request { r -> ctx.resume(r) } }
+    any.invoke(result)
 }
 
-/**
- * 如果当前请求的结果返回true，则执行下一个请求，否则不会执行下一个请求也不会回调
- *
- * @see [isAllGranted]
- */
-suspend fun PermissionsIntentHelper.ifAll() = ifAny { it.isAllGranted() }
+fun PermissionsIntentHelper.ifAll() = ifAny { it.isAllGranted() }
+fun ContactPermissionsIntentHelper.ifAll() = ifAny { it.isAllGranted() }
 
-/**
- * 如果当前请求的结果返回true，则执行下一个请求，否则不会执行下一个请求也不会回调
- */
-suspend fun ResultHelper.JudgeHelper.isOk(): ResultHelper {
-    val result = suspendCancellableCoroutine { ctx -> request { ctx.resume(it) } }
-    return ResultHelper(fm.takeIf { result })
-}
+fun ContactResultHelper.ContactPermissionsResultHelper.manualIntent(intent: Intent = appSetting()) = ContactPermissionsIntentHelper(PermissionsIntentHelper(permissionsHelper, intent), contact)
 
 /**
  * 给[ResultHelper.PermissionsResultHelper]增加跳转到设置界面手动开启权限的功能
@@ -73,7 +52,7 @@ class PermissionsIntentHelper(internal val helper: ResultHelper.PermissionsResul
         helper.request { permissions ->
             val neverAsk = permissions.filter { v -> v.value.isNeverAsk }.keys.toTypedArray()
             if (neverAsk.isEmpty()) return@request callback(permissions)
-            helper.fm?.lifecycleScope?.launchIO {
+            helper.fm.lifecycleScope.launchIO {
                 if (!helper.showExplainDialogIfNeed(ResultHelper.PermissionDialogTime.NeverAsk, neverAsk)) {
                     return@launchIO callback(permissions)
                 }
@@ -84,5 +63,13 @@ class PermissionsIntentHelper(internal val helper: ResultHelper.PermissionsResul
                 }
             }
         }
+    }
+}
+
+class ContactPermissionsIntentHelper(internal val helper: PermissionsIntentHelper, private val contact: ContactResultHelper) {
+
+    fun ifAny(any: (Map<String, PermissionResult>) -> Boolean) = contact.addTask {
+        val result = suspendCancellableCoroutine { ctx -> helper.request { r -> ctx.resume(r) } }
+        any.invoke(result)
     }
 }

@@ -13,6 +13,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.munch1182.lib.helper.AllowDeniedDialog
 import com.munch1182.lib.helper.ResultDialog
 import com.munch1182.lib.helper.currAsFM
+import com.munch1182.lib.helper.result.ContactResultHelper
 import com.munch1182.lib.helper.result.ResultHelper
 
 object DialogHelper {
@@ -95,20 +96,21 @@ private class MessageDialog(
     }
 }
 
-fun ResultHelper.PermissionsResultHelper.onPermission(vararg req: Pair<String, String>): ResultHelper.PermissionsResultHelper {
-    return onDialog { time, _ ->
-        when (time) {
-            ResultHelper.PermissionDialogTime.BeforeRequest -> null
-            ResultHelper.PermissionDialogTime.Denied -> DialogHelper.newMessage("权限请求", req.joinToString(";\n") { "需要授予${it.first}权限用于${it.second}" }, "授权", "拒绝")
-            ResultHelper.PermissionDialogTime.NeverAsk -> DialogHelper.newMessage("权限请求", "需要前往设置界面手动允许${req.joinToString("、") { it.first }}权限才能使用该功能", "前往", "拒绝")
-        }
-    }
+private fun onPermissionDialog(time: ResultHelper.PermissionDialogTime, vararg req: Pair<String, String>) = when (time) {
+    ResultHelper.PermissionDialogTime.BeforeRequest -> null
+    ResultHelper.PermissionDialogTime.Denied -> DialogHelper.newMessage("权限请求", req.joinToString(";\n") { "需要授予${it.first}权限用于${it.second}" }, "授权", "拒绝")
+    ResultHelper.PermissionDialogTime.NeverAsk -> DialogHelper.newMessage("权限请求", "需要前往设置界面手动允许${req.joinToString("、") { it.first }}权限才能使用该功能", "前往", "拒绝")
 }
 
-fun ResultHelper.IntentResultHelper.onIntent(content: String): ResultHelper.IntentResultHelper {
-    return onDialog { DialogHelper.newMessage("前往", content, "前往") }
-}
+fun ResultHelper.PermissionsResultHelper.onPermission(vararg req: Pair<String, String>) = onDialog { time, _ -> onPermissionDialog(time, *req) }
 
-fun ResultHelper.JudgeHelper.onIntent(content: String): ResultHelper.JudgeHelper {
-    return onDialog { DialogHelper.newMessage("前往", content, "前往") }
-}
+fun ContactResultHelper.ContactPermissionsResultHelper.onPermission(vararg req: Pair<String, String>) = onDialog { time, _ -> onPermissionDialog(time, *req) }
+
+private fun onIntentDialog(content: String) = DialogHelper.newMessage("前往", content, "前往")
+
+fun ResultHelper.IntentResultHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
+
+fun ResultHelper.JudgeHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
+
+fun ContactResultHelper.ContactIntentResultHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
+fun ContactResultHelper.ContactJudgeHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }

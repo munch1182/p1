@@ -10,6 +10,7 @@ import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.RvPage
 import com.munch1182.p1.ui.setContentWithScroll
 import com.munch1182.p1.views.AboutActivity
+import com.munch1182.p1.views.AudioActivity
 import com.munch1182.p1.views.BluetoothActivity
 import com.munch1182.p1.views.NetPhoneActivity
 import com.munch1182.p1.views.ResultActivity
@@ -26,6 +27,7 @@ class MainActivity : BaseActivity() {
                 newClass<ResultActivity>("权限相关"),
                 newClass<ScanActivity>("扫码相关"),
                 newClass<BluetoothActivity>("蓝牙相关"),
+                newClass<AudioActivity>("音频相关"),
                 newClass<NetPhoneActivity>("网络电话"),
                 newClass<AboutActivity>("关于")
             )

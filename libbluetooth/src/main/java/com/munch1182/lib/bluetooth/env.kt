@@ -52,7 +52,7 @@ class BluetoothReceiver : BroadcastReceiver(), ARManager<BluetoothReceiver.OnBlu
             BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
                 val curr = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1)
                 val prev = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, -1)
-                update(BlueState.BondStateChanged(dev, prev, curr))
+                update(BlueState.BondStateChanged(dev, BlueBondState.from(prev), BlueBondState.from(curr)))
             }
 
             BluetoothDevice.ACTION_ACL_CONNECTED -> update(BlueState.AclConnected(dev))
@@ -60,7 +60,7 @@ class BluetoothReceiver : BroadcastReceiver(), ARManager<BluetoothReceiver.OnBlu
 
             BluetoothAdapter.ACTION_STATE_CHANGED -> {
                 val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
-                update(BlueState.StateChanged(state))
+                update(BlueState.BlueStateChanged(BlueSysState.from(state)))
             }
         }
     }
@@ -74,17 +74,62 @@ class BluetoothReceiver : BroadcastReceiver(), ARManager<BluetoothReceiver.OnBlu
         fun onBlueStateChange(state: BlueState)
     }
 
+    sealed class BlueBondState(val value: Int) {
+        object BondNone : BlueBondState(BluetoothDevice.BOND_NONE)
+        object Bonding : BlueBondState(BluetoothDevice.BOND_BONDING)
+        object Bonded : BlueBondState(BluetoothDevice.BOND_BONDED)
+
+        override fun toString() = when (this) {
+            BondNone -> "BondNone"
+            Bonded -> "Bonded"
+            Bonding -> "Bonding"
+        }
+
+        companion object {
+            fun from(state: Int) = when (state) {
+                BluetoothDevice.BOND_NONE -> BondNone
+                BluetoothDevice.BOND_BONDED -> Bonded
+                BluetoothDevice.BOND_BONDING -> Bonding
+                else -> null
+            }
+        }
+    }
+
+    sealed class BlueSysState(val value: Int) {
+        object Off : BlueSysState(BluetoothAdapter.STATE_OFF)
+        object On : BlueSysState(BluetoothAdapter.STATE_ON)
+        object TurningOn : BlueSysState(BluetoothAdapter.STATE_TURNING_ON)
+        object TurningOff : BlueSysState(BluetoothAdapter.STATE_TURNING_OFF)
+
+        override fun toString() = when (this) {
+            Off -> "OFF"
+            On -> "ON"
+            TurningOff -> "TURNING_ON"
+            TurningOn -> "TURNING_OFF"
+        }
+
+        companion object {
+            fun from(state: Int) = when (state) {
+                BluetoothAdapter.STATE_OFF -> Off
+                BluetoothAdapter.STATE_ON -> On
+                BluetoothAdapter.STATE_TURNING_ON -> TurningOn
+                BluetoothAdapter.STATE_TURNING_OFF -> TurningOff
+                else -> null
+            }
+        }
+    }
+
     sealed class BlueState {
-        class BondStateChanged(val dev: BluetoothDevice?, val curr: Int, val prev: Int) : BlueState()
+        class BondStateChanged(val dev: BluetoothDevice?, val curr: BlueBondState?, val prev: BlueBondState?) : BlueState()
         class AclConnected(val dev: BluetoothDevice?) : BlueState()
         class AclDisconnected(val dev: BluetoothDevice?) : BlueState()
-        class StateChanged(val state: Int) : BlueState()
+        class BlueStateChanged(val state: BlueSysState?) : BlueState()
 
         override fun toString() = when (this) {
             is BondStateChanged -> "BondStateChanged(${dev?.address}):  $curr => $prev"
             is AclConnected -> "AclConnected(${dev?.address})"
             is AclDisconnected -> "AclDisconnected(${dev?.address})"
-            is StateChanged -> "StateChanged($state)"
+            is BlueStateChanged -> "BlueStateChanged($state)"
         }
     }
 }

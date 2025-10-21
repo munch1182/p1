@@ -17,10 +17,10 @@ import com.munch1182.lib.base.isGpsOpen
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.locSetting
 import com.munch1182.lib.helper.result.ifAll
-import com.munch1182.lib.helper.result.isOk
+import com.munch1182.lib.helper.result.ifTrue
+import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.manualIntent
 import com.munch1182.lib.helper.result.permission
-import com.munch1182.lib.helper.result.permissions
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.onIntent
 import com.munch1182.p1.base.onPermission
@@ -54,19 +54,20 @@ class ResultActivity : BaseActivity() {
                 permission.addAll(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
             }
             lifecycleScope.launchIO {
-                permissions(permission.toTypedArray())
+                judge({ isBluetoothOpen() }, blueSetting())
+                    .onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能")
+                    .ifTrue()
+                    .permission(permission.toTypedArray())
                     .onPermission("蓝牙" to "蓝牙相关功能")
                     .manualIntent()
                     .ifAll()
                     .judge({ isGpsOpen() }, locSetting())
                     .onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备")
-                    .isOk()
+                    .ifTrue()
                     .permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-                    .onPermission("定位" to "扫描附加蓝牙设备")
+                    .onPermission("定位" to "扫描附近蓝牙设备")
                     .manualIntent()
                     .ifAll()
-                    .judge({ isBluetoothOpen() }, blueSetting())
-                    .onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能")
                     .request(callback)
             }
         }

@@ -19,10 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
-
 -dontwarn com.munch1182.lib.AppHelper
 -dontwarn com.munch1182.lib.base.ContextKt
--dontwarn com.munch1182.lib.base.DialogViewCtxProvider
 -dontwarn com.munch1182.lib.base.IntentKt
 -dontwarn com.munch1182.lib.base.JudgeKt
 -dontwarn com.munch1182.lib.base.LogKt
@@ -57,4 +55,25 @@
 -dontwarn com.munch1182.lib.helper.result.ResultHelper$PermissionDialogTime$NeverAsk
 -dontwarn com.munch1182.lib.helper.result.ResultHelper$PermissionDialogTime
 -dontwarn com.munch1182.lib.helper.result.ResultHelper$PermissionsResultHelper
--dontwarn com.munch1182.lib.helper.result.ResultHelper
+
+-dontwarn com.munch1182.lib.base.NumberKt
+-dontwarn com.munch1182.lib.base.StrKt
+-dontwarn com.munch1182.lib.base.ThreadHelper
+-dontwarn com.munch1182.lib.base.ThreadProvider
+-dontwarn com.munch1182.lib.bluetooth.BluetoothReceiver$OnBlueStateChange
+-dontwarn com.munch1182.lib.bluetooth.BluetoothReceiver
+-dontwarn com.munch1182.lib.helper.ARManager
+-dontwarn com.munch1182.lib.helper.DataStore$Companion
+-dontwarn com.munch1182.lib.helper.DataStore$Key
+-dontwarn com.munch1182.lib.helper.DataStore
+-dontwarn com.munch1182.lib.helper.FileHelper
+-dontwarn com.munch1182.lib.helper.FileWriteHelper
+-dontwarn com.munch1182.lib.helper.RecordHelper$Companion
+-dontwarn com.munch1182.lib.helper.RecordHelper
+-dontwarn com.munch1182.lib.helper.result.CantactKt
+-dontwarn com.munch1182.lib.helper.result.ContactPermissionsIntentHelper
+-dontwarn com.munch1182.lib.helper.result.ContactResultHelper$ContactJudgeHelper
+-dontwarn com.munch1182.lib.helper.result.ContactResultHelper$ContactPermissionsResultHelper
+-dontwarn com.munch1182.lib.helper.result.ContactResultHelper
+-dontwarn com.munch1182.lib.scan.QrScanHelper$OnQrCodeListener
+-dontwarn com.munch1182.lib.scan.QrScanHelper

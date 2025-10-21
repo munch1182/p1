@@ -45,3 +45,11 @@ fun interface OnStateValueChangeListener<STATE, VALUE> {
 fun interface DialogViewCtxProvider {
     fun onCreateView(ctx: Context, dialog: DialogInterface?): View?
 }
+
+interface Releasable {
+    fun release()
+}
+
+fun Array<Releasable>.release() {
+    forEach { it.release() }
+}

@@ -140,6 +140,11 @@ fun StateButton(text: String, state: Boolean, modifier: Modifier = Modifier, onC
     )
 }
 
+@Composable
+fun StateButton(textTrue: String, textFalse: String, state: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    StateButton(if (state) textTrue else textFalse, state, modifier, onClick)
+}
+
 /**
  * 页面跳转按钮 - 快速跳转到其他Activity
  */

@@ -20,7 +20,7 @@ import com.munch1182.lib.helper.isAllow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
-class ResultHelper(private val fm: FragmentActivity?) {
+class ResultHelper(private val fm: FragmentActivity) {
 
     companion object {
         private const val TAG = "com.munch1182.lib.helper.result.ResultHelper"
@@ -43,7 +43,7 @@ class ResultHelper(private val fm: FragmentActivity?) {
      */
     fun judge(judge: (Context) -> Boolean, intent: Intent) = JudgeHelper(fm, judge, intent)
 
-    class PermissionsResultHelper(internal val fm: FragmentActivity?, private val permissions: Array<String>) {
+    class PermissionsResultHelper(internal val fm: FragmentActivity, private val permissions: Array<String>) {
 
         private val result = HashMap<String, PermissionResult>()
         private val canAsk = mutableListOf<String>()
@@ -61,7 +61,7 @@ class ResultHelper(private val fm: FragmentActivity?) {
         }
 
         fun request(callback: (Map<String, PermissionResult>) -> Unit) {
-            fm?.lifecycleScope?.launchIO { requestImpl(PermissionDialogTime.BeforeRequest, callback) }
+            fm.lifecycleScope.launchIO { requestImpl(PermissionDialogTime.BeforeRequest, callback) }
         }
 
         private suspend fun requestImpl(time: PermissionDialogTime, callback: (Map<String, PermissionResult>) -> Unit) {
@@ -89,7 +89,7 @@ class ResultHelper(private val fm: FragmentActivity?) {
          * 每一次执行都请求全部权限，用以获取权限的真实状态，且不会有其它影响
          */
         private suspend fun callPermission(): Map<String, Boolean> {
-            if (permissions.isEmpty() || fm == null) return mapOf()
+            if (permissions.isEmpty()) return mapOf()
             return withUI {
                 suspendCancellableCoroutine { acc ->
                     val permissionFragment = ResultFragment.newPermissions(permissions) {
@@ -113,7 +113,7 @@ class ResultHelper(private val fm: FragmentActivity?) {
         }
     }
 
-    class IntentResultHelper(internal val fm: FragmentActivity?, private val intent: Intent) {
+    class IntentResultHelper(internal val fm: FragmentActivity, private val intent: Intent) {
 
         private var onDialog: (() -> AllowDeniedDialog?)? = null
 
@@ -128,29 +128,26 @@ class ResultHelper(private val fm: FragmentActivity?) {
         }
 
         fun request(callback: (ActivityResult) -> Unit) {
-            fm?.lifecycleScope?.launchIO {
+            fm.lifecycleScope.launchIO {
                 val dialog = withUI { onDialog?.invoke()?.isAllow() } ?: true
                 if (!dialog) return@launchIO callback.invoke(ActivityResult(Activity.RESULT_CANCELED, null))
                 callback.invoke(callResult())
             }
         }
 
-        private suspend fun callResult(): ActivityResult {
-            fm ?: return ActivityResult(Activity.RESULT_CANCELED, null)
-            return withUI {
-                suspendCancellableCoroutine { acc ->
-                    val intentFragment = ResultFragment.newResult(intent) {
-                        fm.removeFragmentIfExists(TAG)
-                        acc.resume(it)
-                    }
+        private suspend fun callResult() = withUI {
+            suspendCancellableCoroutine { acc ->
+                val intentFragment = ResultFragment.newResult(intent) {
                     fm.removeFragmentIfExists(TAG)
-                    fm.supportFragmentManager.beginTransaction().add(intentFragment, TAG).commitAllowingStateLoss()
+                    acc.resume(it)
                 }
+                fm.removeFragmentIfExists(TAG)
+                fm.supportFragmentManager.beginTransaction().add(intentFragment, TAG).commitAllowingStateLoss()
             }
         }
     }
 
-    class JudgeHelper(internal val fm: FragmentActivity?, private val judge: (Context) -> Boolean, private val intent: Intent) {
+    class JudgeHelper(internal val fm: FragmentActivity, private val judge: (Context) -> Boolean, private val intent: Intent) {
         private var onDialog: (() -> AllowDeniedDialog?)? = null
 
         /**
@@ -164,7 +161,6 @@ class ResultHelper(private val fm: FragmentActivity?) {
         }
 
         fun request(callback: (Boolean) -> Unit) {
-            fm ?: return
             if (judge.invoke(fm)) return callback(true)
             fm.lifecycleScope.launchIO {
                 val dialog = withUI { onDialog?.invoke()?.isAllow() } ?: true
@@ -174,17 +170,14 @@ class ResultHelper(private val fm: FragmentActivity?) {
             }
         }
 
-        private suspend fun callResult(): ActivityResult {
-            fm ?: return ActivityResult(Activity.RESULT_CANCELED, null)
-            return withUI {
-                suspendCancellableCoroutine { acc ->
-                    val judgeFragment = ResultFragment.newResult(intent) {
-                        fm.removeFragmentIfExists(TAG)
-                        acc.resume(it)
-                    }
+        private suspend fun callResult() = withUI {
+            suspendCancellableCoroutine { acc ->
+                val judgeFragment = ResultFragment.newResult(intent) {
                     fm.removeFragmentIfExists(TAG)
-                    fm.supportFragmentManager.beginTransaction().add(judgeFragment, TAG).commitAllowingStateLoss()
+                    acc.resume(it)
                 }
+                fm.removeFragmentIfExists(TAG)
+                fm.supportFragmentManager.beginTransaction().add(judgeFragment, TAG).commitAllowingStateLoss()
             }
         }
     }

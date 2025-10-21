@@ -51,6 +51,7 @@ import com.munch1182.lib.base.isBluetoothOpen
 import com.munch1182.lib.base.isGpsOpen
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.locSetting
+import com.munch1182.lib.base.log
 import com.munch1182.lib.base.toHexStr
 import com.munch1182.lib.base.toast
 import com.munch1182.lib.bluetooth.BluetoothReceiver
@@ -61,9 +62,9 @@ import com.munch1182.lib.bluetooth.le.CommandResult
 import com.munch1182.lib.bluetooth.le.leScanFlow
 import com.munch1182.lib.helper.onResult
 import com.munch1182.lib.helper.result.ifAll
-import com.munch1182.lib.helper.result.isOk
+import com.munch1182.lib.helper.result.ifTrue
+import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.manualIntent
-import com.munch1182.lib.helper.result.permissions
 import com.munch1182.p1.App
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.BleSender
@@ -98,6 +99,8 @@ import kotlinx.coroutines.flow.update
 
 class BluetoothActivity : BaseActivity() {
 
+
+    private val log = log()
     private val blueState by lazy { BluetoothReceiver() }
     private val vm by viewModels<BluetoothVM>()
 
@@ -106,7 +109,7 @@ class BluetoothActivity : BaseActivity() {
         setContentWithScroll { Views() }
         blueState.register(handler = App.instance.appHandler)
         blueState.add {
-            
+            log.logStr(it.toString())
         }
     }
 
@@ -121,18 +124,26 @@ class BluetoothActivity : BaseActivity() {
         var isExpand by remember { mutableStateOf(false) }
         val target by remember { derivedStateOf { !uiState.filter.target.isNullOrBlank() } }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StateButton(if (uiState.isScanning) "停止扫描" else "开始扫描", uiState.isScanning) {
-                withPermission { if (uiState.isScanning) vm.stopScan() else vm.startScan() }
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StateButton(if (uiState.isScanning) "停止扫描" else "开始扫描", uiState.isScanning) {
+                    withPermission { if (uiState.isScanning) vm.stopScan() else vm.startScan() }
+                }
+                ClickIcon(Icons.Filled.ArrowDropDown, modifier = Modifier.rotate(if (isExpand) 0f else 180f)) {
+                    isExpand = !isExpand
+                    if (isExpand) showScanFilterDialog { isExpand = false }
+                }
+                if (target) Text(uiState.filter.target ?: "")
             }
-            ClickIcon(Icons.Filled.ArrowDropDown, modifier = Modifier.rotate(if (isExpand) 0f else 180f)) {
-                isExpand = !isExpand
-                if (isExpand) showScanFilterDialog { isExpand = false }
-            }
-            if (target) Text(uiState.filter.target ?: "")
+            DevsView()
         }
+    }
 
-        BlueDevListView(devices = uiState.devices.toTypedArray(), modifier = Modifier.fillMaxWidth(), onClick = {
+    @Composable
+    private fun DevsView() { // 数据更新时Composable重组，因此将其放入单独的重组范围中
+        val devArray by vm.devArray.collectAsState()
+
+        BlueDevListView(devices = devArray, modifier = Modifier.fillMaxWidth(), onClick = {
             vm.stopScan()
             showConnectDialog(it)
         }, onLongClick = {
@@ -188,22 +199,27 @@ class BluetoothActivity : BaseActivity() {
             Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permission.addAll(
-                arrayOf(
-                    Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT
-                )
-            )
+            permission.addAll(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
         }
         lifecycleScope.launchIO {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                permissions(permission.toTypedArray()).onPermission("蓝牙" to "蓝牙相关功能").manualIntent().ifAll().judge({ isBluetoothOpen() }, blueSetting()).onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能").request { if (it) lifecycleScope.launchIO { any() } }
-            } else {
-                permissions(permission.toTypedArray()).onPermission("蓝牙" to "蓝牙相关功能").manualIntent().ifAll().judge({ isGpsOpen() }, locSetting()).onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备").isOk().permission(
-                    arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                ).onPermission("定位" to "扫描附近蓝牙设备").manualIntent().ifAll().judge({ isBluetoothOpen() }, blueSetting()).onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能").request { if (it) lifecycleScope.launchIO { any() } }
+            val resultHelper = judge({ isBluetoothOpen() }, blueSetting())
+                .onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能")
+                .ifTrue()
+                .permission(permission.toTypedArray())
+                .onPermission("蓝牙" to "蓝牙相关功能")
+                .manualIntent()
+                .ifAll()
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                resultHelper
+                    .judge({ isGpsOpen() }, locSetting())
+                    .onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备")
+                    .ifTrue()
+                    .permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+                    .onPermission("定位" to "扫描附近蓝牙设备")
+                    .manualIntent()
+                    .ifAll()
             }
+            resultHelper.request { if (it) lifecycleScope.launchIO { any() } }
         }
     }
 
@@ -267,17 +283,18 @@ private fun BlueDevItemView(device: BlueDev, modifier: Modifier = Modifier) {
 class BluetoothVM : ViewModel() {
     private val devs = LinkedHashMap<String, BlueDev>()
     private val _uiState = MutableStateFlow(BluetoothUiState())
+    private val _devArray = MutableStateFlow(arrayOf<BlueDev>())
     val uiState = _uiState.asStateFlow()
+    val devArray = _devArray.asStateFlow()
 
     private val scanJob = ReRunJob()
 
     @OptIn(FlowPreview::class)
     fun startScan() {
-        _uiState.update { it.copy(isScanning = true, devices = emptyList()) }
+        devs.clear()
+        _uiState.update { it.copy(isScanning = true) }
         viewModelScope.launchIO(scanJob.newContext) {
-            leScanFlow().filter(_uiState.value.predicate).onEach { devs[it.device.address] = BlueDev.Scan(it) }.sample(650L).map { devs.values.toList() }.collect {
-                _uiState.emit(_uiState.value.copy(devices = it))
-            }
+            leScanFlow().filter(_uiState.value.predicate).onEach { devs[it.device.address] = BlueDev.Scan(it) }.sample(650L).map { devs.values.toTypedArray() }.collect { _devArray.emit(it) }
         }
     }
 
@@ -323,6 +340,7 @@ class BluetoothVM : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
+        stopScan()
         BleConnectManager.cleanup()
     }
 
@@ -340,7 +358,7 @@ data class Filter(
 )
 
 data class BluetoothUiState(
-    val isScanning: Boolean = false, val connectState: BleConnectState = BleConnectState.Disconnected, val filter: Filter = Filter(), val devices: List<BlueDev> = emptyList(), val sendResult: CommandResult<*>? = null
+    val isScanning: Boolean = false, val connectState: BleConnectState = BleConnectState.Disconnected, val filter: Filter = Filter(), val sendResult: CommandResult<*>? = null
 ) {
     val predicate: suspend (ScanResult) -> Boolean
         @SuppressLint("MissingPermission") get() = res@{
@@ -390,11 +408,11 @@ sealed class BlueDev(val mac: String) {
 
     val dev: BluetoothDevice
         get() = when (this) {
-            is Bind -> this._dev
+            is Bind -> this.originDev
             is Scan -> this.scanResult.device
         }
 
     class Scan(val scanResult: ScanResult) : BlueDev(scanResult.device.address)
 
-    class Bind(internal val _dev: BluetoothDevice) : BlueDev(_dev.address)
+    class Bind(internal val originDev: BluetoothDevice) : BlueDev(originDev.address)
 }
