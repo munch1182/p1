@@ -391,7 +391,6 @@ sealed class BleConnectState {
     }
 }
 
-@SuppressLint("MissingPermission")
 sealed class BlueDev(val mac: String) {
 
     val state
@@ -401,6 +400,7 @@ sealed class BlueDev(val mac: String) {
         }
 
     val name
+        @SuppressLint("MissingPermission")
         get() = when (this) {
             is Bind -> dev.name
             is Scan -> scanResult.device.name

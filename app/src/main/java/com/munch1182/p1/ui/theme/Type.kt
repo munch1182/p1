@@ -53,11 +53,8 @@ val HorizontalPagePaddingModifier = Modifier.padding(horizontal = PagePadding)
 val VerticalPagePadding = PagePadding
 val VerticalPagePaddingModifier = Modifier.padding(vertical = PagePadding)
 
-val Modifier.PagePaddingModifier: Modifier get() = this.padding(PagePadding)
-
-val Modifier.HorizontalPagePadding: Modifier get() = this.padding(horizontal = PagePadding)
-
-val Modifier.VerticalPagePadding: Modifier get() = this.padding(vertical = PagePadding)
-
 val TextSm = 12.sp
 val TextLg = 18.sp
+
+
+val FontManySize = TextSm

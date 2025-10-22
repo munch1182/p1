@@ -27,6 +27,11 @@ fun CoroutineScope.launchIO(
     context: CoroutineContext = EmptyCoroutineContext, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend CoroutineScope.() -> Unit
 ) = launch(context + Dispatchers.IO, start, block)
 
+/**
+ * 重复提供的协程上下文
+ *
+ * 当启动新的协程时，会自动取消上一个任务
+ */
 class ReRunJob : CoroutineScope {
     private var currJob: Job? = null
     override val coroutineContext: CoroutineContext get() = currJob ?: EmptyCoroutineContext
