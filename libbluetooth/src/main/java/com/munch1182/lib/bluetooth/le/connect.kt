@@ -213,10 +213,12 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
     /**
      * 发现设备服务并返回发现的结果
      */
+    @Throws(TimeoutException::class)
     suspend fun discoverServices(timeoutMs: Long = 10000): ServicesDiscoveryResult = executeGattOperation(GattOpKey.DiscoverServices, timeoutMs) {
         _gatt?.discoverServices() ?: false
     }
 
+    @Throws(TimeoutException::class)
     suspend fun readCharacteristic(characteristic: BluetoothGattCharacteristic, timeoutMs: Long = 5000): CharacteristicOperationResult = executeGattOperation(GattOpKey.ReadCharacteristic(characteristic.uuid), timeoutMs) {
         _gatt?.readCharacteristic(characteristic) ?: false
     }
@@ -225,7 +227,8 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
      * 直接写入数据，不会监听[BluetoothGattCallback.onCharacteristicWrite]，因为该回调可能比[BluetoothGattCallback.onCharacteristicChanged]更晚回调导致该结果被忽略
      */
     @Suppress("DEPRECATION")
-    fun writeCharacteristic(characteristic: BluetoothGattCharacteristic, data: ByteArray, timeoutMs: Long = 5000): Boolean {
+    @Throws(TimeoutException::class)
+    fun writeCharacteristic(characteristic: BluetoothGattCharacteristic, data: ByteArray): Boolean {
         val gatt = _gatt ?: return false
         // log.logStr("write data(${dev.address}): ${data.toHexStrCompact()}")
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -236,11 +239,13 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
         }
     }
 
+    @Throws(TimeoutException::class)
     suspend fun readDescriptor(descriptor: BluetoothGattDescriptor, timeoutMs: Long = 5000): DescriptorOperationResult = executeGattOperation(GattOpKey.ReadDescriptor(descriptor.uuid), timeoutMs) {
         _gatt?.readDescriptor(descriptor) ?: false
     }
 
     @Suppress("DEPRECATION")
+    @Throws(TimeoutException::class)
     suspend fun writeDescriptor(descriptor: BluetoothGattDescriptor, value: ByteArray, timeoutMs: Long = 5000): DescriptorOperationResult = executeGattOperation(GattOpKey.WriteDescriptor(descriptor.uuid), timeoutMs) {
         runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -252,12 +257,15 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
         }.getOrNull() ?: false
     }
 
+    @Throws(TimeoutException::class)
     suspend fun readRemoteRssi(timeoutMs: Long = 5000): RemoteRssiResult = executeGattOperation(GattOpKey.ReadRemoteRssi, timeoutMs) {
         _gatt?.readRemoteRssi() ?: false
     }
 
+    @Throws(TimeoutException::class)
     suspend fun requestMtu(mtu: Int, timeoutMs: Long = 5000): MtuChangeResult = executeGattOperation(GattOpKey.RequestMtu, timeoutMs) { _gatt?.requestMtu(mtu) ?: false }
 
+    @Throws(TimeoutException::class)
     suspend fun setCharacteristicNotification(characteristic: BluetoothGattCharacteristic, enable: Boolean, descriptorUuid: UUID, timeoutMs: Long = 3000): Boolean = withTimeoutOrNull(timeoutMs) {
         if (!(_gatt?.setCharacteristicNotification(characteristic, enable) ?: true)) {
             log.logStr("setCharacteristicNotification(${dev.address}):  enable: $enable, result: false")
@@ -286,6 +294,7 @@ class BLEConnector(val dev: BluetoothDevice, private var scope: CoroutineScope) 
             if (!operation()) {
                 completePendingOp<T>(key, BluetoothException("GATT operation failed to start"))
             }
+            // 等待pendingGattOperations去执行resume
         }
     } ?: throw TimeoutException("GATT operation timed out after ${timeoutMs}ms")
 

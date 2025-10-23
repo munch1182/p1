@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,6 +21,7 @@ import com.munch1182.lib.base.isGpsOpen
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.locSetting
 import com.munch1182.lib.base.toDateStr
+import com.munch1182.lib.helper.FileHelper
 import com.munch1182.lib.helper.NoticeHelper
 import com.munch1182.lib.helper.result.ifAll
 import com.munch1182.lib.helper.result.ifTrue
@@ -27,6 +29,7 @@ import com.munch1182.lib.helper.result.isAllGranted
 import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.manualIntent
 import com.munch1182.lib.helper.result.permission
+import com.munch1182.lib.helper.toProvider
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.onIntent
 import com.munch1182.p1.base.onPermission
@@ -47,6 +50,17 @@ class ResultActivity : BaseActivity() {
         ClickButton("设置界面") { startActivity(appSetting()) }
         SpacerV()
         val callback: (Any) -> Unit = { result = it.toString() }
+        ClickButton("拍照") {
+            FileHelper.newCache("img", "img.png").toProvider()?.let { uri ->
+                permission(Manifest.permission.CAMERA)
+                    .onPermission("相机" to "拍照")
+                    .manualIntent()
+                    .ifAll()
+                    .contract(ActivityResultContracts.TakePicture(), uri)
+                    .ifAny { it == true }
+                    .request(callback)
+            }
+        }
         ClickButton("相机权限") {
             callback("")
             permission(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).onPermission("相机" to "拍摄视频", "麦克风" to "录音和音频通话").manualIntent().request(callback)
@@ -84,7 +98,6 @@ class ResultActivity : BaseActivity() {
     }
 
 }
-
 
 @SuppressLint("MissingPermission")
 private fun BaseActivity.sendNotice(title: String = "通知", content: String, notifyId: Int = NoticeHelper.newId, onSend: ((Int) -> Unit)? = null) {

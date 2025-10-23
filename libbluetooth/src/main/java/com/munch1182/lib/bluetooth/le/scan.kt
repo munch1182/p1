@@ -6,7 +6,6 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import com.munch1182.lib.base.log
 import com.munch1182.lib.bluetooth.BluetoothIBluetoothEnv
-import com.munch1182.lib.bluetooth.Error
 import com.munch1182.lib.bluetooth.IBluetoothEnv
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
@@ -66,7 +65,7 @@ object BLEScanner : IBluetoothEnv by BluetoothIBluetoothEnv {
             }
 
             override fun onScanFailed(errorCode: Int) {
-                close(Error("onScanFailed: $errorCode"))
+                close(IllegalStateException("onScanFailed: $errorCode"))
             }
         }
 

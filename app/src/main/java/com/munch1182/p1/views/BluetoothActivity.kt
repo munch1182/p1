@@ -99,7 +99,6 @@ import kotlinx.coroutines.flow.update
 
 class BluetoothActivity : BaseActivity() {
 
-
     private val log = log()
     private val blueState by lazy { BluetoothReceiver() }
     private val vm by viewModels<BluetoothVM>()

@@ -3,4 +3,7 @@
     <cache-path
         name="audio"
         path="audio" />
+    <cache-path
+        name="img"
+        path="img" />
 </paths>

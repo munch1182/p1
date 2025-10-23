@@ -6,11 +6,25 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 interface ARManager<T> : Iterable<T> {
+    /**
+     * 添加回调
+     */
     fun add(t: T): ARManager<T>
+
+    /**
+     * 移除回调
+     */
     fun remove(t: T): ARManager<T>
+
+    /**
+     * 移除所有回调
+     */
     fun clear(): ARManager<T>
 }
 
+/**
+ * 对[ARManager]的默认实现
+ */
 class ARDefaultManager<T> : ARManager<T> {
     private val _list = mutableListOf<T>()
     override fun add(t: T): ARManager<T> {
@@ -33,6 +47,9 @@ class ARDefaultManager<T> : ARManager<T> {
     val size get() = _list.size
 }
 
+/**
+ * 对[ARManager]的同步默认实现
+ */
 class ARDefaultSyncManager<T> : ARManager<T> {
     private val lock = ReentrantLock()
     private val manager = ARDefaultManager<T>()

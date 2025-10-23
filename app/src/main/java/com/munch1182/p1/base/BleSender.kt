@@ -7,17 +7,25 @@ import com.munch1182.lib.base.subArray
 import com.munch1182.lib.bluetooth.le.BLEConnector
 import com.munch1182.lib.bluetooth.le.BleCommand
 import com.munch1182.lib.bluetooth.le.BleCommandSender
-import com.munch1182.lib.bluetooth.le.CommandExecutionResult
+import com.munch1182.lib.bluetooth.le.CommandSendResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.coroutineContext
 
+/**
+ * 蓝牙数据解析同一处理
+ */
 object BleSender : BleCommandSender<Byte>(AppHelper) {
 
-    val bleRefs = ConcurrentHashMap<String, BleWriteRef>()
-    override fun parseResponseType(data: ByteArray): Byte? {
+    private val bleRefs = ConcurrentHashMap<String, BleWriteRef>()
+
+    fun send(address: String, data: ByteArray): Boolean {
+        return bleRefs.get(address)?.let { it.connector.writeCharacteristic(it.write, data) } ?: false
+    }
+
+    override fun parsePackType(data: ByteArray): Byte? {
         return data.getOrNull(3)
     }
 
@@ -76,13 +84,12 @@ class SnQuery(private val mac: String) : BleCommand<Byte, String>, Command {
     override val type: Byte get() = 0x06.toByte()
     private val waitRespDataType = 0x06.toByte()
 
-    override suspend fun execute(): CommandExecutionResult<Byte, String> {
+    override suspend fun send(): CommandSendResult<Byte, String> {
         val data = newSend(1, 6)
-        val write = BleSender.bleRefs[mac] ?: return CommandExecutionResult.Failed("No write reference found")
-        if (!write.connector.writeCharacteristic(write.write, data)) {
-            return CommandExecutionResult.Failed("Failed to write characteristic")
+        if (!BleSender.send(mac, data)) {
+            return CommandSendResult.Failed("Failed to write characteristic")
         }
-        return CommandExecutionResult.WaitingForResponse(waitRespDataType)
+        return CommandSendResult.WaitingForResponse(waitRespDataType)
     }
 
     override suspend fun handleResponse(data: ByteArray): String {

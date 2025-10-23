@@ -9,8 +9,8 @@ suspend fun BLEConnector.initBlue(): IniResult {
     val writer = service.characteristics.find { it.uuid.startsWith("0000b03f") } ?: return IniResult.NoFindUUIDWrite
     val notify = service.characteristics.find { it.uuid.startsWith("0000b03e") } ?: return IniResult.NoFindUUIDNotify
     val notifyUUID = notify.descriptors.find { it.uuid.startsWith("00002902") } ?: return IniResult.NoFindUUIDNotifyUUID
-    val result = setCharacteristicNotification(notify, true, notifyUUID.uuid)
-    if (!result) return IniResult.NoSetNotify
+    val result = runCatching { setCharacteristicNotification(notify, true, notifyUUID.uuid) }.getOrNull()
+    if (result == null || !result) return IniResult.NoSetNotify
     BleSender.register(this, writer)
     return IniResult.Success
 }

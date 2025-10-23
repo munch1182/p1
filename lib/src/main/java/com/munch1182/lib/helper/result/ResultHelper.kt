@@ -41,7 +41,39 @@ class ResultHelper(private val fm: FragmentActivity) {
      *
      * 适应场景：打开定位/蓝牙等
      */
-    fun judge(judge: (Context) -> Boolean, intent: Intent) = JudgeHelper(fm, judge, intent)
+    fun judge(judge: (Context) -> Boolean, intent: Intent) = JudgeResultHelper(fm, judge, intent)
+
+    /**
+     * 执行[ActivityResultContracts]中的对象并返回结果
+     */
+    fun <I, O> contract(contract: ActivityResultContract<I, O>, input: I) = ContractResultHelper(fm, contract, input)
+
+    class ContractResultHelper<I, O>(internal val fm: FragmentActivity, private val contract: ActivityResultContract<I, O>, private val input: I) {
+        private var onDialog: (() -> AllowDeniedDialog?)? = null
+        fun onDialog(provide: () -> AllowDeniedDialog?): ContractResultHelper<I, O> {
+            this.onDialog = provide
+            return this
+        }
+
+        fun request(callback: (O?) -> Unit) {
+            fm.lifecycleScope.launchIO {
+                val dialog = withUI { onDialog?.invoke()?.isAllow() } ?: true
+                if (!dialog) return@launchIO callback.invoke(null)
+                callback.invoke(callResult())
+            }
+        }
+
+        private suspend fun callResult() = withUI {
+            suspendCancellableCoroutine { acc ->
+                val judgeFragment = ResultFragment(input, contract) {
+                    fm.removeFragmentIfExists(TAG)
+                    acc.resume(it)
+                }
+                fm.removeFragmentIfExists(TAG)
+                fm.supportFragmentManager.beginTransaction().add(judgeFragment, TAG).commitAllowingStateLoss()
+            }
+        }
+    }
 
     class PermissionsResultHelper(internal val fm: FragmentActivity, private val permissions: Array<String>) {
 
@@ -147,7 +179,7 @@ class ResultHelper(private val fm: FragmentActivity) {
         }
     }
 
-    class JudgeHelper(internal val fm: FragmentActivity, private val judge: (Context) -> Boolean, private val intent: Intent) {
+    class JudgeResultHelper(internal val fm: FragmentActivity, private val judge: (Context) -> Boolean, private val intent: Intent) {
         private var onDialog: (() -> AllowDeniedDialog?)? = null
 
         /**
@@ -155,8 +187,8 @@ class ResultHelper(private val fm: FragmentActivity) {
          *
          *  如果[show]返回不为null，则会显示该[AllowDeniedDialog]并根据[AllowDeniedDialog.result]继续或者终止流程
          */
-        fun onDialog(show: () -> AllowDeniedDialog?): JudgeHelper {
-            this@JudgeHelper.onDialog = show
+        fun onDialog(show: () -> AllowDeniedDialog?): JudgeResultHelper {
+            this@JudgeResultHelper.onDialog = show
             return this
         }
 

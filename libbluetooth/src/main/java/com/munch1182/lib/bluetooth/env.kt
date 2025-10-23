@@ -25,6 +25,11 @@ object BluetoothIBluetoothEnv : IBluetoothEnv {
     override val bm: BluetoothManager? get() = _bm
 }
 
+/**
+ * 蓝牙状态监听
+ *
+ * @see register
+ */
 class BluetoothReceiver : BroadcastReceiver(), ARManager<BluetoothReceiver.OnBlueStateChange> by ARDefaultSyncManager() {
     private val log = log()
     fun register(ctx: Context = AppHelper, handler: Handler? = null) {

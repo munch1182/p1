@@ -13,7 +13,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.munch1182.lib.helper.AllowDeniedDialog
 import com.munch1182.lib.helper.ResultDialog
 import com.munch1182.lib.helper.currAsFM
-import com.munch1182.lib.helper.result.ContactResultHelper
+import com.munch1182.lib.helper.result.ResultChainHelper
 import com.munch1182.lib.helper.result.ResultHelper
 
 object DialogHelper {
@@ -22,12 +22,10 @@ object DialogHelper {
         return MessageDialog(ctx!!, title, msg, ok, cancel)
     }
 
-    fun newBottom(isCancel: Boolean = true, content: @Composable () -> Unit): DFBottom<Boolean> {
-        return DFBottom(true, isCancel).inject { ctx, _ -> ComposeView(ctx).apply { setContent({ content() }) } }
-    }
+    fun newBottom(isCancel: Boolean = true, content: @Composable () -> Unit) = newBottom(false, isCancel) { content() }
 
     fun <RESULT> newBottom(result: RESULT, isCancel: Boolean = true, content: @Composable (SimpleData<RESULT>) -> Unit): DFBottom<RESULT> {
-        return DFBottom(result, isCancel).inject { ctx, result -> ComposeView(ctx).apply { setContent({ content(result) }) } }
+        return DFBottom(result, isCancel).inject { ctx, result -> ComposeView(ctx).apply { setContent { content(result) } } }
     }
 
     @FunctionalInterface
@@ -104,13 +102,13 @@ private fun onPermissionDialog(time: ResultHelper.PermissionDialogTime, vararg r
 
 fun ResultHelper.PermissionsResultHelper.onPermission(vararg req: Pair<String, String>) = onDialog { time, _ -> onPermissionDialog(time, *req) }
 
-fun ContactResultHelper.ContactPermissionsResultHelper.onPermission(vararg req: Pair<String, String>) = onDialog { time, _ -> onPermissionDialog(time, *req) }
+fun ResultChainHelper.ChainPermissionsResultHelper.onPermission(vararg req: Pair<String, String>) = onDialog { time, _ -> onPermissionDialog(time, *req) }
 
 private fun onIntentDialog(content: String) = DialogHelper.newMessage("前往", content, "前往")
 
 fun ResultHelper.IntentResultHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
 
-fun ResultHelper.JudgeHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
+fun ResultHelper.JudgeResultHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
 
-fun ContactResultHelper.ContactIntentResultHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
-fun ContactResultHelper.ContactJudgeHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
+fun ResultChainHelper.ChainIntentResultHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }
+fun ResultChainHelper.ChainJudgeResultHelper.onIntent(content: String) = onDialog { onIntentDialog(content) }

@@ -52,6 +52,8 @@ fun File.delAll(): Boolean {
     return result && delete()
 }
 
+fun File.toProvider(): Uri? = FileProvider.getUriForFile(AppHelper, "${AppHelper.packageName}.fileprovider", this)
+
 /**
  * 文件写入服务类
  *

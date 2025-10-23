@@ -30,7 +30,7 @@ android {
 
 dependencies {
     implementation(projects.lib)
-    implementation(projects.libui)
+    implementation(projects.libweight)
     implementation(projects.libscan)
     implementation(projects.libbluetooth)
 

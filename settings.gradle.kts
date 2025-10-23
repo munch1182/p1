@@ -37,7 +37,7 @@ rootProject.name = "p1"
 include(":app")
 include(":lib")
 include(":libbluetooth")
-include(":libui")
+include(":libweight")
 include(":libscan")
 
 // 能够以代码的方式引入module
