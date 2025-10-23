@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
@@ -8,57 +9,69 @@
     tools:context=".views.NetPhoneActivity"
     tools:ignore="HardcodedText">
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal">
-
-        <org.webrtc.SurfaceViewRenderer
-            android:id="@+id/remote_video_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <org.webrtc.SurfaceViewRenderer
-            android:id="@+id/local_video_view"
-            android:layout_width="120dp"
-            android:layout_height="180dp"
-            android:layout_gravity="end|top"
-            android:layout_margin="16dp" />
-    </FrameLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_start_call"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="开始通话" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_end_call"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:enabled="false"
-            android:text="结束通话" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_switch_camera"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="切换摄像头" />
-    </LinearLayout>
-
     <TextView
         android:id="@+id/tv_status"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="8dp"
-        android:text="状态: 未连接" />
-</LinearLayout>
+        android:text="状态: 未连接"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/net_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:text="当前网络: 无"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_start_call"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="开始通话"
+        app:layout_constraintBottom_toTopOf="@id/tv_status"
+        app:layout_constraintEnd_toStartOf="@id/btn_end_call"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_end_call"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="结束通话"
+        app:layout_constraintBottom_toBottomOf="@id/btn_start_call"
+        app:layout_constraintEnd_toStartOf="@id/btn_switch_camera"
+        app:layout_constraintStart_toEndOf="@id/btn_start_call"
+        app:layout_constraintTop_toTopOf="@id/btn_start_call" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_switch_camera"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="切换摄像头"
+        app:layout_constraintBottom_toBottomOf="@id/btn_start_call"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btn_end_call"
+        app:layout_constraintTop_toTopOf="@id/btn_start_call" />
+
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/remote_video_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/btn_start_call"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/local_video_view"
+        android:layout_width="120dp"
+        android:layout_height="180dp"
+        android:layout_gravity="end|top"
+        android:layout_margin="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

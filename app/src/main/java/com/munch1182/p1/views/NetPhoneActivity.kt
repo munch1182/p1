@@ -1,12 +1,19 @@
 package com.munch1182.p1.views
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.AppHelper
+import com.munch1182.lib.base.launchMain
 import com.munch1182.lib.base.log
+import com.munch1182.lib.helper.NetStateHelper
 import com.munch1182.lib.helper.result.isAllGranted
 import com.munch1182.lib.helper.result.permissions
+import com.munch1182.p1.App
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.bind
 import com.munch1182.p1.databinding.ActivityNetPhoneBinding
@@ -44,6 +51,7 @@ class NetPhoneActivity : BaseActivity() {
     }
 
     private val log = log()
+    private val netState by lazy { runCatching { NetStateHelper() }.getOrNull() }
     private val eglBase by lazy { EglBase.create() }
     private val bind by bind(ActivityNetPhoneBinding::inflate)
     private val localVideoView by lazy { bind.localVideoView.init(eglBase?.eglBaseContext, null) }
@@ -80,11 +88,32 @@ class NetPhoneActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initViews()
-        withPermission(false) { initWebRTC() }
+        withPermission(false) {
+            initWebRTC()
+            initNetState()
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun initNetState() {
+        val netState = netState ?: return
+        netState.register(App.instance.appHandler)
+        netState.add {
+            lifecycleScope.launchMain { bind.netStatus.text = if (!it.isConnected) "当前网络：无" else "当前网络：${it.type}" }
+        }
+
+        lifecycleScope.launchMain {
+            lifecycle.addObserver(object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    super.onDestroy(owner)
+                    netState.release()
+                }
+            })
+        }
     }
 
     private fun withPermission(reInit: Boolean = true, p: () -> Unit) {
-        permissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)).request {
+        permissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.ACCESS_NETWORK_STATE)).request {
             if (it.isAllGranted()) {
                 if (reInit && videoCapturer == null) initWebRTC()
                 p()
@@ -93,6 +122,7 @@ class NetPhoneActivity : BaseActivity() {
     }
 
     private fun initViews() {
+        fitWindow(bind.main)
         localVideoView
         remoteVideoView
         bind.remoteVideoView.setMirror(true)
