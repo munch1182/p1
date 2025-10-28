@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.appSetting
 import com.munch1182.lib.base.blueSetting
+import com.munch1182.lib.base.getPhoneNumbers
 import com.munch1182.lib.base.isBluetoothOpen
 import com.munch1182.lib.base.isGpsOpen
 import com.munch1182.lib.base.launchIO
@@ -44,6 +45,7 @@ class ResultActivity : BaseActivity() {
         setContentWithRv { Views() }
     }
 
+    @SuppressLint("MissingPermission")
     @Composable
     private fun Views() {
         var result by remember { mutableStateOf("") }
@@ -63,7 +65,10 @@ class ResultActivity : BaseActivity() {
         }
         ClickButton("相机权限") {
             callback("")
-            permission(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).onPermission("相机" to "拍摄视频", "麦克风" to "录音和音频通话").manualIntent().request(callback)
+            permission(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+                .onPermission("相机" to "拍摄视频", "麦克风" to "录音和音频通话")
+                .manualIntent()
+                .request(callback)
         }
         ClickButton("蓝牙权限") {
             callback("")
@@ -72,8 +77,21 @@ class ResultActivity : BaseActivity() {
                 permission.addAll(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
             }
             lifecycleScope.launchIO {
-                judge({ isBluetoothOpen() }, blueSetting()).onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能").ifTrue().permission(permission.toTypedArray()).onPermission("蓝牙" to "蓝牙相关功能").manualIntent().ifAll().judge({ isGpsOpen() }, locSetting())
-                    .onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备").ifTrue().permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)).onPermission("定位" to "扫描附近蓝牙设备").manualIntent().ifAll().request(callback)
+                judge({ isBluetoothOpen() }, blueSetting())
+                    .onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能")
+                    .ifTrue()
+                    .permission(permission.toTypedArray())
+                    .onPermission("蓝牙" to "蓝牙相关功能")
+                    .manualIntent()
+                    .ifAll()
+                    .judge({ isGpsOpen() }, locSetting())
+                    .onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备")
+                    .ifTrue()
+                    .permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+                    .onPermission("定位" to "扫描附近蓝牙设备")
+                    .manualIntent()
+                    .ifAll()
+                    .request(callback)
             }
         }
         SpacerV()
@@ -92,6 +110,23 @@ class ResultActivity : BaseActivity() {
                     }
                 }
             }
+        }
+
+        SpacerV()
+
+        ClickButton("获取手机号") {
+            callback("")
+            permission(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_PHONE_NUMBERS)
+                .onPermission("手机状态" to "获取手机号")
+                .manualIntent()
+                .request {
+                    val str = if (it.isAllGranted()) {
+                        getPhoneNumbers()?.takeIf { l -> l.isNotEmpty() }?.let { s -> s.joinToString { i -> "$i\n" } } ?: "null"
+                    } else {
+                        it.toString()
+                    }
+                    callback(str)
+                }
         }
 
         Text(result)
@@ -115,9 +150,7 @@ private fun BaseActivity.witNoticePermission(channelId: String, any: () -> Unit)
     val permission = {
         val name = "测试通知"
         NoticeHelper.checkOrCreateChannel(channelId, name, "测试通知")
-        judge({ !NoticeHelper.checkChannelIsDisable(channelId) }, appSetting())
-            .onIntent("该类型的通知已被关闭，请前往设置-通知管理-通知类别中手动允许${name}类别的通知")
-            .request { if (it) any() }
+        judge({ !NoticeHelper.checkChannelIsDisable(channelId) }, appSetting()).onIntent("该类型的通知已被关闭，请前往设置-通知管理-通知类别中手动允许${name}类别的通知").request { if (it) any() }
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         permission(Manifest.permission.POST_NOTIFICATIONS).onPermission("通知" to "获取通知").manualIntent().request {
