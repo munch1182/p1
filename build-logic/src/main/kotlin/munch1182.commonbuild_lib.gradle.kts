@@ -1,4 +1,3 @@
-import gradle.kotlin.dsl.accessors._10b377ab6bbb84bac19e75517daad53d.kotlin
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
