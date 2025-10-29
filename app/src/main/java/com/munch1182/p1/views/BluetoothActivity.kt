@@ -7,7 +7,6 @@ import android.bluetooth.le.ScanResult
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -60,6 +59,7 @@ import com.munch1182.lib.bluetooth.le.BleConnectManager
 import com.munch1182.lib.bluetooth.le.BlueScanRecordHelper
 import com.munch1182.lib.bluetooth.le.CommandResult
 import com.munch1182.lib.bluetooth.le.leScanFlow
+import com.munch1182.lib.bluetooth.removeBond
 import com.munch1182.lib.helper.onResult
 import com.munch1182.lib.helper.result.ifAll
 import com.munch1182.lib.helper.result.ifTrue
@@ -109,6 +109,9 @@ class BluetoothActivity : BaseActivity() {
         blueState.register(handler = App.instance.appHandler)
         blueState.add {
             log.logStr(it.toString())
+            if (it is BluetoothReceiver.BlueState.BondStateChanged) {
+                vm.updateBondState(it)
+            }
         }
     }
 
@@ -201,22 +204,9 @@ class BluetoothActivity : BaseActivity() {
             permission.addAll(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
         }
         lifecycleScope.launchIO {
-            val resultHelper = judge({ isBluetoothOpen() }, blueSetting())
-                .onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能")
-                .ifTrue()
-                .permission(permission.toTypedArray())
-                .onPermission("蓝牙" to "蓝牙相关功能")
-                .manualIntent()
-                .ifAll()
+            val resultHelper = judge({ isBluetoothOpen() }, blueSetting()).onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能").ifTrue().permission(permission.toTypedArray()).onPermission("蓝牙" to "蓝牙相关功能").manualIntent().ifAll()
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                resultHelper
-                    .judge({ isGpsOpen() }, locSetting())
-                    .onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备")
-                    .ifTrue()
-                    .permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-                    .onPermission("定位" to "扫描附近蓝牙设备")
-                    .manualIntent()
-                    .ifAll()
+                resultHelper.judge({ isGpsOpen() }, locSetting()).onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备").ifTrue().permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)).onPermission("定位" to "扫描附近蓝牙设备").manualIntent().ifAll()
             }
             resultHelper.request { if (it) lifecycleScope.launchIO { any() } }
         }
@@ -224,9 +214,13 @@ class BluetoothActivity : BaseActivity() {
 
     @Suppress("UNCHECKED_CAST")
     private fun showConnectDialog(dev: BlueDev) {
+        vm.linkDev(dev)
         DialogHelper.newBottom {
             val uiState by vm.uiState.collectAsState()
             ScrollPage(PagePaddingModifier) {
+                StateButton("解除绑定", "绑定设备", uiState.isBond, modifier = Modifier.padding(vertical = PagePadding)) {
+                    if (uiState.isBond) vm.unbind(dev) else vm.bind(dev)
+                }
                 StateButton(if (uiState.connectState.isCanStart) "开始连接" else "断开连接", !uiState.connectState.isCanStart) {
                     withPermission { if (uiState.connectState.isCanStart) vm.connect(dev) else vm.disconnect(dev) }
                 }
@@ -258,7 +252,6 @@ class BluetoothActivity : BaseActivity() {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BlueDevListView(devices: Array<BlueDev>, modifier: Modifier = Modifier, onLongClick: ((BlueDev) -> Unit)? = null, onClick: (BlueDev) -> Unit = {}) {
     RvPage(devices, modifier = modifier, key = { it.mac }) { device ->
@@ -331,9 +324,7 @@ class BluetoothVM : ViewModel() {
     }
 
     fun disconnect(dev: BlueDev) {
-        _uiState.update {
-            it.copy(connectState = BleConnectState.Disconnected, sendResult = null)
-        }
+        _uiState.update { it.copy(currDev = null, connectState = BleConnectState.Disconnected, sendResult = null) }
         BleConnectManager.disconnect(dev.mac)
     }
 
@@ -349,6 +340,28 @@ class BluetoothVM : ViewModel() {
             _uiState.update { it.copy(sendResult = result) }
         }
     }
+
+    @SuppressLint("MissingPermission")
+    fun bind(dev: BlueDev) {
+        val result = dev.dev.createBond()
+        if (result) _uiState.update { it.copy(isBond = true) }
+    }
+
+    fun unbind(dev: BlueDev) {
+        val result = dev.dev.removeBond()
+        if (result) _uiState.update { it.copy(isBond = false) }
+    }
+
+    fun updateBondState(update: BluetoothReceiver.BlueState.BondStateChanged) {
+        if (_uiState.value.currDev?.let { it.mac == update.dev?.address } ?: false) {
+            _uiState.update { it.copy(isBond = update.curr?.let { c -> c != BluetoothReceiver.BlueBondState.BondNone } ?: false) }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun linkDev(dev: BlueDev) {
+        _uiState.update { it.copy(currDev = dev, isBond = dev.dev.bondState == BluetoothDevice.BOND_BONDED) }
+    }
 }
 
 data class Filter(
@@ -357,7 +370,7 @@ data class Filter(
 )
 
 data class BluetoothUiState(
-    val isScanning: Boolean = false, val connectState: BleConnectState = BleConnectState.Disconnected, val filter: Filter = Filter(), val sendResult: CommandResult<*>? = null
+    val currDev: BlueDev? = null, val isScanning: Boolean = false, val connectState: BleConnectState = BleConnectState.Disconnected, val isBond: Boolean = false, val filter: Filter = Filter(), val sendResult: CommandResult<*>? = null
 ) {
     val predicate: suspend (ScanResult) -> Boolean
         @SuppressLint("MissingPermission") get() = res@{
@@ -399,8 +412,7 @@ sealed class BlueDev(val mac: String) {
         }
 
     val name
-        @SuppressLint("MissingPermission")
-        get() = when (this) {
+        @SuppressLint("MissingPermission") get() = when (this) {
             is Bind -> dev.name
             is Scan -> scanResult.device.name
         } ?: "Unknown Device"

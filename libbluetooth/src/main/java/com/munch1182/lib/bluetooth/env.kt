@@ -1,5 +1,6 @@
 package com.munch1182.lib.bluetooth
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
@@ -9,6 +10,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Handler
 import com.munch1182.lib.AppHelper
+import com.munch1182.lib.base.callMethod
 import com.munch1182.lib.base.getParcelableCompat
 import com.munch1182.lib.base.log
 import com.munch1182.lib.helper.ARDefaultSyncManager
@@ -84,6 +86,8 @@ class BluetoothReceiver : BroadcastReceiver(), ARManager<BluetoothReceiver.OnBlu
         object Bonding : BlueBondState(BluetoothDevice.BOND_BONDING)
         object Bonded : BlueBondState(BluetoothDevice.BOND_BONDED)
 
+        val isBonded get() = this == Bonded
+
         override fun toString() = when (this) {
             BondNone -> "BondNone"
             Bonded -> "Bonded"
@@ -125,16 +129,27 @@ class BluetoothReceiver : BroadcastReceiver(), ARManager<BluetoothReceiver.OnBlu
     }
 
     sealed class BlueState {
-        class BondStateChanged(val dev: BluetoothDevice?, val curr: BlueBondState?, val prev: BlueBondState?) : BlueState()
+        class BondStateChanged(val dev: BluetoothDevice?, val prev: BlueBondState?, val curr: BlueBondState?) : BlueState()
         class AclConnected(val dev: BluetoothDevice?) : BlueState()
         class AclDisconnected(val dev: BluetoothDevice?) : BlueState()
         class BlueStateChanged(val state: BlueSysState?) : BlueState()
 
         override fun toString() = when (this) {
-            is BondStateChanged -> "BondStateChanged(${dev?.address}):  $curr => $prev"
+            is BondStateChanged -> "BondStateChanged(${dev?.address}):  $prev => $curr"
             is AclConnected -> "AclConnected(${dev?.address})"
             is AclDisconnected -> "AclDisconnected(${dev?.address})"
             is BlueStateChanged -> "BlueStateChanged($state)"
         }
     }
 }
+
+/**
+ * 取消配对或者配对流程
+ */
+@SuppressLint("MissingPermission")
+//@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+fun BluetoothDevice.removeBond() = when (this.bondState) {
+    BluetoothDevice.BOND_BONDED -> this.callMethod("removeBond")
+    BluetoothDevice.BOND_BONDING -> this.callMethod("cancelBondProcess")
+    else -> true
+} ?: false

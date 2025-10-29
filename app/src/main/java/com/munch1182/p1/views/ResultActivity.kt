@@ -2,8 +2,10 @@ package com.munch1182.p1.views
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,6 +72,11 @@ class ResultActivity : BaseActivity() {
                 .manualIntent()
                 .request(callback)
         }
+        ClickButton("悬浮窗") {
+            judge({ Settings.canDrawOverlays(AppHelper) }, Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+                .onIntent("请前往悬浮窗界面打开悬浮窗权限，以使用悬浮窗功能")
+                .request(callback)
+        }
         ClickButton("蓝牙权限") {
             callback("")
             val permission = mutableListOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN)
@@ -128,6 +135,7 @@ class ResultActivity : BaseActivity() {
                     callback(str)
                 }
         }
+        SpacerV()
 
         Text(result)
     }
