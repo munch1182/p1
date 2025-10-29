@@ -6,6 +6,7 @@ import android.app.Application
 import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
+import com.munch1182.lib.base.OnUpdateListener
 import com.munch1182.lib.base.log
 import java.lang.ref.WeakReference
 import java.util.Stack
@@ -36,37 +37,56 @@ open class DefaultActivityLifecycleCallbacks : Application.ActivityLifecycleCall
 /**
  * 当前activity的管理工具类
  */
-object ActivityCurrHelper {
+/**
+ * 增强的Activity管理工具类
+ * 支持Activity栈管理、前台状态判断等功能
+ */
+object ActivityCurrHelper : ARManager<OnUpdateListener<Boolean>> by ARDefaultManager() {
 
     private val activityStack = Stack<WeakReference<Activity>>()
+    private var resumedActivityCount = 0 // 记录处于resumed状态的Activity数量
+    private var isAppInForeground = false // 应用是否在前台
+
     private val log = this.log(false)
 
     // 当前活动的Activity
     val curr: Activity?
         get() = activityStack.lastOrNull { it.get()?.isFinishing == false }?.get()
 
-    // 应用是否在前台
-    val isAppInForeground: Boolean get() = activityStack.isNotEmpty()
+    // 栈中存活的Activity数量
+    val activityCount: Int
+        get() = activityStack.count { it.get()?.isFinishing == false }
 
-    // 栈中Activity数量
-    val activityCount: Int get() = activityStack.count { it.get()?.isFinishing == false }
+    // 应用是否在前台（有Activity处于resumed状态）
+    val isAppForeground: Boolean
+        get() = isAppInForeground
+
+    // 当前Activity是否在前台（栈顶且resumed）
+    val isCurrentActivityForeground: Boolean
+        get() = isAppInForeground && resumedActivityCount > 0
 
     private val callback by lazy {
         object : DefaultActivityLifecycleCallbacks() {
-            override fun onActivityStarted(activity: Activity) {
-                super.onActivityStarted(activity)
-                // 移除已销毁的Activity引用
-                activityStack.removeAll { it.get() == null || it.get()?.isFinishing == true }
-                // 如果Activity已经在栈中，先移除再重新添加（保证在栈顶）
-                activityStack.removeAll { it.get() == activity }
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                super.onActivityCreated(activity, savedInstanceState)
+                // 清理已销毁的Activity引用
+                cleanupDestroyedActivities()
                 activityStack.push(WeakReference(activity))
-                log.logStr("Activity started: ${activity::class.java.simpleName}, stack size: $activityCount")
+                log.logStr("Activity created: ${activity::class.java.simpleName}, stack size: $activityCount")
             }
 
-            override fun onActivityStopped(activity: Activity) {
-                super.onActivityStopped(activity)
-                // 不移除，只在destroy时移除
-                log.logStr("Activity stopped: ${activity::class.java.simpleName}")
+            override fun onActivityResumed(activity: Activity) {
+                super.onActivityResumed(activity)
+                resumedActivityCount++
+                updateForegroundStatus()
+                log.logStr("Activity resumed: ${activity::class.java.simpleName}, resumed count: $resumedActivityCount")
+            }
+
+            override fun onActivityPaused(activity: Activity) {
+                super.onActivityPaused(activity)
+                resumedActivityCount = maxOf(0, resumedActivityCount - 1)
+                updateForegroundStatus()
+                log.logStr("Activity paused: ${activity::class.java.simpleName}, resumed count: $resumedActivityCount")
             }
 
             override fun onActivityDestroyed(activity: Activity) {
@@ -75,6 +95,27 @@ object ActivityCurrHelper {
                 log.logStr("Activity destroyed: ${activity::class.java.simpleName}, stack size: $activityCount")
             }
         }
+    }
+
+    /**
+     * 更新应用前台状态
+     */
+    private fun updateForegroundStatus() {
+        val wasInForeground = isAppInForeground
+        isAppInForeground = resumedActivityCount > 0
+
+        // 状态变化时通知监听器
+        if (wasInForeground != isAppInForeground) {
+            log.logStr("App foreground status changed: $isAppInForeground")
+            forEach { it.onUpdate(isAppForeground) }
+        }
+    }
+
+    /**
+     * 清理已销毁的Activity引用
+     */
+    private fun cleanupDestroyedActivities() {
+        activityStack.removeAll { it.get() == null || it.get()?.isFinishing == true }
     }
 
     /**
@@ -113,61 +154,18 @@ object ActivityCurrHelper {
     }
 
     /**
-     * 结束指定Activity
+     * 判断指定Activity是否是当前栈顶Activity
      */
-    fun finishActivity(activityClass: Class<out Activity>) {
-        findActivityByClass(activityClass)?.finish()
+    fun isActivityOnTop(activityClass: Class<out Activity>): Boolean {
+        return curr?.let { it::class.java == activityClass } ?: false
     }
 
     /**
-     * 结束除指定Activity外的所有Activity
+     * 获取栈信息（用于调试）
      */
-    fun finishAllActivitiesExcept(activityClass: Class<out Activity>) {
-        getAliveActivities().forEach { activity ->
-            if (activity::class.java != activityClass) {
-                activity.finish()
-            }
-        }
-    }
-
-    /**
-     * 结束所有Activity
-     */
-    fun finishAllActivities() {
-        getAliveActivities().forEach { it.finish() }
-    }
-
-    /**
-     * 返回到指定Activity
-     */
-    fun backToActivity(activityClass: Class<out Activity>): Boolean {
+    fun getStackInfo(): String {
         val activities = getAliveActivities()
-        val targetIndex = activities.indexOfFirst { it::class.java == activityClass }
-
-        if (targetIndex == -1) return false
-
-        // 结束目标Activity之后的所有Activity
-        for (i in targetIndex + 1 until activities.size) {
-            activities[i].finish()
-        }
-
-        return true
-    }
-
-    /**
-     * 安全启动Activity
-     */
-    fun startActivitySafely(intent: Intent, fromActivity: Activity? = curr) {
-        fromActivity?.let { activity ->
-            try {
-                activity.startActivity(intent)
-            } catch (e: Exception) {
-                log.logStr("Start activity failed: ${e.message}")
-                // 添加FLAG_ACTIVITY_NEW_TASK重试
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                activity.startActivity(intent)
-            }
-        }
+        return "Stack size: ${activities.size}, " + "Foreground: $isAppInForeground, " + "Resumed count: $resumedActivityCount, " + "Activities: ${activities.map { it::class.java.simpleName }}"
     }
 
     /**
@@ -175,9 +173,10 @@ object ActivityCurrHelper {
      */
     fun restartApp(restartTo: Class<out Activity>, fromActivity: Activity? = curr) {
         fromActivity?.let { activity ->
-            val intent = Intent(activity, restartTo).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK }
+            val intent = Intent(activity, restartTo).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
             activity.startActivity(intent)
-            // 结束当前Activity
             activity.finish()
         }
     }
@@ -185,38 +184,8 @@ object ActivityCurrHelper {
 
 // 扩展属性
 val currAct: Activity
-    get() = ActivityCurrHelper.curr
-        ?: throw IllegalStateException("No active activity found. Make sure ActivityCurrHelper is registered.")
+    get() = ActivityCurrHelper.curr ?: throw IllegalStateException("No active activity found. Make sure ActivityCurrHelper is registered.")
 
 val currAsFM: FragmentActivity
-    get() = ActivityCurrHelper.curr as? FragmentActivity
-        ?: throw IllegalStateException("Current activity is not a FragmentActivity")
+    get() = ActivityCurrHelper.curr as? FragmentActivity ?: throw IllegalStateException("Current activity is not a FragmentActivity")
 
-// 扩展函数
-/**
- * 重启应用到指定Activity
- */
-fun restartApp(restartTo: Class<out Activity>) {
-    ActivityCurrHelper.restartApp(restartTo)
-}
-
-/**
- * 安全启动Activity
- */
-fun startActivitySafely(intent: Intent) {
-    ActivityCurrHelper.startActivitySafely(intent)
-}
-
-/**
- * 结束所有Activity
- */
-fun finishAllActivities() {
-    ActivityCurrHelper.finishAllActivities()
-}
-
-/**
- * 判断指定Activity是否在栈中
- */
-fun isActivityInStack(activityClass: Class<out Activity>): Boolean {
-    return ActivityCurrHelper.containsActivity(activityClass)
-}

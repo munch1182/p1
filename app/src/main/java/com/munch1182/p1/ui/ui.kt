@@ -167,9 +167,9 @@ fun ClickIcon(icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> U
  * 带标签的复选框 - 常用表单组件
  */
 @Composable
-fun CheckBoxLabel(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun CheckBoxLabel(label: String, checked: Boolean, modifier: Modifier = Modifier, onCheckedChange: (Boolean) -> Unit) {
     Row(
-        verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onCheckedChange(!checked) }) {
+        verticalAlignment = Alignment.CenterVertically, modifier = modifier.clickable { onCheckedChange(!checked) }) {
         Checkbox(checked = checked, onCheckedChange = onCheckedChange)
         Text(label)
     }

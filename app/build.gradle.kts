@@ -1,8 +1,10 @@
 plugins {
     id("munch1182.commonbuild_app")
-
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 android {
@@ -42,6 +44,16 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    // https://developer.android.google.cn/guide/navigation/navigation-3/get-started?hl=zh_cn
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.kotlinx.serialization.core)
+    // https://developer.android.google.cn/develop/ui/compose/libraries?hl=zh-cn#hilt
+    // https://developer.android.google.cn/training/dependency-injection/hilt-android?hl=zh-cn
+    implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.compose)
+    ksp(libs.hilt.ksp)
 
     implementation(libs.androidx.material3)
     implementation(libs.androidx.appcompat)

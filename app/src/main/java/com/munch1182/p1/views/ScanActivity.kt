@@ -37,11 +37,14 @@ class ScanActivity : BaseActivity(), QrScanHelper.OnQrCodeListener {
     }
 
     private fun request() {
-        permission(Manifest.permission.CAMERA).onPermission("相机" to "识别二维码").manualIntent().request {
-            if (it.isAllGranted()) {
-                scan.bindPreviewView(this, bind.preview)
+        permission(Manifest.permission.CAMERA)
+            .onPermission("相机" to "识别二维码")
+            .manualIntent()
+            .request {
+                if (it.isAllGranted()) {
+                    scan.bindPreviewView(this, bind.preview)
+                }
             }
-        }
     }
 
     override fun onQrCode(qrCode: List<String>) {
@@ -53,7 +56,8 @@ class ScanActivity : BaseActivity(), QrScanHelper.OnQrCodeListener {
                         .clickable { intent(shareTextIntent(s)).request {} }
                         .padding(PagePadding))
             }
-        }.onResult { scan.setQrCodeListener(this) }.show()
+        }.onResult { scan.setQrCodeListener(this) }
+            .show()
     }
 
 }

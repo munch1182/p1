@@ -27,6 +27,10 @@ fun CoroutineScope.launchIO(
     context: CoroutineContext = EmptyCoroutineContext, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend CoroutineScope.() -> Unit
 ) = launch(context + Dispatchers.IO, start, block)
 
+fun CoroutineScope.launchUI(
+    context: CoroutineContext = EmptyCoroutineContext, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend CoroutineScope.() -> Unit
+) = launch(context + Dispatchers.Main, start, block)
+
 /**
  * 重复提供的协程上下文
  *

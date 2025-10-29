@@ -1,22 +1,19 @@
-package com.munch1182.p1.views
+package com.munch1182.p1.views.other
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import androidx.activity.viewModels
 import com.munch1182.lib.AppHelper
-import com.munch1182.lib.base.launchMain
 import com.munch1182.lib.base.log
-import com.munch1182.lib.helper.NetStateHelper
 import com.munch1182.lib.helper.result.isAllGranted
 import com.munch1182.lib.helper.result.permissions
-import com.munch1182.p1.App
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.bind
 import com.munch1182.p1.databinding.ActivityNetPhoneBinding
+import com.munch1182.p1.views.NetStateVM
+import dagger.hilt.android.AndroidEntryPoint
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -44,6 +41,7 @@ import org.webrtc.VideoTrack
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+@AndroidEntryPoint
 class NetPhoneActivity : BaseActivity() {
 
     companion object {
@@ -51,7 +49,6 @@ class NetPhoneActivity : BaseActivity() {
     }
 
     private val log = log()
-    private val netState by lazy { runCatching { NetStateHelper() }.getOrNull() }
     private val eglBase by lazy { EglBase.create() }
     private val bind by bind(ActivityNetPhoneBinding::inflate)
     private val localVideoView by lazy { bind.localVideoView.init(eglBase?.eglBaseContext, null) }
@@ -64,6 +61,7 @@ class NetPhoneActivity : BaseActivity() {
     private var socket: WebSocket? = null
     private var localPeerConnection: PeerConnection? = null
     private var remotePeerConnection: PeerConnection? = null
+    private val netStateVM: NetStateVM by viewModels()
 
     override fun onDestroy() {
         super.onDestroy()
@@ -85,36 +83,19 @@ class NetPhoneActivity : BaseActivity() {
     @OptIn(ExperimentalUuidApi::class)
     private val my = Uuid.random().toString().replace("-", "")
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initViews()
-        withPermission(false) {
-            initWebRTC()
-            initNetState()
-        }
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun initNetState() {
-        val netState = netState ?: return
-        netState.register(App.instance.appHandler)
-        netState.add {
-            lifecycleScope.launchMain { bind.netStatus.text = if (!it.isConnected) "当前网络：无" else "当前网络：${it.type}" }
-        }
-
-        lifecycleScope.launchMain {
-            lifecycle.addObserver(object : DefaultLifecycleObserver {
-                override fun onDestroy(owner: LifecycleOwner) {
-                    super.onDestroy(owner)
-                    netState.release()
-                }
-            })
+        withPermission(false) { initWebRTC() }
+        netStateVM.netState.observe(this) {
+            bind.netStatus.text = "当前网络：$it"
         }
     }
 
     private fun withPermission(reInit: Boolean = true, p: () -> Unit) {
         permissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.ACCESS_NETWORK_STATE)).request {
-            if (it.isAllGranted()) {
+            if (it.filterNot { k -> k.key == Manifest.permission.ACCESS_NETWORK_STATE }.isAllGranted()) {
                 if (reInit && videoCapturer == null) initWebRTC()
                 p()
             }

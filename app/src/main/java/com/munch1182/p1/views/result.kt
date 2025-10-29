@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
-import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Text
@@ -14,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.appSetting
@@ -33,28 +33,23 @@ import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.manualIntent
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.toProvider
-import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.onIntent
 import com.munch1182.p1.base.onPermission
 import com.munch1182.p1.ui.ClickButton
+import com.munch1182.p1.ui.Items
 import com.munch1182.p1.ui.SpacerV
-import com.munch1182.p1.ui.setContentWithRv
 import kotlinx.coroutines.delay
 
-class ResultActivity : BaseActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentWithRv { Views() }
-    }
-
-    @SuppressLint("MissingPermission")
-    @Composable
-    private fun Views() {
-        var result by remember { mutableStateOf("") }
+@SuppressLint("MissingPermission")
+@Composable
+fun FragmentActivity.ResultView() {
+    var result by remember { mutableStateOf("") }
+    Items {
         ClickButton("设置界面") { startActivity(appSetting()) }
         SpacerV()
         val callback: (Any) -> Unit = { result = it.toString() }
         ClickButton("拍照") {
+            callback("")
             FileHelper.newCache("img", "img.png").toProvider()?.let { uri ->
                 permission(Manifest.permission.CAMERA)
                     .onPermission("相机" to "拍照")
@@ -63,7 +58,7 @@ class ResultActivity : BaseActivity() {
                     .contract(ActivityResultContracts.TakePicture(), uri)
                     .ifAny { it == true }
                     .request(callback)
-            }
+            } ?: callback("null")
         }
         ClickButton("相机权限") {
             callback("")
@@ -73,6 +68,7 @@ class ResultActivity : BaseActivity() {
                 .request(callback)
         }
         ClickButton("悬浮窗") {
+            callback("")
             judge({ Settings.canDrawOverlays(AppHelper) }, Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
                 .onIntent("请前往悬浮窗界面打开悬浮窗权限，以使用悬浮窗功能")
                 .request(callback)
@@ -139,11 +135,10 @@ class ResultActivity : BaseActivity() {
 
         Text(result)
     }
-
 }
 
 @SuppressLint("MissingPermission")
-private fun BaseActivity.sendNotice(title: String = "通知", content: String, notifyId: Int = NoticeHelper.newId, onSend: ((Int) -> Unit)? = null) {
+private fun FragmentActivity.sendNotice(title: String = "通知", content: String, notifyId: Int = NoticeHelper.newId, onSend: ((Int) -> Unit)? = null) {
     val channelId = ".notice"
     witNoticePermission(channelId) {
         val res = NoticeHelper.send(
@@ -154,16 +149,20 @@ private fun BaseActivity.sendNotice(title: String = "通知", content: String, n
     }
 }
 
-private fun BaseActivity.witNoticePermission(channelId: String, any: () -> Unit) {
+private fun FragmentActivity.witNoticePermission(channelId: String, any: () -> Unit) {
     val permission = {
         val name = "测试通知"
         NoticeHelper.checkOrCreateChannel(channelId, name, "测试通知")
-        judge({ !NoticeHelper.checkChannelIsDisable(channelId) }, appSetting()).onIntent("该类型的通知已被关闭，请前往设置-通知管理-通知类别中手动允许${name}类别的通知").request { if (it) any() }
+        judge({ !NoticeHelper.checkChannelIsDisable(channelId) }, appSetting())
+            .onIntent("该类型的通知已被关闭，请前往设置-通知管理-通知类别中手动允许${name}类别的通知")
+            .request { if (it) any() }
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        permission(Manifest.permission.POST_NOTIFICATIONS).onPermission("通知" to "获取通知").manualIntent().request {
-            if (it.isAllGranted()) permission()
-        }
+        permission(Manifest.permission.POST_NOTIFICATIONS)
+            .onPermission("通知" to "获取通知")
+            .manualIntent().request {
+                if (it.isAllGranted()) permission()
+            }
     } else {
         permission()
     }

@@ -5,8 +5,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanResult
 import android.os.Build
-import android.os.Bundle
-import androidx.activity.viewModels
+import android.os.Handler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -40,6 +39,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
@@ -50,7 +50,6 @@ import com.munch1182.lib.base.isBluetoothOpen
 import com.munch1182.lib.base.isGpsOpen
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.locSetting
-import com.munch1182.lib.base.log
 import com.munch1182.lib.base.toHexStr
 import com.munch1182.lib.base.toast
 import com.munch1182.lib.bluetooth.BluetoothReceiver
@@ -65,8 +64,6 @@ import com.munch1182.lib.helper.result.ifAll
 import com.munch1182.lib.helper.result.ifTrue
 import com.munch1182.lib.helper.result.judge
 import com.munch1182.lib.helper.result.manualIntent
-import com.munch1182.p1.App
-import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.BleSender
 import com.munch1182.p1.base.DialogHelper
 import com.munch1182.p1.base.SnQuery
@@ -82,12 +79,12 @@ import com.munch1182.p1.ui.ScrollPage
 import com.munch1182.p1.ui.StateButton
 import com.munch1182.p1.ui.paddingNoBottom
 import com.munch1182.p1.ui.paddingNoTop
-import com.munch1182.p1.ui.setContentWithScroll
 import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.ui.theme.PagePaddingHalf
 import com.munch1182.p1.ui.theme.PagePaddingModifier
 import com.munch1182.p1.ui.theme.TextLg
 import com.munch1182.p1.ui.theme.TextSm
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -96,160 +93,139 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.update
+import javax.inject.Inject
 
-class BluetoothActivity : BaseActivity() {
+@Composable
+fun BluetoothView(vm: BluetoothVM = hiltViewModel()) {
+    val uiState by vm.uiState.collectAsState()
+    var isExpand by remember { mutableStateOf(false) }
+    val target by remember { derivedStateOf { !uiState.filter.target.isNullOrBlank() } }
 
-    private val log = log()
-    private val blueState by lazy { BluetoothReceiver() }
-    private val vm by viewModels<BluetoothVM>()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentWithScroll { Views() }
-        blueState.register(handler = App.instance.appHandler)
-        blueState.add {
-            log.logStr(it.toString())
-            if (it is BluetoothReceiver.BlueState.BondStateChanged) {
-                vm.updateBondState(it)
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StateButton(if (uiState.isScanning) "停止扫描" else "开始扫描", uiState.isScanning) {
+                withPermission { if (uiState.isScanning) vm.stopScan() else vm.startScan() }
             }
+            ClickIcon(Icons.Filled.ArrowDropDown, modifier = Modifier.rotate(if (isExpand) 0f else 180f)) {
+                isExpand = !isExpand
+                if (isExpand) showScanFilterDialog(vm) { isExpand = false }
+            }
+            if (target) Text(uiState.filter.target ?: "")
+        }
+        DevsView(vm) {
+            vm.stopScan()
         }
     }
+}
 
-    override fun onDestroy() {
-        super.onDestroy()
-        blueState.unregister()
-    }
+@Composable
+private fun DevsView(vm: BluetoothVM, onCLick: () -> Unit) { // 数据更新时Composable重组，因此将其放入单独的重组范围中
+    val devArray by vm.devArray.collectAsState()
 
-    @Composable
-    private fun Views() {
-        val uiState by vm.uiState.collectAsState()
-        var isExpand by remember { mutableStateOf(false) }
-        val target by remember { derivedStateOf { !uiState.filter.target.isNullOrBlank() } }
+    BlueDevListView(devices = devArray, modifier = Modifier.fillMaxWidth(), onClick = {
+        onCLick()
+        showConnectDialog(vm, it)
+    }, onLongClick = {
+        onCLick()
+        showRecordDialog(it)
+    })
+}
 
-        Column {
+private fun showScanFilterDialog(vm: BluetoothVM, onResult: (Boolean) -> Unit) {
+    vm.stopScan()
+    DialogHelper.newBottom {
+        val state by vm.uiState.collectAsState()
+        Items(PagePaddingModifier) {
+            CheckBoxLabel("忽略没有名称的设备", state.filter.ignoreNoName) {
+                vm.updateFilter(state.filter.copy(ignoreNoName = it))
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StateButton(if (uiState.isScanning) "停止扫描" else "开始扫描", uiState.isScanning) {
-                    withPermission { if (uiState.isScanning) vm.stopScan() else vm.startScan() }
-                }
-                ClickIcon(Icons.Filled.ArrowDropDown, modifier = Modifier.rotate(if (isExpand) 0f else 180f)) {
-                    isExpand = !isExpand
-                    if (isExpand) showScanFilterDialog { isExpand = false }
-                }
-                if (target) Text(uiState.filter.target ?: "")
+                Text("包含：")
+                TextField(state.filter.target ?: "", { vm.updateFilter(state.filter.copy(target = it)) }, modifier = Modifier.fillMaxWidth())
             }
-            DevsView()
+            Spacer(Modifier.height(100.dp))
         }
-    }
+    }.onResult(onResult).show()
+}
 
-    @Composable
-    private fun DevsView() { // 数据更新时Composable重组，因此将其放入单独的重组范围中
-        val devArray by vm.devArray.collectAsState()
-
-        BlueDevListView(devices = devArray, modifier = Modifier.fillMaxWidth(), onClick = {
-            vm.stopScan()
-            showConnectDialog(it)
-        }, onLongClick = {
-            vm.stopScan()
-            showRecordDialog(it)
-        })
-    }
-
-    private fun showScanFilterDialog(onResult: (Boolean) -> Unit) {
-        vm.stopScan()
-        DialogHelper.newBottom {
-            val state by vm.uiState.collectAsState()
-            Items(PagePaddingModifier) {
-                CheckBoxLabel("忽略没有名称的设备", state.filter.ignoreNoName) {
-                    vm.updateFilter(state.filter.copy(ignoreNoName = it))
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("包含：")
-                    TextField(state.filter.target ?: "", { vm.updateFilter(state.filter.copy(target = it)) }, modifier = Modifier.fillMaxWidth())
-                }
-                Spacer(Modifier.height(100.dp))
-            }
-        }.onResult(onResult).show()
-    }
-
-    private fun showRecordDialog(dev: BlueDev) {
-        val dev = dev as? BlueDev.Scan ?: return
-        val devs = BlueScanRecordHelper.parseScanRecord(dev.scanResult.scanRecord?.bytes ?: ByteArray(0)).toTypedArray()
-        DialogHelper.newBottom {
-            var showType by remember { mutableIntStateOf(0) }
-            Column(modifier = Modifier.sizeIn(minHeight = 250.dp)) {
-                ClickIcon(Icons.Filled.Autorenew) { showType = (showType + 1) % 2 }
-                when (showType) {
-                    0 -> RvPage(
-                        devs, modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Transparent)
-                            .padding(vertical = PagePadding)
-                    ) {
-                        Text(text = it.typeStr(), modifier = Modifier.paddingNoBottom(PagePadding, PagePaddingHalf), fontSize = TextSm)
-                        Text(text = it.value2StrIfTypeCan(), modifier = Modifier.paddingNoTop(PagePadding, PagePaddingHalf))
-                    }
-
-                    1 -> Text(dev.scanResult.scanRecord?.bytes?.toHexStr() ?: "", PagePaddingModifier)
-                    else -> {}
-                }
-            }
-        }.show()
-    }
-
-    private fun withPermission(any: suspend () -> Unit) {
-        val permission = mutableListOf(
-            Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permission.addAll(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
-        }
-        lifecycleScope.launchIO {
-            val resultHelper = judge({ isBluetoothOpen() }, blueSetting()).onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能").ifTrue().permission(permission.toTypedArray()).onPermission("蓝牙" to "蓝牙相关功能").manualIntent().ifAll()
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                resultHelper.judge({ isGpsOpen() }, locSetting()).onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备").ifTrue().permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)).onPermission("定位" to "扫描附近蓝牙设备").manualIntent().ifAll()
-            }
-            resultHelper.request { if (it) lifecycleScope.launchIO { any() } }
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun showConnectDialog(dev: BlueDev) {
-        vm.linkDev(dev)
-        DialogHelper.newBottom {
-            val uiState by vm.uiState.collectAsState()
-            ScrollPage(PagePaddingModifier) {
-                StateButton("解除绑定", "绑定设备", uiState.isBond, modifier = Modifier.padding(vertical = PagePadding)) {
-                    if (uiState.isBond) vm.unbind(dev) else vm.bind(dev)
-                }
-                StateButton(if (uiState.connectState.isCanStart) "开始连接" else "断开连接", !uiState.connectState.isCanStart) {
-                    withPermission { if (uiState.connectState.isCanStart) vm.connect(dev) else vm.disconnect(dev) }
-                }
-                Items(
-                    modifier = Modifier
+private fun showRecordDialog(dev: BlueDev) {
+    val dev = dev as? BlueDev.Scan ?: return
+    val devs = BlueScanRecordHelper.parseScanRecord(dev.scanResult.scanRecord?.bytes ?: ByteArray(0)).toTypedArray()
+    DialogHelper.newBottom {
+        var showType by remember { mutableIntStateOf(0) }
+        Column(modifier = Modifier.sizeIn(minHeight = 250.dp)) {
+            ClickIcon(Icons.Filled.Autorenew) { showType = (showType + 1) % 2 }
+            when (showType) {
+                0 -> RvPage(
+                    devs, modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Transparent)
                         .padding(vertical = PagePadding)
-                        .height(350.dp)
                 ) {
-                    Text("${dev.name}(${dev.mac})", fontSize = TextLg, fontWeight = FontWeight.Bold)
-                    Text("${uiState.connectState}", fontSize = TextSm, fontWeight = FontWeight.Bold)
-                    if (uiState.connectState.isConnected) {
-                        ClickButton("获取SN码", modifier = Modifier.padding(vertical = PagePadding)) { vm.sendSn(dev) }
-                        val sendResult = uiState.sendResult as? CommandResult<String>
-                        if (sendResult != null) {
-                            if (sendResult.isSuccess) {
-                                val result: String = sendResult.getOrNull() ?: ""
-                                Text(result, fontSize = TextLg, modifier = Modifier.clickable(true) {
-                                    copyText(result)
-                                    toast("已复制到剪贴板")
-                                })
-                            } else {
-                                Text(uiState.sendResult.toString())
-                            }
+                    Text(text = it.typeStr(), modifier = Modifier.paddingNoBottom(PagePadding, PagePaddingHalf), fontSize = TextSm)
+                    Text(text = it.value2StrIfTypeCan(), modifier = Modifier.paddingNoTop(PagePadding, PagePaddingHalf))
+                }
+
+                1 -> Text(dev.scanResult.scanRecord?.bytes?.toHexStr() ?: "", PagePaddingModifier)
+                else -> {}
+            }
+        }
+    }.show()
+}
+
+private fun withPermission(any: suspend () -> Unit) {
+    val permission = mutableListOf(
+        Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN
+    )
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        permission.addAll(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
+    }
+    currNow.lifecycleScope.launchIO {
+        val resultHelper = currNow.judge({ isBluetoothOpen() }, blueSetting()).onIntent("请前往蓝牙界面打开蓝牙，以使用蓝牙功能").ifTrue().permission(permission.toTypedArray()).onPermission("蓝牙" to "蓝牙相关功能").manualIntent().ifAll()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            resultHelper.judge({ isGpsOpen() }, locSetting()).onIntent("请前往位置界面打开定位，以扫描附近蓝牙设备").ifTrue().permission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)).onPermission("定位" to "扫描附近蓝牙设备").manualIntent().ifAll()
+        }
+        resultHelper.request { if (it) currNow.lifecycleScope.launchIO { any() } }
+    }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun showConnectDialog(vm: BluetoothVM, dev: BlueDev) {
+    vm.linkDev(dev)
+    DialogHelper.newBottom {
+        val uiState by vm.uiState.collectAsState()
+        ScrollPage(PagePaddingModifier) {
+            StateButton("解除绑定", "绑定设备", uiState.isBond, modifier = Modifier.padding(vertical = PagePadding)) {
+                if (uiState.isBond) vm.unbind(dev) else vm.bind(dev)
+            }
+            StateButton(if (uiState.connectState.isCanStart) "开始连接" else "断开连接", !uiState.connectState.isCanStart) {
+                withPermission { if (uiState.connectState.isCanStart) vm.connect(dev) else vm.disconnect(dev) }
+            }
+            Items(
+                modifier = Modifier
+                    .padding(vertical = PagePadding)
+                    .height(350.dp)
+            ) {
+                Text("${dev.name}(${dev.mac})", fontSize = TextLg, fontWeight = FontWeight.Bold)
+                Text("${uiState.connectState}", fontSize = TextSm, fontWeight = FontWeight.Bold)
+                if (uiState.connectState.isConnected) {
+                    ClickButton("获取SN码", modifier = Modifier.padding(vertical = PagePadding)) { vm.sendSn(dev) }
+                    val sendResult = uiState.sendResult as? CommandResult<String>
+                    if (sendResult != null) {
+                        if (sendResult.isSuccess) {
+                            val result: String = sendResult.getOrNull() ?: ""
+                            Text(result, fontSize = TextLg, modifier = Modifier.clickable(true) {
+                                copyText(result)
+                                toast("已复制到剪贴板")
+                            })
+                        } else {
+                            Text(uiState.sendResult.toString())
                         }
                     }
                 }
             }
-        }.onResult { vm.disconnect(dev) }.show()
-    }
+        }
+    }.onResult { vm.disconnect(dev) }.show()
 }
 
 @Composable
@@ -272,14 +248,26 @@ private fun BlueDevItemView(device: BlueDev, modifier: Modifier = Modifier) {
     }
 }
 
-class BluetoothVM : ViewModel() {
+@HiltViewModel
+class BluetoothVM @Inject constructor(private val appHandler: Handler) : ViewModel() {
     private val devs = LinkedHashMap<String, BlueDev>()
     private val _uiState = MutableStateFlow(BluetoothUiState())
     private val _devArray = MutableStateFlow(arrayOf<BlueDev>())
     val uiState = _uiState.asStateFlow()
     val devArray = _devArray.asStateFlow()
 
+    private val blueState by lazy { BluetoothReceiver() }
+
     private val scanJob = ReRunJob()
+
+    init {
+        blueState.register(handler = appHandler)
+        blueState.add {
+            if (it is BluetoothReceiver.BlueState.BondStateChanged) {
+                updateBondState(it)
+            }
+        }
+    }
 
     @OptIn(FlowPreview::class)
     fun startScan() {
@@ -352,7 +340,7 @@ class BluetoothVM : ViewModel() {
         if (result) _uiState.update { it.copy(isBond = false) }
     }
 
-    fun updateBondState(update: BluetoothReceiver.BlueState.BondStateChanged) {
+    private fun updateBondState(update: BluetoothReceiver.BlueState.BondStateChanged) {
         if (_uiState.value.currDev?.let { it.mac == update.dev?.address } ?: false) {
             _uiState.update { it.copy(isBond = update.curr?.let { c -> c != BluetoothReceiver.BlueBondState.BondNone } ?: false) }
         }

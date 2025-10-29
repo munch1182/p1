@@ -5,8 +5,7 @@ import android.annotation.SuppressLint
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.os.Build
-import android.os.Bundle
-import androidx.activity.viewModels
+import android.os.Handler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,8 +27,10 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.munch1182.lib.base.ReRunJob
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.toast
@@ -45,8 +46,6 @@ import com.munch1182.lib.helper.result.isAllGranted
 import com.munch1182.lib.helper.result.manualIntent
 import com.munch1182.lib.helper.result.permission
 import com.munch1182.lib.helper.toAudio
-import com.munch1182.p1.App
-import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.DialogHelper
 import com.munch1182.p1.base.onPermission
 import com.munch1182.p1.ui.ClickIcon
@@ -54,34 +53,26 @@ import com.munch1182.p1.ui.Items
 import com.munch1182.p1.ui.RvPageIter
 import com.munch1182.p1.ui.SpacerV
 import com.munch1182.p1.ui.StateButton
-import com.munch1182.p1.ui.setContentWithScroll
 import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.ui.theme.PagePaddingHalf
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.io.File
+import javax.inject.Inject
 
-class AudioActivity : BaseActivity() {
-    private val recordVM by viewModels<RecordVM>()
-    private val playVM by viewModels<AudioPlayVM>()
-    private val audioVM by viewModels<AudioVM>()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentWithScroll { Views() }
+@Composable
+fun AudioView(audioVM: AudioVM = hiltViewModel(), recordVM: RecordVM = viewModel(), playVM: AudioPlayVM = viewModel()) {
+    val audioUiState by audioVM.uiState.collectAsState()
+    val recordUiState by recordVM.uiState.collectAsState()
+    val file by remember(recordUiState.recordFile) { derivedStateOf { recordUiState.recordFile } }
+    var isExpand by remember { mutableStateOf(false) }
+    if (audioUiState.isErr) {
+        toast("操作失败")
+        audioVM.clearErr()
     }
-
-    @Composable
-    private fun Views() {
-        val audioUiState by audioVM.uiState.collectAsState()
-        val recordUiState by recordVM.uiState.collectAsState()
-        val file by remember(recordUiState.recordFile) { derivedStateOf { recordUiState.recordFile } }
-        var isExpand by remember { mutableStateOf(false) }
-        if (audioUiState.isErr) {
-            toast("操作失败")
-            audioVM.clearErr()
-        }
+    Items {
         StateButton("取消焦点", "获取焦点", audioUiState.isFocus) {
             if (audioUiState.isFocus) audioVM.abandonFocus() else audioVM.requestFocus()
         }
@@ -101,132 +92,131 @@ class AudioActivity : BaseActivity() {
             }
             ClickIcon(Icons.Filled.ArrowDropDown, modifier = Modifier.rotate(if (isExpand) 0f else 180f)) {
                 isExpand = !isExpand
-                if (isExpand) showRecordParamDialog { isExpand = false }
+                if (isExpand) showRecordParamDialog(recordVM) { isExpand = false }
             }
         }
 
         SpacerV()
 
-        file?.let { Play(it) }
+        file?.let { Play(it, playVM, recordVM) }
     }
+}
 
-    @Composable
-    private fun Play(file: File) {
-        val audioUiState by playVM.uiState.collectAsState()
-        Text(file.name)
-        StateButton("停止", "播放", audioUiState.isPlaying) {
-            if (audioUiState.isPlaying) playVM.stop() else playVM.play(recordVM.newAudio, file)
+@Composable
+private fun Play(file: File, playVM: AudioPlayVM, recordVM: RecordVM) {
+    val audioUiState by playVM.uiState.collectAsState()
+    Text(file.name)
+    StateButton("停止", "播放", audioUiState.isPlaying) {
+        if (audioUiState.isPlaying) playVM.stop() else playVM.play(recordVM.newAudio, file)
+    }
+}
+
+private fun showRecordParamDialog(recordVM: RecordVM, onDismiss: (Boolean) -> Unit) {
+    DialogHelper.newBottom {
+        val uiState by recordVM.uiState.collectAsState()
+        Items(modifier = Modifier.padding(vertical = PagePadding)) {
+            ClickText("采样: ${uiState.params.sampleRateInHz}") { recordVM.updateParams(uiState.params.nextRate) }
+            ClickText("声道: ${uiState.params.channelConfig.toInChannelStr()}") { recordVM.updateParams(uiState.params.nextChannel) }
+            ClickText("编码: ${uiState.params.audioFormat.toEncodingStr()}") { recordVM.updateParams(uiState.params.newFormat) }
+            ClickText("时间: ${uiState.params.time}") { recordVM.updateParams(uiState.params.nextTime) }
         }
-    }
+    }.onResult(onDismiss).show()
+}
 
-    private fun showRecordParamDialog(onDismiss: (Boolean) -> Unit) {
-        DialogHelper.newBottom {
-            val uiState by recordVM.uiState.collectAsState()
-            Items(modifier = Modifier.padding(vertical = PagePadding)) {
-                ClickText("采样: ${uiState.params.sampleRateInHz}") { recordVM.updateParams(uiState.params.nextRate) }
-                ClickText("声道: ${uiState.params.channelConfig.toInChannelStr()}") { recordVM.updateParams(uiState.params.nextChannel) }
-                ClickText("编码: ${uiState.params.audioFormat.toEncodingStr()}") { recordVM.updateParams(uiState.params.newFormat) }
-                ClickText("时间: ${uiState.params.time}") { recordVM.updateParams(uiState.params.nextTime) }
+private fun showDevs(devs: Array<out AudioDeviceInfo>, isIn: Boolean, on: (Int) -> Unit) {
+    val txt = 10.sp
+    DialogHelper.newBottom(-1) { i ->
+        var select by remember { mutableIntStateOf(-1) }
+        RvPageIter(devs) { index, dev ->
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        i.update(index)
+                        select = index
+                    }
+                    .padding(PagePadding, PagePaddingHalf)) {
+                Text("${dev.type.toAudiTypeStr()}${if (select == index) "*" else ""}", fontWeight = FontWeight.ExtraBold)
+                Text(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) "(${dev.address}, ${dev.productName})" else "(${dev.productName})", fontSize = txt)
+                Text(if (dev.sampleRates.isEmpty() || dev.sampleRates.size == 9) "*" else dev.sampleRates.joinToString("/"), fontSize = txt)
+                Text(if (dev.channelMasks.isEmpty()) "*" else dev.channelMasks.joinToString { i -> if (isIn) i.toInChannelStr() else i.toOutChannelStr() }, fontSize = txt)
+                Text(if (dev.encodings.isEmpty()) "*" else dev.encodings.joinToString { i -> i.toEncodingStr() }, fontSize = txt)
             }
-        }.onResult(onDismiss).show()
-    }
-
-    private fun showDevs(devs: Array<out AudioDeviceInfo>, isIn: Boolean, on: (Int) -> Unit) {
-        val txt = 10.sp
-        DialogHelper.newBottom(-1) { i ->
-            var select by remember { mutableIntStateOf(-1) }
-            RvPageIter(devs) { index, dev ->
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            i.update(index)
-                            select = index
-                        }
-                        .padding(PagePadding, PagePaddingHalf)) {
-                    Text("${dev.type.toAudiTypeStr()}${if (select == index) "*" else ""}", fontWeight = FontWeight.ExtraBold)
-                    Text(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) "(${dev.address}, ${dev.productName})" else "(${dev.productName})", fontSize = txt)
-                    Text(if (dev.sampleRates.isEmpty() || dev.sampleRates.size == 9) "*" else dev.sampleRates.joinToString("/"), fontSize = txt)
-                    Text(if (dev.channelMasks.isEmpty()) "*" else dev.channelMasks.joinToString { i -> if (isIn) i.toInChannelStr() else i.toOutChannelStr() }, fontSize = txt)
-                    Text(if (dev.encodings.isEmpty()) "*" else dev.encodings.joinToString { i -> i.toEncodingStr() }, fontSize = txt)
-                }
-            }
-        }.onResult(on).show()
-    }
-
-    @Composable
-    private fun ClickText(text: String, noPadding: Boolean = false, onClick: () -> Unit) {
-        Text(
-            text, Modifier
-                .clickable(onClick = onClick)
-                .padding(if (noPadding) 0.dp else PagePadding)
-        )
-    }
-
-    private fun withPermission(p: () -> Unit) {
-        permission(Manifest.permission.RECORD_AUDIO).onPermission("麦克风" to "录制音频").manualIntent().request { if (it.isAllGranted()) p() }
-    }
-
-    private fun Int.toInChannelStr(): String {
-        return when (this) {
-            AudioFormat.CHANNEL_IN_MONO -> "CHANNEL_IN_MONO"
-            AudioFormat.CHANNEL_IN_STEREO -> "CHANNEL_IN_STEREO"
-            else -> this.toString()
         }
-    }
+    }.onResult(on).show()
+}
 
-    private fun Int.toOutChannelStr(): String {
-        return when (this) {
-            AudioFormat.CHANNEL_OUT_MONO -> "CHANNEL_OUT_MONO"
-            AudioFormat.CHANNEL_OUT_STEREO -> "CHANNEL_OUT_STEREO"
-            else -> this.toString()
-        }
-    }
+@Composable
+private fun ClickText(text: String, noPadding: Boolean = false, onClick: () -> Unit) {
+    Text(
+        text, Modifier
+            .clickable(onClick = onClick)
+            .padding(if (noPadding) 0.dp else PagePadding)
+    )
+}
 
-    private fun Int.toEncodingStr(): String {
-        return when (this) {
-            AudioFormat.ENCODING_PCM_8BIT -> "ENCODING_PCM_8BIT"
-            AudioFormat.ENCODING_PCM_16BIT -> "ENCODING_PCM_16BIT"
-            AudioFormat.ENCODING_PCM_FLOAT -> "ENCODING_PCM_FLOAT"
-            AudioFormat.ENCODING_AC3 -> "ENCODING_AC3"
-            AudioFormat.ENCODING_E_AC3 -> "ENCODING_E_AC3"
-            AudioFormat.ENCODING_DTS -> "ENCODING_DTS"
-            AudioFormat.ENCODING_DTS_HD -> "ENCODING_DTS_HD"
-            AudioFormat.ENCODING_IEC61937 -> "ENCODING_IEC61937"
-            AudioFormat.ENCODING_PCM_32BIT -> "ENCODING_PCM_32BIT"
-            else -> this.toString()
-        }
-    }
+private fun withPermission(p: () -> Unit) {
+    currNow.permission(Manifest.permission.RECORD_AUDIO).onPermission("麦克风" to "录制音频").manualIntent().request { if (it.isAllGranted()) p() }
+}
 
-    private fun Int.toAudiTypeStr(): String {
-        val name = when (this) {
-            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "BUILTIN_EARPIECE"
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "BUILTIN_SPEAKER"
-            AudioDeviceInfo.TYPE_WIRED_HEADSET -> "WIRED_HEADSET"
-            AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "WIRED_HEADPHONES"
-            AudioDeviceInfo.TYPE_LINE_ANALOG -> "WIRED_HEADPHONES"
-            AudioDeviceInfo.TYPE_LINE_DIGITAL -> "WIRED_HEADPHONES"
-            AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "BLUETOOTH_SCO"
-            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "BLUETOOTH_A2DP"
-            AudioDeviceInfo.TYPE_BUILTIN_MIC -> "BUILTIN_MIC"
-            AudioDeviceInfo.TYPE_FM_TUNER -> "FM_TUNER"
-            AudioDeviceInfo.TYPE_TELEPHONY -> "TELEPHONY"
-            AudioDeviceInfo.TYPE_USB_HEADSET -> "USB_HEADSET"
-            AudioDeviceInfo.TYPE_REMOTE_SUBMIX -> "REMOTE_SUBMIX"
-            AudioDeviceInfo.TYPE_BLE_HEADSET -> "BLE_HEADSET"
-            AudioDeviceInfo.TYPE_BLE_SPEAKER -> "TYPE_BLE_SPEAKER"
-            28 -> "TYPE_ECHO_REFERENCE"
-            else -> this.toString()
-        }
-        return "$name($this)"
+private fun Int.toInChannelStr(): String {
+    return when (this) {
+        AudioFormat.CHANNEL_IN_MONO -> "CHANNEL_IN_MONO"
+        AudioFormat.CHANNEL_IN_STEREO -> "CHANNEL_IN_STEREO"
+        else -> this.toString()
     }
+}
 
+private fun Int.toOutChannelStr(): String {
+    return when (this) {
+        AudioFormat.CHANNEL_OUT_MONO -> "CHANNEL_OUT_MONO"
+        AudioFormat.CHANNEL_OUT_STEREO -> "CHANNEL_OUT_STEREO"
+        else -> this.toString()
+    }
+}
+
+private fun Int.toEncodingStr(): String {
+    return when (this) {
+        AudioFormat.ENCODING_PCM_8BIT -> "ENCODING_PCM_8BIT"
+        AudioFormat.ENCODING_PCM_16BIT -> "ENCODING_PCM_16BIT"
+        AudioFormat.ENCODING_PCM_FLOAT -> "ENCODING_PCM_FLOAT"
+        AudioFormat.ENCODING_AC3 -> "ENCODING_AC3"
+        AudioFormat.ENCODING_E_AC3 -> "ENCODING_E_AC3"
+        AudioFormat.ENCODING_DTS -> "ENCODING_DTS"
+        AudioFormat.ENCODING_DTS_HD -> "ENCODING_DTS_HD"
+        AudioFormat.ENCODING_IEC61937 -> "ENCODING_IEC61937"
+        AudioFormat.ENCODING_PCM_32BIT -> "ENCODING_PCM_32BIT"
+        else -> this.toString()
+    }
+}
+
+private fun Int.toAudiTypeStr(): String {
+    val name = when (this) {
+        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "BUILTIN_EARPIECE"
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "BUILTIN_SPEAKER"
+        AudioDeviceInfo.TYPE_WIRED_HEADSET -> "WIRED_HEADSET"
+        AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "WIRED_HEADPHONES"
+        AudioDeviceInfo.TYPE_LINE_ANALOG -> "WIRED_HEADPHONES"
+        AudioDeviceInfo.TYPE_LINE_DIGITAL -> "WIRED_HEADPHONES"
+        AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "BLUETOOTH_SCO"
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "BLUETOOTH_A2DP"
+        AudioDeviceInfo.TYPE_BUILTIN_MIC -> "BUILTIN_MIC"
+        AudioDeviceInfo.TYPE_FM_TUNER -> "FM_TUNER"
+        AudioDeviceInfo.TYPE_TELEPHONY -> "TELEPHONY"
+        AudioDeviceInfo.TYPE_USB_HEADSET -> "USB_HEADSET"
+        AudioDeviceInfo.TYPE_REMOTE_SUBMIX -> "REMOTE_SUBMIX"
+        AudioDeviceInfo.TYPE_BLE_HEADSET -> "BLE_HEADSET"
+        AudioDeviceInfo.TYPE_BLE_SPEAKER -> "TYPE_BLE_SPEAKER"
+        28 -> "TYPE_ECHO_REFERENCE"
+        else -> this.toString()
+    }
+    return "$name($this)"
 }
 
 /**
  * 录音
  */
-internal class RecordVM : ViewModel() {
+class RecordVM : ViewModel() {
 
     private var recordHelper = RecordHelper.recognition()
     private var write = FileWriteHelper()
@@ -280,7 +270,7 @@ internal class RecordVM : ViewModel() {
 /**
  * 播放
  */
-internal class AudioPlayVM : ViewModel() {
+class AudioPlayVM : ViewModel() {
     private val _uiState = MutableStateFlow(AudioPlayUiState())
     private var audio: AudioStreamHelper? = null
 
@@ -321,7 +311,8 @@ internal class AudioPlayVM : ViewModel() {
 /**
  * 音频状态
  */
-internal class AudioVM : ViewModel() {
+@HiltViewModel
+class AudioVM @Inject constructor(private val appHandler: Handler) : ViewModel() {
     private var select = Pair(-1, -1)
     private val _uiState = MutableStateFlow(AudioUiState())
     val uiState = _uiState.asStateFlow()
@@ -341,7 +332,7 @@ internal class AudioVM : ViewModel() {
     }
 
     fun requestFocus() {
-        val res = audioFocus.requestAudioFocusNow(AudioFocus.GainTransient, App.instance.appHandler)
+        val res = audioFocus.requestAudioFocusNow(AudioFocus.GainTransient, appHandler)
         _uiState.update { if (res) it.copy(isFocus = true) else it.copy(isErr = true) }
     }
 
@@ -367,20 +358,20 @@ internal class AudioVM : ViewModel() {
     }
 }
 
-internal data class AudioUiState(
+data class AudioUiState(
     val isFocus: Boolean = false, val isErr: Boolean = false, val input: Int = -1, val output: Int = -1
 )
 
 
-internal data class RecordUiState(
+data class RecordUiState(
     val isRecording: Boolean = false, val params: RecordParam, val recordFile: File? = null
 )
 
-internal data class AudioPlayUiState(
+data class AudioPlayUiState(
     val isPlaying: Boolean = false
 )
 
-internal data class RecordParam(
+data class RecordParam(
     val sampleRateInHz: Int, val channelConfig: Int, val audioFormat: Int, val time: Long = 40L
 ) {
     val nextRate

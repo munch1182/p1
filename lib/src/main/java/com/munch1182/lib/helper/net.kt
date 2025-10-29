@@ -1,5 +1,6 @@
 package com.munch1182.lib.helper
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.net.ConnectivityManager
 import android.net.Network
@@ -19,12 +20,13 @@ private typealias ARMUpdate = ARManager<OnUpdateListener<NetStateHelper.NetState
  * @see register
  *
  */
-@SuppressLint("MissingPermission")
-class NetStateHelper @RequiresPermission(android.Manifest.permission.ACCESS_NETWORK_STATE) constructor() : ARMUpdate by ARDefaultManager(), Releasable {
+class NetStateHelper : ARMUpdate by ARDefaultManager(), Releasable {
 
     private val log = log()
     private var lastNet: NetState = NetState(NetworkType.None, false)
     private val cm by lazy { AppHelper.getSystemService(ConnectivityManager::class.java) }
+
+    @SuppressLint("MissingPermission")
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onLost(network: Network) {
             log.logStr("onLost")
@@ -40,8 +42,9 @@ class NetStateHelper @RequiresPermission(android.Manifest.permission.ACCESS_NETW
     /**
      * 回调网络状态
      */
+    @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
     private fun updateNet(network: Network) {
-        val newState = NetState(getNetworkType(network), isNetAvailable(network))
+        val newState = getState(network)
         if (newState != lastNet) {
             lastNet = newState
             log.logStr("updateNet: $newState")
@@ -49,14 +52,19 @@ class NetStateHelper @RequiresPermission(android.Manifest.permission.ACCESS_NETW
         }
     }
 
+    @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
+    fun getState(network: Network? = curr) = NetState(getNetworkType(network), isNetAvailable(network))
+
     /**
      * 当前使用的网络
      */
-    val curr get() = cm?.activeNetwork
+    val curr
+        @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE) get() = cm?.activeNetwork
 
     /**
      * 判断网络使用有可用网络
      */
+    @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
     fun isNetAvailable(net: Network? = curr): Boolean {
         net ?: return false
         return cm?.getNetworkCapabilities(net)?.isNetAvailable() ?: false
@@ -65,6 +73,7 @@ class NetStateHelper @RequiresPermission(android.Manifest.permission.ACCESS_NETW
     /**
      * 判断当前网络是否包含指定类型
      */
+    @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
     fun hasTransport(net: Network? = curr, netType: NetworkType): Boolean {
         net ?: return false
         val cap = cm?.getNetworkCapabilities(net) ?: return false
@@ -74,6 +83,7 @@ class NetStateHelper @RequiresPermission(android.Manifest.permission.ACCESS_NETW
     /**
      * 获取网络类型
      */
+    @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
     fun getNetworkType(net: Network? = curr): NetworkType {
         net ?: return NetworkType.None
         val capabilities = cm?.getNetworkCapabilities(net) ?: return NetworkType.None
@@ -83,6 +93,7 @@ class NetStateHelper @RequiresPermission(android.Manifest.permission.ACCESS_NETW
     /**
      * 注册网络监听；如果注册太多次，会抛出异常
      */
+    @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
     fun register(handler: Handler? = null): Boolean {
         cm ?: return false
         try {

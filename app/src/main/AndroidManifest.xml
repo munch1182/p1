@@ -30,7 +30,6 @@
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -44,23 +43,13 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name=".views.AudioActivity"
+            android:name=".views.other.NetPhoneActivity"
             android:exported="false" />
+
         <activity
             android:name=".views.ScanActivity"
             android:exported="false" />
-        <activity
-            android:name=".views.NetPhoneActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.BluetoothActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.ResultActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.AboutActivity"
-            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
