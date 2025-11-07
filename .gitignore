@@ -8,4 +8,11 @@
 .externalNativeBuild
 .cxx
 local.properties
-/gradle/key.properties
+
+# 应该忽略
+#
+#/gradle/key.properties
+#/gradle/*.jks
+
+
+apk
