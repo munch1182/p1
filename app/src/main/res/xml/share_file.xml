@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path
+        name="audio"
+        path="audio" />
+    <cache-path
+        name="img"
+        path="img" />
+    <files-path
+        name="audio"
+        path="audio" />
+</paths>
