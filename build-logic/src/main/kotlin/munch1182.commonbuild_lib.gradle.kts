@@ -31,6 +31,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    // 指定publish的release
+    publishing {
+        singleVariant("release") {}
+    }
 }
 
 kotlin {
