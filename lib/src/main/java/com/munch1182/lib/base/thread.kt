@@ -23,6 +23,7 @@ fun LifecycleCoroutineScope.launchMain(
 ) = launch(context + Dispatchers.Main, start, block)
 
 suspend inline fun <T> withUI(noinline block: suspend CoroutineScope.() -> T) = withContext(Dispatchers.Main, block)
+suspend inline fun <T> withIO(noinline block: suspend CoroutineScope.() -> T) = withContext(Dispatchers.IO, block)
 fun CoroutineScope.launchIO(
     context: CoroutineContext = EmptyCoroutineContext, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend CoroutineScope.() -> Unit
 ) = launch(context + Dispatchers.IO, start, block)

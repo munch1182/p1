@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
-import com.munch1182.lib.base.keepScreenOn
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.withUI
 import com.munch1182.p1.base.DialogHelper
@@ -22,7 +21,6 @@ fun WeightView() {
 
 private fun showWave() {
     DialogHelper.newBottom((ViewSoundWaveBinding::inflate), onViewCreated = { bind, fg ->
-        fg.activity?.keepScreenOn()
         bind.wave.setAnimationSpeed(40L)
         bind.wave.setAmplitudes(FloatArray(20) { 0.1f })
         fg.lifecycleScope.launchIO {

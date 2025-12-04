@@ -29,10 +29,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +46,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.munch1182.lib.helper.currAct
 import com.munch1182.p1.ui.theme.CornerDef
 import com.munch1182.p1.ui.theme.P1Theme
@@ -184,6 +187,26 @@ fun JumpButton(text: String, modifier: Modifier = Modifier, clazz: KClass<out Ac
     }
 }
 
+
+@Stable
+data class OutlineButtonState(
+    val icon: ImageVector, val text: String, val containerColor: Color = Color.Transparent, val contentDescription: String? = null, val contentColor: Color = Color.Unspecified
+)
+
+@Composable
+fun IconStateOutlineButton(state: OutlineButtonState, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    OutlinedButton(
+        onClick = onClick, modifier = modifier, colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = state.containerColor, contentColor = state.contentColor
+        )
+    ) {
+
+        Icon(imageVector = state.icon, state.contentDescription, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = state.text, fontSize = 14.sp)
+    }
+}
+
 @Composable
 fun ClickIcon(icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
     IconButton(onClick) { Icon(painter = rememberVectorPainter(icon), null, modifier = modifier) }
@@ -210,10 +233,11 @@ fun CheckBoxLabel(label: String, checked: Boolean, modifier: Modifier = Modifier
 fun RadioGroup(options: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit) {
     Column {
         options.forEachIndexed { index, text ->
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
-                .clickable { onSelected(index) }
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+                    .clickable { onSelected(index) }
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)) {
                 RadioButton(
                     selected = index == selectedIndex, onClick = { onSelected(index) })
                 Text(

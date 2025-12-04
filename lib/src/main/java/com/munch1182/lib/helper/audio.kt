@@ -129,7 +129,7 @@ class AudioStreamHelper @Throws(IllegalArgumentException::class) constructor(val
 
     val state get() = player.playState
     val newBuff get() = ByteArray(bufferSize)
-    private val fsib by lazy { format.frameSizeInBytesCompat }
+    val frameSizeInBytes by lazy { format.frameSizeInBytesCompat }
 
     private val callback = object : AudioTrack.OnPlaybackPositionUpdateListener {
         override fun onMarkerReached(track: AudioTrack?) {
@@ -163,7 +163,7 @@ class AudioStreamHelper @Throws(IllegalArgumentException::class) constructor(val
      */
     fun write(data: ByteArray, offset: Int = 0, len: Int = data.size) {
         player.write(data, offset, len)
-        written += len / fsib
+        written += len / frameSizeInBytes
     }
 
     /**
@@ -203,14 +203,18 @@ val AudioFormat.frameSizeInBytesCompat
         frameSizeInBytes
     } else {
         // see android.media.AudioFormat#getBytesPerSample
-        when (encoding) {
-            AudioFormat.ENCODING_PCM_8BIT, AudioFormat.ENCODING_MP3 -> 1
-            AudioFormat.ENCODING_PCM_16BIT, AudioFormat.ENCODING_IEC61937, AudioFormat.ENCODING_DEFAULT -> 2
-            AudioFormat.ENCODING_PCM_24BIT_PACKED -> 3
-            AudioFormat.ENCODING_PCM_FLOAT, AudioFormat.ENCODING_PCM_32BIT -> 4
-            else -> 2
-        } * channelCount
+        frameSizeInBytes(encoding, channelCount)
     }
+
+fun frameSizeInBytes(encoding: Int, channelCount: Int): Int {
+    return when (encoding) {
+        AudioFormat.ENCODING_PCM_8BIT, AudioFormat.ENCODING_MP3 -> 1
+        AudioFormat.ENCODING_PCM_16BIT, AudioFormat.ENCODING_IEC61937, AudioFormat.ENCODING_DEFAULT -> 2
+        AudioFormat.ENCODING_PCM_24BIT_PACKED -> 3
+        AudioFormat.ENCODING_PCM_FLOAT, AudioFormat.ENCODING_PCM_32BIT -> 4
+        else -> 2
+    } * channelCount
+}
 
 @WorkerThread
 fun AudioStreamHelper.play(file: File, over: (() -> Unit)? = null) {
