@@ -12,7 +12,9 @@ fun ResultHelper.JudgeResultHelper.ifAny(ifAny: (Boolean) -> Boolean) = ContactR
 fun ResultHelper.PermissionResultHelper.ifAny(ifAny: (Map<String, PermissionResult>) -> Boolean) = ContactResultHelper.PermissionPartResultHelper(ContactResultHelper(fm), this).ifAny(ifAny)
 
 fun ResultHelper.JudgeResultHelper.ifTrue() = ifAny { it }
+fun ContactResultHelper.JudgePartResultHelper.ifTrue() = ifAny { it }
 fun ResultHelper.PermissionResultHelper.ifAllGranted() = ifAny { it.values.all { p -> p.isGranted } }
+fun ContactResultHelper.PermissionPartResultHelper.ifAllGranted() = ifAny { it.values.all { p -> p.isGranted } }
 
 interface IfAny<O> {
     fun ifAny(ifAny: (O) -> Boolean): ContactResultHelper

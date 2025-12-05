@@ -27,6 +27,7 @@ import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.RvPage
 import com.munch1182.p1.views.AboutView
 import com.munch1182.p1.views.AudioView
+import com.munch1182.p1.views.BluetoothView
 import com.munch1182.p1.views.FileExplorerView
 import com.munch1182.p1.views.QrScanActivity
 import com.munch1182.p1.views.ResultView
@@ -58,6 +59,9 @@ sealed class Screen(val name: String) {
 
     @Serializable
     object Weight : Screen("Weight")
+
+    @Serializable
+    object Bluetooth : Screen("Bluetooth")
 }
 
 private interface IntentScreen {
@@ -71,6 +75,7 @@ internal val mainScreens: Array<Pair<Screen, NavGraph>> by lazy {
         Screen.Home to { nav -> ItemView(ignoreFirst = true) { nav.goTo(it) } },
         Screen.Result to { ResultView() },
         Screen.Audio to { AudioView() },
+        Screen.Bluetooth to { BluetoothView() },
         Screen.Scan to { },
         Screen.FilExplorer to { FileExplorerView() },
         Screen.Weight to { WeightView() },
