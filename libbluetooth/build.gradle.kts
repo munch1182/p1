@@ -8,14 +8,15 @@ android {
 }
 
 publishToMavenLocal {
-    groupId = "com.munch1182"
+    groupId = "com.munch1182.android"
     artifactId = "bluetooth"
-    version = "0.1"
+    version = "0.1.0"
 }
 
 dependencies {
+    debugImplementation(projects.lib)
+    releaseApi(libs.munch1182.lib)
 
-    implementation(projects.lib)
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)

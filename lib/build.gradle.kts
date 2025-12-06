@@ -9,9 +9,9 @@ android {
 }
 
 publishToMavenLocal {
-    groupId = "com.munch1182"
+    groupId = "com.munch1182.android"
     artifactId = "lib"
-    version = "0.1"
+    version = "0.1.0"
 }
 
 dependencies {
