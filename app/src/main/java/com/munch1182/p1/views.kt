@@ -29,8 +29,10 @@ import com.munch1182.p1.views.AboutView
 import com.munch1182.p1.views.AudioView
 import com.munch1182.p1.views.BluetoothView
 import com.munch1182.p1.views.FileExplorerView
+import com.munch1182.p1.views.NetView
 import com.munch1182.p1.views.QrScanActivity
 import com.munch1182.p1.views.ResultView
+import com.munch1182.p1.views.TestView
 import com.munch1182.p1.views.WeightView
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
@@ -62,6 +64,12 @@ sealed class Screen(val name: String) {
 
     @Serializable
     object Bluetooth : Screen("Bluetooth")
+
+    @Serializable
+    object Net : Screen("Net")
+
+    @Serializable
+    object Test : Screen("Test")
 }
 
 private interface IntentScreen {
@@ -77,7 +85,9 @@ internal val mainScreens: Array<Pair<Screen, NavGraph>> by lazy {
         Screen.Audio to { AudioView() },
         Screen.Bluetooth to { BluetoothView() },
         Screen.Scan to { },
+        Screen.Net to { NetView() },
         Screen.FilExplorer to { FileExplorerView() },
+        Screen.Test to { TestView() },
         Screen.Weight to { WeightView() },
         Screen.About to { AboutView() })
 

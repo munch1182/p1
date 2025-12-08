@@ -41,6 +41,7 @@ include(":lib")
 include(":libbluetooth")
 include(":libweight")
 include(":libscan")
+include(":libnet")
 
 // 能够以代码的方式引入module
 // 示例：

@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
 import androidx.viewbinding.ViewBinding
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.munch1182.lib.helper.AllowDeniedDialog
 import com.munch1182.lib.helper.ResultDialog
@@ -80,6 +82,7 @@ open class DFBottom<RESULT>(result: RESULT, private val isCancel: Boolean = true
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         bind?.let { onViewCreated?.invoke(it, this@DFBottom) }
+        (dialog as? BottomSheetDialog?)?.behavior?.setState(BottomSheetBehavior.STATE_EXPANDED)
         dialog?.window?.setBackgroundDrawable(null)
         dialog?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         isCancelable = isCancel

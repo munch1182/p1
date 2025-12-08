@@ -59,6 +59,7 @@ dependencies {
     implementation(projects.libweight)
     implementation(projects.libscan)
     implementation(projects.libbluetooth)
+    implementation(projects.libnet)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -92,6 +93,7 @@ dependencies {
     implementation(platform(libs.okhttp.bom))
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.gson)
 
     // https://github.com/GetStream/webrtc-android
     //noinspection UseTomlInstead
