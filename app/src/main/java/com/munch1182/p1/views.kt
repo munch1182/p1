@@ -31,6 +31,7 @@ import com.munch1182.p1.views.AudioView
 import com.munch1182.p1.views.BluetoothView
 import com.munch1182.p1.views.FileExplorerView
 import com.munch1182.p1.views.NetView
+import com.munch1182.p1.views.QrCodeView
 import com.munch1182.p1.views.QrScanActivity
 import com.munch1182.p1.views.ResultView
 import com.munch1182.p1.views.TestView
@@ -76,6 +77,9 @@ sealed class Screen(val name: String) {
     object Usb : Screen("Usb"), IntentScreen {
         override val intent: Intent get() = Intent(currNow, UsbActivity::class.java)
     }
+
+    @Serializable
+    object QrCode : Screen("QrCode")
 }
 
 private interface IntentScreen {
@@ -92,6 +96,7 @@ internal val mainScreens: Array<Pair<Screen, NavGraph>> by lazy {
         Screen.Bluetooth to { BluetoothView() },
         Screen.Usb to { },
         Screen.Scan to { },
+        Screen.QrCode to { QrCodeView() },
         Screen.Net to { NetView() },
         Screen.FilExplorer to { FileExplorerView() },
         Screen.Test to { TestView() },

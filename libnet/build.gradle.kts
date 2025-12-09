@@ -15,7 +15,7 @@ publishToMavenLocal {
 
 dependencies {
     debugImplementation(projects.lib)
-    releaseApi(libs.munch1182.lib)
+    releaseImplementation(libs.munch1182.lib)
 
     implementation(platform(libs.okhttp.bom))
     implementation(libs.okhttp)

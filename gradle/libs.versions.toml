@@ -1,5 +1,6 @@
 [versions]
 agp = "8.13.1"
+core = "3.5.4"
 kotlin = "2.2.10"
 kotlinKsp = "2.2.10-2.0.2" # KSP 版本的前一部分必须与 build 中使用的 Kotlin 版本一致
 activityCompose = "1.12.1"
@@ -13,6 +14,7 @@ lifecycleViewmodelNav3 = "2.10.0"
 
 [libraries]
 # gradle plugins
+zxing = { module = "com.google.zxing:core", version.ref = "core" }
 gradle = { module = "com.android.tools.build:gradle", version = "8.13.1" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 

@@ -139,15 +139,16 @@ class UsbDataHelper(
             override fun hashCode(): Int {
                 return data.contentHashCode()
             }
+
+            override fun toString() = "Date(data=${data.take(10).toByteArray().toHexStr()})"
         }
 
-        object Error : ReceiveDataEvent()
-        object ConnectionClosed : ReceiveDataEvent()
+        object Error : ReceiveDataEvent() {
+            override fun toString() = "Error"
+        }
 
-        override fun toString() = when (this) {
-            ConnectionClosed -> "ConnectionClosed"
-            is Data -> data.take(10).toByteArray().toHexStr()
-            Error -> "Error"
+        object ConnectionClosed : ReceiveDataEvent() {
+            override fun toString() = "ConnectionClosed"
         }
     }
 

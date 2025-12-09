@@ -16,7 +16,7 @@ object FileHelper {
      *
      * 需要定义FileProvider
      */
-    fun uri(file: File?): Uri? = file?.let { runCatching { FileProvider.getUriForFile(AppHelper, AppHelper.packageName, it) }.getOrNull() }
+    fun uri(file: File?): Uri? = file?.let { runCatching { FileProvider.getUriForFile(AppHelper, "${AppHelper.packageName}.fileprovider", it) }.getOrNull() }
 }
 
 fun File.createParents() = try {

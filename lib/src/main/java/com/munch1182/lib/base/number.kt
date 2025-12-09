@@ -2,7 +2,7 @@ package com.munch1182.lib.base
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import kotlin.math.abs
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -67,58 +67,52 @@ fun Double.keep(decimals: Int): Double {
 
 /**
  * 将整数类型的Number转换为十六进制字符串
- * 仅支持Byte、Short、Int、Long类型
- * 如果传入负数，取其绝对值
- *
- * @param includePrefix 是否包含"0x"前缀，默认为true
- * @param trimLeadingZeros 是否移除前方无用的0，默认为true
- * @return 十六进制字符串
+ * 支持负数的补码表示
+ * 按字节单位补齐，且补齐不受trimLeadingZeros影响
  */
 fun Number.toHexStr(includePrefix: Boolean = true, trimLeadingZeros: Boolean = true): String {
-    // 根据不同类型进行处理
-    val hexStr = when (this) {
-        is Byte -> {
-            val absValue = abs(this.toInt()).coerceAtMost(255)
-            "%02X".format(absValue)
-        }
-
-        is Short -> {
-            val absValue = abs(this.toInt()).coerceAtMost(65535)
-            "%04X".format(absValue)
-        }
-
-        is Int -> {
-            val absValue = if (this == Int.MIN_VALUE) 2147483647 else abs(this)
-            "%08X".format(absValue)
-        }
-
-        is Long -> {
-            val absValue = if (this == Long.MIN_VALUE) Long.MAX_VALUE else abs(this)
-            "%016X".format(absValue)
-        }
-
-        else -> {
-            // 尝试转换为Long，然后取其绝对值
-            try {
-                val longValue = this.toLong()
-                val absValue = if (longValue == Long.MIN_VALUE) Long.MAX_VALUE else abs(longValue)
-                "%016X".format(absValue)
-            } catch (e: Exception) {
-                throw IllegalArgumentException("仅支持整数类型（Byte、Short、Int、Long）")
-            }
-        }
+    // 根据不同类型获取对应的补码值和字节长度
+    val (value, bytes) = when (this) {
+        is Byte -> Pair(this.toInt() and 0xFF, 1)
+        is Short -> Pair(this.toInt() and 0xFFFF, 2)
+        is Int -> Pair((this.toLong() and 0xFFFFFFFFL).toLong(), 4)
+        is Long -> Pair(this, 8)
+        else -> throw IllegalArgumentException("仅支持整数类型（Byte、Short、Int、Long）")
     }
 
-    // 根据trimLeadingZeros参数决定是否移除前导零
-    val finalHexStr = if (trimLeadingZeros) {
-        // 移除前导零，但至少保留一位字符
-        val trimmed = hexStr.trimStart('0')
-        trimmed.ifEmpty { "0" }
+    // 计算总位数（字节数 * 2，因为每个字节2个十六进制字符）
+    val totalDigits = bytes * 2
+
+    // 生成完整十六进制字符串（按字节补齐）
+    val fullHex = "%0${totalDigits}X".format(value)
+
+    // 处理前导零的移除
+    val finalHex = if (trimLeadingZeros) {
+        // 计算要保留的最小位数（至少保留1位，最多保留totalDigits位）
+        val minDigits = when (bytes) {
+            1 -> 2  // Byte至少显示2位
+            2 -> 4  // Short至少显示4位
+            4 -> 8  // Int至少显示8位
+            8 -> 16 // Long至少显示16位
+            else -> totalDigits
+        }
+
+        // 找到第一个非零的位置，但不能小于最小位数
+        val firstNonZero = fullHex.indexOfFirst { it != '0' }
+        val keepFrom = if (firstNonZero == -1) {
+            // 全为零，至少保留minDigits位
+            totalDigits - minDigits
+        } else {
+            // 确保保留足够的位数
+            min(firstNonZero, totalDigits - minDigits)
+        }
+
+        fullHex.substring(keepFrom)
     } else {
-        hexStr
+        fullHex
     }
 
-    return if (includePrefix) "0x$finalHexStr" else finalHexStr
+    return if (includePrefix) "0x$finalHex" else finalHex
 }
 
 fun ByteArray.toHexStr(includePrefix: Boolean = false, trimLeadingZeros: Boolean = true): String = joinToString("") { it.toHexStr(includePrefix, trimLeadingZeros) }

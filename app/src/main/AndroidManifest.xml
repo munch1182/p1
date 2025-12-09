@@ -45,7 +45,8 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".receiver.UsbActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>

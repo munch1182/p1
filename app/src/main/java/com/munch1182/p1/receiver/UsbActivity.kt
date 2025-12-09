@@ -32,6 +32,7 @@ import com.munch1182.p1.ui.setContentWithTheme
 import com.munch1182.p1.ui.theme.PagePadding
 import com.munch1182.p1.ui.theme.TextSm
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
@@ -110,12 +111,32 @@ class UsbViewModel : ViewModel() {
                         connect.claimInterface(intf, true)
                         _uiState.emit(_uiState.value.copy(dev, state = "连接成功"))
                         connector = UsbHelper.connect(dev, intf, connect)
-                        connector?.receiveAsFlow()?.filter { it !is UsbDataHelper.ReceiveDataEvent.Error }?.collect {
-                            Loglog.log(it)
+                        launchIO {
+                            connector?.receiveAsFlow()?.filter { it !is UsbDataHelper.ReceiveDataEvent.Error }?.collect {
+                                Loglog.log(it)
+                                if (it is UsbDataHelper.ReceiveDataEvent.Data) {
+                                    Loglog.log(it.data)
+                                    Loglog.log(it.data.toHexStr(), 22)
+                                }
+
+                            }
                         }
+                        launchIO {
+                            var index = 0
+                            while (true) {
+                                if (index >= 3) break
+                                index += 1
+                                delay(500L)
+                                val list = intArrayOf(0x02, 0xa8, 0x91, index).map { it.toByte() }
+
+                                val res = connector?.send(list.toByteArray())
+                                Loglog.log("send: 0x0$index: $res")
+                            }
+                        }
+                        return@launchIO
                     }
                 }
-                _uiState.emit(_uiState.value.copy(dev, state = "连接识别"))
+                _uiState.emit(_uiState.value.copy(dev, state = "连接失败"))
             }
 
         } else {

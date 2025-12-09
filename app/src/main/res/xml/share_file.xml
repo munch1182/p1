@@ -6,6 +6,10 @@
     <cache-path
         name="img"
         path="img" />
+
+    <files-path
+        name="qrcode"
+        path="qrcode" />
     <files-path
         name="audio"
         path="audio" />
