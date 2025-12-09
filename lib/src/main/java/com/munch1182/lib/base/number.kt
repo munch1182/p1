@@ -2,6 +2,7 @@ package com.munch1182.lib.base
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -65,13 +66,62 @@ fun Double.keep(decimals: Int): Double {
 }
 
 /**
- * 十六进制转换工具
+ * 将整数类型的Number转换为十六进制字符串
+ * 仅支持Byte、Short、Int、Long类型
+ * 如果传入负数，取其绝对值
+ *
+ * @param includePrefix 是否包含"0x"前缀，默认为true
+ * @param trimLeadingZeros 是否移除前方无用的0，默认为true
+ * @return 十六进制字符串
  */
-fun Byte.toHexStr(includePrefix: Boolean = false): String =
-    if (includePrefix) "0x%02X".format(this) else "%02X".format(this)
+fun Number.toHexStr(includePrefix: Boolean = true, trimLeadingZeros: Boolean = true): String {
+    // 根据不同类型进行处理
+    val hexStr = when (this) {
+        is Byte -> {
+            val absValue = abs(this.toInt()).coerceAtMost(255)
+            "%02X".format(absValue)
+        }
 
-fun ByteArray.toHexStr(includePrefix: Boolean = false): String =
-    joinToString("") { it.toHexStr(includePrefix) }
+        is Short -> {
+            val absValue = abs(this.toInt()).coerceAtMost(65535)
+            "%04X".format(absValue)
+        }
+
+        is Int -> {
+            val absValue = if (this == Int.MIN_VALUE) 2147483647 else abs(this)
+            "%08X".format(absValue)
+        }
+
+        is Long -> {
+            val absValue = if (this == Long.MIN_VALUE) Long.MAX_VALUE else abs(this)
+            "%016X".format(absValue)
+        }
+
+        else -> {
+            // 尝试转换为Long，然后取其绝对值
+            try {
+                val longValue = this.toLong()
+                val absValue = if (longValue == Long.MIN_VALUE) Long.MAX_VALUE else abs(longValue)
+                "%016X".format(absValue)
+            } catch (e: Exception) {
+                throw IllegalArgumentException("仅支持整数类型（Byte、Short、Int、Long）")
+            }
+        }
+    }
+
+    // 根据trimLeadingZeros参数决定是否移除前导零
+    val finalHexStr = if (trimLeadingZeros) {
+        // 移除前导零，但至少保留一位字符
+        val trimmed = hexStr.trimStart('0')
+        trimmed.ifEmpty { "0" }
+    } else {
+        hexStr
+    }
+
+    return if (includePrefix) "0x$finalHexStr" else finalHexStr
+}
+
+fun ByteArray.toHexStr(includePrefix: Boolean = false, trimLeadingZeros: Boolean = true): String = joinToString("") { it.toHexStr(includePrefix, trimLeadingZeros) }
 
 fun ByteArray.toHexStrCompact(visibleStart: Int = 8, visibleEnd: Int = 4): String {
     return if (size > visibleStart + visibleEnd) {
@@ -98,20 +148,17 @@ fun Number.toByteArray(bigEndian: Boolean = true): ByteArray = when (this) {
     else -> throw IllegalArgumentException("Unsupported type: ${this::class.java}")
 }
 
-private fun Int.toByteArray(size: Int, bigEndian: Boolean): ByteArray =
-    ByteArray(size) { index ->
-        val shift = if (bigEndian) (size - 1 - index) else index
-        (this ushr (shift * 8) and 0xFF).toByte()
-    }
+private fun Int.toByteArray(size: Int, bigEndian: Boolean): ByteArray = ByteArray(size) { index ->
+    val shift = if (bigEndian) (size - 1 - index) else index
+    (this ushr (shift * 8) and 0xFF).toByte()
+}
 
 /**
  * 字符和字符串字节数组转换
  */
-fun Char.toByteArray(bigEndian: Boolean = true): ByteArray =
-    code.toByteArray(Char.SIZE_BYTES, bigEndian)
+fun Char.toByteArray(bigEndian: Boolean = true): ByteArray = code.toByteArray(Char.SIZE_BYTES, bigEndian)
 
-fun String.toByteArray(charset: Charset = StandardCharsets.UTF_8): ByteArray =
-    toByteArray(charset)
+fun String.toByteArray(charset: Charset = StandardCharsets.UTF_8): ByteArray = toByteArray(charset)
 
 /**
  * 字节数组数值类型解析
@@ -119,44 +166,22 @@ fun String.toByteArray(charset: Charset = StandardCharsets.UTF_8): ByteArray =
 fun ByteArray.getInt(start: Int = 0, bigEndian: Boolean = true): Int {
     require(start + Int.SIZE_BYTES <= size) { "Insufficient bytes for Int" }
     return if (bigEndian) {
-        (this[start].toInt() and 0xFF shl 24) or
-                (this[start + 1].toInt() and 0xFF shl 16) or
-                (this[start + 2].toInt() and 0xFF shl 8) or
-                (this[start + 3].toInt() and 0xFF)
+        (this[start].toInt() and 0xFF shl 24) or (this[start + 1].toInt() and 0xFF shl 16) or (this[start + 2].toInt() and 0xFF shl 8) or (this[start + 3].toInt() and 0xFF)
     } else {
-        (this[start].toInt() and 0xFF) or
-                (this[start + 1].toInt() and 0xFF shl 8) or
-                (this[start + 2].toInt() and 0xFF shl 16) or
-                (this[start + 3].toInt() and 0xFF shl 24)
+        (this[start].toInt() and 0xFF) or (this[start + 1].toInt() and 0xFF shl 8) or (this[start + 2].toInt() and 0xFF shl 16) or (this[start + 3].toInt() and 0xFF shl 24)
     }
 }
 
-fun ByteArray.getShort(start: Int = 0, bigEndian: Boolean = true): Short =
-    getInt(start, 2, bigEndian).toShort()
+fun ByteArray.getShort(start: Int = 0, bigEndian: Boolean = true): Short = getInt(start, 2, bigEndian).toShort()
 
-fun ByteArray.getChar(start: Int = 0, bigEndian: Boolean = true): Char =
-    getInt(start, 2, bigEndian).toChar()
+fun ByteArray.getChar(start: Int = 0, bigEndian: Boolean = true): Char = getInt(start, 2, bigEndian).toChar()
 
 fun ByteArray.getLong(start: Int = 0, bigEndian: Boolean = true): Long {
     require(start + Long.SIZE_BYTES <= size) { "Insufficient bytes for Long" }
     return if (bigEndian) {
-        (this[start].toLong() and 0xFF shl 56) or
-                (this[start + 1].toLong() and 0xFF shl 48) or
-                (this[start + 2].toLong() and 0xFF shl 40) or
-                (this[start + 3].toLong() and 0xFF shl 32) or
-                (this[start + 4].toLong() and 0xFF shl 24) or
-                (this[start + 5].toLong() and 0xFF shl 16) or
-                (this[start + 6].toLong() and 0xFF shl 8) or
-                (this[start + 7].toLong() and 0xFF)
+        (this[start].toLong() and 0xFF shl 56) or (this[start + 1].toLong() and 0xFF shl 48) or (this[start + 2].toLong() and 0xFF shl 40) or (this[start + 3].toLong() and 0xFF shl 32) or (this[start + 4].toLong() and 0xFF shl 24) or (this[start + 5].toLong() and 0xFF shl 16) or (this[start + 6].toLong() and 0xFF shl 8) or (this[start + 7].toLong() and 0xFF)
     } else {
-        (this[start].toLong() and 0xFF) or
-                (this[start + 1].toLong() and 0xFF shl 8) or
-                (this[start + 2].toLong() and 0xFF shl 16) or
-                (this[start + 3].toLong() and 0xFF shl 24) or
-                (this[start + 4].toLong() and 0xFF shl 32) or
-                (this[start + 5].toLong() and 0xFF shl 40) or
-                (this[start + 6].toLong() and 0xFF shl 48) or
-                (this[start + 7].toLong() and 0xFF shl 56)
+        (this[start].toLong() and 0xFF) or (this[start + 1].toLong() and 0xFF shl 8) or (this[start + 2].toLong() and 0xFF shl 16) or (this[start + 3].toLong() and 0xFF shl 24) or (this[start + 4].toLong() and 0xFF shl 32) or (this[start + 5].toLong() and 0xFF shl 40) or (this[start + 6].toLong() and 0xFF shl 48) or (this[start + 7].toLong() and 0xFF shl 56)
     }
 }
 
@@ -170,19 +195,15 @@ private fun ByteArray.getInt(start: Int, byteCount: Int, bigEndian: Boolean): In
     return result
 }
 
-fun ByteArray.getFloat(start: Int = 0, bigEndian: Boolean = true): Float =
-    java.lang.Float.intBitsToFloat(getInt(start, bigEndian))
+fun ByteArray.getFloat(start: Int = 0, bigEndian: Boolean = true): Float = java.lang.Float.intBitsToFloat(getInt(start, bigEndian))
 
-fun ByteArray.getDouble(start: Int = 0, bigEndian: Boolean = true): Double =
-    java.lang.Double.longBitsToDouble(getLong(start, bigEndian))
+fun ByteArray.getDouble(start: Int = 0, bigEndian: Boolean = true): Double = java.lang.Double.longBitsToDouble(getLong(start, bigEndian))
 
 /**
  * 字节数组字符串解析
  */
 fun ByteArray.getString(
-    start: Int = 0,
-    length: Int = size - start,
-    charset: Charset = StandardCharsets.UTF_8
+    start: Int = 0, length: Int = size - start, charset: Charset = StandardCharsets.UTF_8
 ): String {
     require(start >= 0 && length >= 0) { "Invalid range: start=$start, length=$length" }
     require(start + length <= size) { "Range exceeds array size" }

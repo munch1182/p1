@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.munch1182.lib.helper.ActivityCurrHelper
 import com.munch1182.p1.base.DataHelper
+import com.munch1182.p1.receiver.UsbActivity
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.RvPage
 import com.munch1182.p1.views.AboutView
@@ -70,6 +71,11 @@ sealed class Screen(val name: String) {
 
     @Serializable
     object Test : Screen("Test")
+
+    @Serializable
+    object Usb : Screen("Usb"), IntentScreen {
+        override val intent: Intent get() = Intent(currNow, UsbActivity::class.java)
+    }
 }
 
 private interface IntentScreen {
@@ -84,6 +90,7 @@ internal val mainScreens: Array<Pair<Screen, NavGraph>> by lazy {
         Screen.Result to { ResultView() },
         Screen.Audio to { AudioView() },
         Screen.Bluetooth to { BluetoothView() },
+        Screen.Usb to { },
         Screen.Scan to { },
         Screen.Net to { NetView() },
         Screen.FilExplorer to { FileExplorerView() },

@@ -5,10 +5,13 @@ import android.os.Handler
 import androidx.lifecycle.ViewModel
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.ThreadHelper
+import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
 import com.munch1182.lib.helper.ActivityCurrHelper
 import com.munch1182.lib.helper.NetStateHelper
+import com.munch1182.lib.helper.UsbHelper
 import com.munch1182.lib.helper.asFlow
+import com.munch1182.p1.receiver.UserUsbHelper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,6 +31,12 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         ActivityCurrHelper.add { onCheckInTime(it) }
+        AppHelper.launchIO {
+            UsbHelper.registerUsbStateUpdate()
+            UsbHelper.getDevs(UserUsbHelper.VENDOR_ID, UserUsbHelper.PRODUCT_ID)?.firstOrNull()?.let {
+                UserUsbHelper.init(it)
+            }
+        }
     }
 
     /**
