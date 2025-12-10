@@ -2,7 +2,6 @@ package com.munch1182.lib.base
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -68,51 +67,28 @@ fun Double.keep(decimals: Int): Double {
 /**
  * 将整数类型的Number转换为十六进制字符串
  * 支持负数的补码表示
- * 按字节单位补齐，且补齐不受trimLeadingZeros影响
  */
 fun Number.toHexStr(includePrefix: Boolean = true, trimLeadingZeros: Boolean = true): String {
     // 根据不同类型获取对应的补码值和字节长度
     val (value, bytes) = when (this) {
         is Byte -> Pair(this.toInt() and 0xFF, 1)
         is Short -> Pair(this.toInt() and 0xFFFF, 2)
-        is Int -> Pair((this.toLong() and 0xFFFFFFFFL).toLong(), 4)
+        is Int -> Pair((this.toLong() and 0xFFFFFFFFL), 4)
         is Long -> Pair(this, 8)
         else -> throw IllegalArgumentException("仅支持整数类型（Byte、Short、Int、Long）")
     }
 
-    // 计算总位数（字节数 * 2，因为每个字节2个十六进制字符）
     val totalDigits = bytes * 2
 
-    // 生成完整十六进制字符串（按字节补齐）
     val fullHex = "%0${totalDigits}X".format(value)
-
-    // 处理前导零的移除
-    val finalHex = if (trimLeadingZeros) {
-        // 计算要保留的最小位数（至少保留1位，最多保留totalDigits位）
-        val minDigits = when (bytes) {
-            1 -> 2  // Byte至少显示2位
-            2 -> 4  // Short至少显示4位
-            4 -> 8  // Int至少显示8位
-            8 -> 16 // Long至少显示16位
-            else -> totalDigits
+    var finaStr = fullHex
+    if (trimLeadingZeros) {
+        while (finaStr.startsWith("00")) {
+            finaStr = finaStr.substring(2)
         }
-
-        // 找到第一个非零的位置，但不能小于最小位数
-        val firstNonZero = fullHex.indexOfFirst { it != '0' }
-        val keepFrom = if (firstNonZero == -1) {
-            // 全为零，至少保留minDigits位
-            totalDigits - minDigits
-        } else {
-            // 确保保留足够的位数
-            min(firstNonZero, totalDigits - minDigits)
-        }
-
-        fullHex.substring(keepFrom)
-    } else {
-        fullHex
     }
 
-    return if (includePrefix) "0x$finalHex" else finalHex
+    return if (includePrefix) "0x${finaStr}" else finaStr
 }
 
 fun ByteArray.toHexStr(includePrefix: Boolean = false, trimLeadingZeros: Boolean = true): String = joinToString("") { it.toHexStr(includePrefix, trimLeadingZeros) }

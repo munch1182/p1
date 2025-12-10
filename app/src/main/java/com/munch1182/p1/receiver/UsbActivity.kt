@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.munch1182.lib.base.Loglog
 import com.munch1182.lib.base.getParcelableCompat
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.toHexStr
@@ -106,32 +105,25 @@ class UsbViewModel : ViewModel() {
                 _uiState.emit(_uiState.value.copy(dev, state = "开始连接"))
                 val connect = UsbHelper.usbManager.openDevice(dev)
                 if (connect != null) {
-                    val intf = List(dev.interfaceCount) { dev.getInterface(it) }.firstOrNull { it.interfaceClass == UsbConstants.USB_CLASS_HID }
+                    val intf = List(dev.interfaceCount) { dev.getInterface(it) }
+                        .firstOrNull { it.interfaceClass == UsbConstants.USB_CLASS_HID }
                     if (intf != null) {
                         connect.claimInterface(intf, true)
                         _uiState.emit(_uiState.value.copy(dev, state = "连接成功"))
                         connector = UsbHelper.connect(dev, intf, connect)
                         launchIO {
                             connector?.receiveAsFlow()?.filter { it !is UsbDataHelper.ReceiveDataEvent.Error }?.collect {
-                                Loglog.log(it)
                                 if (it is UsbDataHelper.ReceiveDataEvent.Data) {
-                                    Loglog.log(it.data)
-                                    Loglog.log(it.data.toHexStr(), 22)
+                                    _uiState.emit(_uiState.value.copy(dev, state = "收到数据: ${it.data.toHexStr()}"))
                                 }
-
                             }
                         }
                         launchIO {
-                            var index = 0
-                            while (true) {
-                                if (index >= 3) break
-                                index += 1
-                                delay(500L)
-                                val list = intArrayOf(0x02, 0xa8, 0x91, index).map { it.toByte() }
+                            delay(500L)
+                            val list = intArrayOf(0xa8, 0x94, 0x03).map { it.toByte() }.toByteArray()
 
-                                val res = connector?.send(list.toByteArray())
-                                Loglog.log("send: 0x0$index: $res")
-                            }
+                            val res = connector?.send(list)
+                            _uiState.emit(_uiState.value.copy(dev, state = "发送数据: ${list.toHexStr()}：$res"))
                         }
                         return@launchIO
                     }
