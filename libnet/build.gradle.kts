@@ -4,7 +4,7 @@ plugins {
     id("munch1182.publish-local")
 }
 android {
-    namespace = "com.munch1182.lib.net"
+    namespace = "com.munch1182.android.net"
 }
 
 publishToMavenLocal {

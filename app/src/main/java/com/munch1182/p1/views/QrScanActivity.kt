@@ -6,9 +6,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
-import com.munch1182.lib.helper.onResult
-import com.munch1182.lib.helper.result.permission
-import com.munch1182.lib.scan.QrScanHelper
+import com.munch1182.android.lib.helper.onResult
+import com.munch1182.android.lib.helper.result.permission
+import com.munch1182.android.scan.QrScanHelper
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.base.DialogHelper
 import com.munch1182.p1.base.appIntent

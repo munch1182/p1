@@ -1,16 +1,16 @@
-package com.munch1182.lib.helper.result
+package com.munch1182.android.lib.helper.result
 
 import android.content.Intent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import com.munch1182.lib.base.isCanAsk
-import com.munch1182.lib.base.isGranted
-import com.munch1182.lib.base.launchIO
-import com.munch1182.lib.base.withUI
-import com.munch1182.lib.helper.AllowDeniedDialog
-import com.munch1182.lib.helper.IDialog
-import com.munch1182.lib.helper.isAllow
+import com.munch1182.android.lib.base.isCanAsk
+import com.munch1182.android.lib.base.isGranted
+import com.munch1182.android.lib.base.launchIO
+import com.munch1182.android.lib.base.withUI
+import com.munch1182.android.lib.helper.AllowDeniedDialog
+import com.munch1182.android.lib.helper.IDialog
+import com.munch1182.android.lib.helper.isAllow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 

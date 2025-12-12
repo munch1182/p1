@@ -1,13 +1,13 @@
 package com.munch1182.p1.base
 
 import android.bluetooth.BluetoothGattCharacteristic
-import com.munch1182.lib.AppHelper
-import com.munch1182.lib.base.launchIO
-import com.munch1182.lib.base.subArray
-import com.munch1182.lib.bluetooth.le.BLEConnector
-import com.munch1182.lib.bluetooth.le.BleCommand
-import com.munch1182.lib.bluetooth.le.BleCommandSender
-import com.munch1182.lib.bluetooth.le.CommandSendResult
+import com.munch1182.android.lib.base.launchIO
+import com.munch1182.android.lib.base.subArray
+import com.munch1182.android.bluetooth.le.BLEConnector
+import com.munch1182.android.bluetooth.le.BleCommand
+import com.munch1182.android.bluetooth.le.BleCommandSender
+import com.munch1182.android.bluetooth.le.CommandSendResult
+import com.munch1182.android.lib.AppHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob

@@ -1,9 +1,10 @@
-package com.munch1182.lib.base
+package com.munch1182.android.lib.base
 
 import android.content.Context
 import android.content.DialogInterface
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.activity.ComponentDialog
 
 @FunctionalInterface
@@ -28,7 +29,7 @@ fun interface DialogProvider {
 
 @FunctionalInterface
 fun interface ViewInflaterProvider {
-    fun onCreateView(li: LayoutInflater, parent: android.view.ViewGroup?): View?
+    fun onCreateView(li: LayoutInflater, parent: ViewGroup?): View?
 }
 
 @FunctionalInterface

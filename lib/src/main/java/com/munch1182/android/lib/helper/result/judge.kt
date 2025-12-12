@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper.result
+package com.munch1182.android.lib.helper.result
 
 import android.content.Context
 import android.content.Intent

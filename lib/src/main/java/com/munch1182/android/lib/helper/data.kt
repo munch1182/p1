@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper
+package com.munch1182.android.lib.helper
 
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -9,7 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.munch1182.lib.AppHelper
+import com.munch1182.android.lib.AppHelper
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 

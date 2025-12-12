@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper
+package com.munch1182.android.lib.helper
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner

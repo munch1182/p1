@@ -21,11 +21,11 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.munch1182.lib.AppHelper
-import com.munch1182.lib.base.launchIO
-import com.munch1182.lib.base.versionCodeCompat
-import com.munch1182.lib.base.versionName
-import com.munch1182.lib.helper.onResult
+import com.munch1182.android.lib.base.launchIO
+import com.munch1182.android.lib.AppHelper
+import com.munch1182.android.lib.base.versionCodeCompat
+import com.munch1182.android.lib.base.versionName
+import com.munch1182.android.lib.helper.onResult
 import com.munch1182.p1.AppVM
 import com.munch1182.p1.base.DataHelper
 import com.munch1182.p1.base.DialogHelper

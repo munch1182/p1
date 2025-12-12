@@ -5,7 +5,7 @@
     android:paddingTop="16dp"
     android:paddingBottom="16dp">
 
-    <com.munch1182.weight.SoundWaveView
+    <com.munch1182.android.weight.SoundWaveView
         android:id="@+id/wave"
         android:layout_width="match_parent"
         android:layout_height="120dp" />

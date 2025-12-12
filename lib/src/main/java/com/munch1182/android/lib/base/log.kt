@@ -1,6 +1,7 @@
-package com.munch1182.lib.base
+package com.munch1182.android.lib.base
 
 import android.util.Log
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import org.json.JSONArray
 import org.json.JSONObject
@@ -104,7 +105,7 @@ internal object Any2StrFmt {
     }
 
     private fun String.toFmtStr(): String {
-        return kotlin.runCatching { JSONObject(this).toString(4) }.getOrNull() ?: kotlin.runCatching { JSONArray(this).toString(4) }.getOrNull() ?: "\"$this\""
+        return runCatching { JSONObject(this).toString(4) }.getOrNull() ?: runCatching { JSONArray(this).toString(4) }.getOrNull() ?: "\"$this\""
     }
 
     private fun Throwable.toFmtStr(): String {
@@ -153,7 +154,7 @@ fun Any.log(enable: Boolean = true) = Logger(this, enable)
 
 fun Logger.logLife(owner: LifecycleOwner, prefix: String = "Life") {
     if (!enable) return
-    owner.lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+    owner.lifecycle.addObserver(object : DefaultLifecycleObserver {
         override fun onCreate(owner: LifecycleOwner) {
             super.onCreate(owner)
             logStr("${prefix}: onCreate")

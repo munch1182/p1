@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper
+package com.munch1182.android.lib.helper
 
 
 import android.app.Activity
@@ -6,8 +6,8 @@ import android.app.Application
 import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
-import com.munch1182.lib.base.OnUpdateListener
-import com.munch1182.lib.base.log
+import com.munch1182.android.lib.base.OnUpdateListener
+import com.munch1182.android.lib.base.log
 import java.lang.ref.WeakReference
 import java.util.Stack
 
@@ -174,7 +174,7 @@ object ActivityCurrHelper : ARManager<OnUpdateListener<Boolean>> by ARDefaultMan
     fun restartApp(restartTo: Class<out Activity>, fromActivity: Activity? = curr) {
         fromActivity?.let { activity ->
             val intent = Intent(activity, restartTo).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
             activity.startActivity(intent)
             activity.finish()

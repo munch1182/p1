@@ -1,4 +1,4 @@
-package com.munch1182.lib.base
+package com.munch1182.android.lib.base
 
 import android.Manifest
 import android.content.Context

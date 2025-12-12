@@ -9,7 +9,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.viewbinding.ViewBinding
-import com.munch1182.lib.base.keepScreenOn
+import com.munch1182.android.lib.base.keepScreenOn
 
 open class BaseActivity : FragmentActivity() {
 

@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper.result
+package com.munch1182.android.lib.helper.result
 
 import android.content.Context
 import android.content.Intent
@@ -6,7 +6,7 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import com.munch1182.lib.base.launchIO
+import com.munch1182.android.lib.base.launchIO
 
 interface IResultHelper<R> {
     fun request(callback: (R) -> Unit)

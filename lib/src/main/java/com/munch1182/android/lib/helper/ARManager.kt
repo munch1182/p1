@@ -1,8 +1,8 @@
-package com.munch1182.lib.helper
+package com.munch1182.android.lib.helper
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.munch1182.lib.base.OnUpdateListener
+import com.munch1182.android.lib.base.OnUpdateListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import java.util.concurrent.locks.ReentrantLock

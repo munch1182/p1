@@ -21,12 +21,13 @@ tasks.register("listPublish") {
 }
 
 // 创建一个任务来构建所有要发布的版本到指定文件夹
+// 注意：release编译时要先将本地库发布
 tasks.register("buildPublishFlavors") {
     group = "build"
     description = "Build specified product flavors in release mode"
 
     // 定义要构建的flavors
-    val flavors = listOf("zkeg" to "apk", "core" to "aab")
+    val flavors = listOf("dev" to "apk", "publish" to "aab")
     build2Dir(flavors, "publish")
 }
 
@@ -56,12 +57,19 @@ android {
 
 dependencies {
 
+    debugImplementation(projects.lib)
+    debugImplementation(projects.libweight)
+    debugImplementation(projects.libscan)
+    debugImplementation(projects.libbluetooth)
+    debugImplementation(projects.libnet)
+
+    releaseImplementation(libs.munch1182.lib)
+    releaseImplementation(libs.munch1182.weight)
+    releaseImplementation(libs.munch1182.scan)
+    releaseImplementation(libs.munch1182.bluetooth)
+    releaseImplementation(libs.munch1182.net)
+
     implementation(files("libs/AIKit.aar"))
-    implementation(projects.lib)
-    implementation(projects.libweight)
-    implementation(projects.libscan)
-    implementation(projects.libbluetooth)
-    implementation(projects.libnet)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

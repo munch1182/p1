@@ -1,5 +1,6 @@
-package com.munch1182.lib.base
+package com.munch1182.android.lib.base
 
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.location.LocationManager
 
@@ -9,4 +10,4 @@ val locManager get() = ctx.getSystemService(Context.LOCATION_SERVICE) as? Locati
 
 fun isBluetoothOpen() = runCatching { bm?.adapter?.isEnabled }.getOrNull() ?: false
 
-val bm get() = ctx.getSystemService(Context.BLUETOOTH_SERVICE) as? android.bluetooth.BluetoothManager?
+val bm get() = ctx.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager?

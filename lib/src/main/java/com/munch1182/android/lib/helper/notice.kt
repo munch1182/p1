@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper
+package com.munch1182.android.lib.helper
 
 import android.Manifest
 import android.app.NotificationChannel
@@ -6,7 +6,7 @@ import android.app.NotificationManager
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.munch1182.lib.AppHelper
+import com.munch1182.android.lib.AppHelper
 import java.util.concurrent.atomic.AtomicInteger
 
 object NoticeHelper {

@@ -15,10 +15,10 @@ import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.munch1182.lib.helper.AllowDeniedDialog
-import com.munch1182.lib.helper.ResultDialog
-import com.munch1182.lib.helper.currAsFM
-import com.munch1182.lib.helper.result.IPermissionWithDialog
+import com.munch1182.android.lib.helper.AllowDeniedDialog
+import com.munch1182.android.lib.helper.ResultDialog
+import com.munch1182.android.lib.helper.currAsFM
+import com.munch1182.android.lib.helper.result.IPermissionWithDialog
 import com.munch1182.p1.ui.createComposeView
 
 object DialogHelper {

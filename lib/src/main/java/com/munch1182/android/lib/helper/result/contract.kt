@@ -1,10 +1,10 @@
-package com.munch1182.lib.helper.result
+package com.munch1182.android.lib.helper.result
 
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.fragment.app.FragmentActivity
-import com.munch1182.lib.base.withUI
-import com.munch1182.lib.helper.AllowDeniedDialog
-import com.munch1182.lib.helper.isAllow
+import com.munch1182.android.lib.base.withUI
+import com.munch1182.android.lib.helper.AllowDeniedDialog
+import com.munch1182.android.lib.helper.isAllow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 

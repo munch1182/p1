@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper
+package com.munch1182.android.lib.helper
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -13,10 +13,10 @@ import android.os.Build
 import android.os.Handler
 import androidx.annotation.RequiresPermission
 import androidx.annotation.WorkerThread
-import com.munch1182.lib.AppHelper
-import com.munch1182.lib.base.OnUpdateListener
-import com.munch1182.lib.base.Releasable
-import com.munch1182.lib.base.log
+import com.munch1182.android.lib.base.OnUpdateListener
+import com.munch1182.android.lib.base.Releasable
+import com.munch1182.android.lib.base.log
+import com.munch1182.android.lib.AppHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay

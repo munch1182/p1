@@ -1,4 +1,4 @@
-package com.munch1182.lib.base
+package com.munch1182.android.lib.base
 
 import android.content.ClipData
 import android.content.Context
@@ -9,7 +9,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
-import com.munch1182.lib.AppHelper
+import com.munch1182.android.lib.AppHelper
 
 fun <T> Intent.getParcelableCompat(name: String, clazz: Class<T>): T? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
     getParcelableExtra(name, clazz)
@@ -21,14 +21,14 @@ fun Intent.wPName() = setData(Uri.fromParts("package", ctx.packageName, null))
 
 fun shareTextIntent(text: String, title: String? = null): Intent = Intent.createChooser(
     Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
+        setType("text/plain")
         putExtra(Intent.EXTRA_TEXT, text)
     }, title
 )
 
 fun shareImage(uri: Uri, title: String? = null): Intent = Intent.createChooser(
     Intent(Intent.ACTION_SEND).apply {
-        type = "image/*"
+        setType("image/*")
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }, title
@@ -47,7 +47,7 @@ fun selectDir() = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
 
 @RequiresApi(Build.VERSION_CODES.R)
 fun managerAllFiles() = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-    data = "package:${AppHelper.packageName}".toUri()
+    setData("package:${AppHelper.packageName}".toUri())
 }
 
 // https://developer.android.com/training/monitoring-device-state/doze-standby?hl=zh-cn#support_for_other_use_cases

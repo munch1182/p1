@@ -1,11 +1,11 @@
-package com.munch1182.lib.helper.result
+package com.munch1182.android.lib.helper.result
 
 import android.content.Context
 import android.content.Intent
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import com.munch1182.lib.base.launchIO
+import com.munch1182.android.lib.base.launchIO
 
 fun <I, O> ResultHelper.ContractResultHelper<I, O>.ifAny(ifAny: (O?) -> Boolean) = ContactResultHelper.ContractPartResultHelper(ContactResultHelper(fm), this).ifAny(ifAny)
 fun ResultHelper.JudgeResultHelper.ifAny(ifAny: (Boolean) -> Boolean) = ContactResultHelper.JudgePartResultHelper(ContactResultHelper(fm), this).ifAny(ifAny)

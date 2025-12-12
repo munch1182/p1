@@ -44,8 +44,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.munch1182.lib.base.formatFileSize
-import com.munch1182.lib.base.launchIO
+import com.munch1182.android.lib.base.formatFileSize
+import com.munch1182.android.lib.base.launchIO
 import com.munch1182.p1.ui.corner
 import com.munch1182.p1.ui.theme.FontManySize
 import com.munch1182.p1.ui.theme.PagePadding

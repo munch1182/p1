@@ -1,6 +1,6 @@
 package com.munch1182.p1.base
 
-import com.munch1182.lib.helper.DataStore
+import com.munch1182.android.lib.helper.DataStore
 import com.munch1182.p1.mainScreens
 
 object DataHelper {

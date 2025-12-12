@@ -1,6 +1,7 @@
-package com.munch1182.lib.base
+package com.munch1182.android.lib.base
 
 import android.app.Activity
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
@@ -9,7 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.view.WindowManager
 import android.widget.Toast
-import com.munch1182.lib.AppHelper
+import com.munch1182.android.lib.AppHelper
 
 
 internal val ctx: Context
@@ -42,4 +43,4 @@ val versionCodeCompat: Long
 val packInfo: PackageInfo get() = ctx.packageManager.getPackageInfo(ctx.packageName, PackageManager.GET_CONFIGURATIONS)
 
 val wm: WindowManager get() = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-val clipManager get() = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+val clipManager get() = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

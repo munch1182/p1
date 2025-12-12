@@ -1,8 +1,8 @@
-package com.munch1182.lib.helper
+package com.munch1182.android.lib.helper
 
 import android.net.Uri
 import androidx.core.content.FileProvider
-import com.munch1182.lib.AppHelper
+import com.munch1182.android.lib.AppHelper
 import okio.Closeable
 import java.io.File
 import java.io.FileOutputStream

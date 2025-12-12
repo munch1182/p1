@@ -47,7 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.munch1182.lib.helper.currAct
+import com.munch1182.android.lib.helper.currAct
 import com.munch1182.p1.ui.theme.CornerDef
 import com.munch1182.p1.ui.theme.P1Theme
 import com.munch1182.p1.ui.theme.PagePadding

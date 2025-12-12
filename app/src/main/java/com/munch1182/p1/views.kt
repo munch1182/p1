@@ -21,7 +21,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.munch1182.lib.helper.ActivityCurrHelper
+import com.munch1182.android.lib.helper.ActivityCurrHelper
 import com.munch1182.p1.base.DataHelper
 import com.munch1182.p1.receiver.UsbActivity
 import com.munch1182.p1.ui.ClickButton

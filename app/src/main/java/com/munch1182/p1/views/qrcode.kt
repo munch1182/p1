@@ -21,11 +21,11 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import com.munch1182.lib.base.launchIO
-import com.munch1182.lib.base.shareImage
-import com.munch1182.lib.helper.FileHelper
-import com.munch1182.lib.helper.createIfNotExist
-import com.munch1182.lib.helper.currAsFM
+import com.munch1182.android.lib.base.launchIO
+import com.munch1182.android.lib.base.shareImage
+import com.munch1182.android.lib.helper.FileHelper
+import com.munch1182.android.lib.helper.createIfNotExist
+import com.munch1182.android.lib.helper.currAsFM
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.Items
 import com.munch1182.p1.ui.SpacerV

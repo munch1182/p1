@@ -1,5 +1,6 @@
-package com.munch1182.lib.base
+package com.munch1182.android.lib.base
 
+import android.R
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
@@ -48,8 +49,8 @@ fun newSelectDrawable(
     unselectedDrawable: Drawable?, selectedDrawable: Drawable?
 ): StateListDrawable {
     val drawable = StateListDrawable()
-    drawable.addState(intArrayOf(-android.R.attr.state_selected), unselectedDrawable)
-    drawable.addState(intArrayOf(android.R.attr.state_selected), selectedDrawable)
+    drawable.addState(intArrayOf(-R.attr.state_selected), unselectedDrawable)
+    drawable.addState(intArrayOf(R.attr.state_selected), selectedDrawable)
     return drawable
 }
 

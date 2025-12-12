@@ -4,7 +4,7 @@ plugins {
     id("munch1182.publish-local")
 }
 android {
-    namespace = "com.munch1182.lib.scan"
+    namespace = "com.munch1182.android.scan"
 }
 
 publishToMavenLocal {
