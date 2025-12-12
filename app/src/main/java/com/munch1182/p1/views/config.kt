@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -27,7 +28,9 @@ import com.munch1182.p1.base.DialogHelper
 import com.munch1182.p1.base.onDialog
 import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.Items
-import com.munch1182.p1.ui.SpacerH
+import com.munch1182.p1.ui.SpacerV
+import com.munch1182.p1.ui.corner
+import com.munch1182.p1.ui.theme.PagePaddingHalf
 import com.munch1182.p1.ui.theme.PagePaddingModifier
 import com.munch1182.p1.ui.theme.TextSm
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,23 +41,33 @@ fun ConfigView(vm: ConfigVM = viewModel()) {
     Items(Modifier.fillMaxWidth()) {
         val state by vm.uiState.collectAsState()
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ClickButton("加载Translate配置") {
-                intent(selectFile("application/json").apply {
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }).onDialog("选择配置文件来读取并设置").request {
+        ConfigItem("加载Translate配置", state.transConfigState, state.trans != null, { vm.openTransConfig(it) }) {
+            state.trans?.let { showTransConfig(it) }
+        }
+
+        SpacerV()
+    }
+}
+
+@Composable
+private fun ConfigItem(title: String, state: String, enabled: Boolean, select: (Uri) -> Unit, onClick: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        ClickButton(title) {
+            intent(selectFile("application/json").apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) })
+                .onDialog("选择配置文件(json)来读取并设置")
+                .request {
                     val uri = it?.data?.data
                     if (uri == null) return@request
-                    vm.openTransConfig(uri)
+                    select.invoke(uri)
                 }
-            }
-            SpacerH()
-            Text(
-                state.transConfigState, fontSize = TextSm, modifier =
-                    Modifier.clickable(state.trans != null) {
-                        state.trans?.let { showTransConfig(it) }
-                    })
         }
+        Text(
+            state, fontSize = TextSm, modifier = Modifier
+                .corner()
+                .clickable(enabled, onClick = onClick)
+                .padding(PagePaddingHalf)
+
+        )
     }
 }
 

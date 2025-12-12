@@ -26,9 +26,7 @@ interface ARManager<T> : Iterable<T> {
 }
 
 fun <T> ARManager<OnUpdateListener<T>>.asFlow() = callbackFlow {
-    val lis = OnUpdateListener<T> {
-        trySend(it)
-    }
+    val lis = OnUpdateListener<T> { trySend(it) }
     add(lis)
     awaitClose { remove(lis) }
 }

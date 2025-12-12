@@ -18,9 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.munch1182.android.lib.base.Loglog
+import com.munch1182.android.lib.base.getParcelableCompat
 import com.munch1182.android.lib.base.launchIO
 import com.munch1182.android.lib.base.toHexStr
-import com.munch1182.android.lib.base.getParcelableCompat
 import com.munch1182.android.lib.helper.UsbDataHelper
 import com.munch1182.android.lib.helper.UsbHelper
 import com.munch1182.android.lib.helper.hasPermission
@@ -40,7 +41,7 @@ class UsbActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val dev = intent.getParcelableCompat(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
-        UserUsbHelper.getDevFromActivity(dev)
+        UserUsbHelper.getDevFromUsbActivity(dev)
         setContentWithTheme { p ->
             UsbView(Modifier.padding(p))
         }
@@ -68,12 +69,17 @@ private fun UsbView(modifier: Modifier, vm: UsbViewModel = viewModel()) {
                 }
                 Text("vid: ${it.vendorId.toHexStr()}(${it.vendorId})")
                 Text("pid: ${it.productId.toHexStr()}(${it.productId})")
+                SpacerV()
+                Text(it.collHad())
             }
         } ?: Text("error")
         SpacerV()
         Text(uiState.state)
     }
 }
+
+private fun UsbDevice.collHad() = "mHas.*?=(true|false)".toRegex().findAll(toString())
+    .joinToString(separator = "\n") { it.value }
 
 @Stable
 class UsbViewModel : ViewModel() {
@@ -85,6 +91,7 @@ class UsbViewModel : ViewModel() {
     init {
         viewModelScope.launchIO {
             UserUsbHelper.curr.collect {
+                Loglog.log("curr: $it")
                 _uiState.emit(UsbUiState(it?.dev))
                 val dev = it?.dev
                 if (dev != null) {
@@ -105,7 +112,7 @@ class UsbViewModel : ViewModel() {
                 _uiState.emit(_uiState.value.copy(dev, state = "开始连接"))
                 val connect = UsbHelper.usbManager.openDevice(dev)
                 if (connect != null) {
-                    val intf = List(dev.interfaceCount) { dev.getInterface(it) }.firstOrNull { it.interfaceClass == UsbConstants.USB_CLASS_HID }
+                    val intf = List(dev.interfaceCount) { dev.getInterface(it) }.firstOrNull { it.interfaceClass == UsbConstants.USB_CLASS_AUDIO }
                     if (intf != null) {
                         connect.claimInterface(intf, true)
                         _uiState.emit(_uiState.value.copy(dev, state = "连接成功"))
@@ -139,6 +146,9 @@ class UsbViewModel : ViewModel() {
                         job.cancel()
                     }
                 }
+
+            }
+            viewModelScope.launchIO(job) {
                 _uiState.emit(_uiState.value.copy(dev, state = "开始请求权限"))
                 UsbHelper.requestUsbPermission(dev)
             }

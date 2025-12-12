@@ -12,12 +12,12 @@ import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import androidx.core.content.ContextCompat
+import com.munch1182.android.lib.AppHelper
 import com.munch1182.android.lib.base.OnUpdateListener
+import com.munch1182.android.lib.base.getParcelableCompat
 import com.munch1182.android.lib.base.launchIO
 import com.munch1182.android.lib.base.log
 import com.munch1182.android.lib.base.toHexStr
-import com.munch1182.android.lib.AppHelper
-import com.munch1182.android.lib.base.getParcelableCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -35,7 +35,7 @@ object UsbHelper {
     private val log = log()
 
     private val _devState = ARDefaultManager<OnUpdateListener<UsbUpdate>>()
-    val devState = _devState.asFlow()
+    val devState by lazy { _devState.asFlow() }
 
     fun getDevs(vid: Int? = null, pid: Int? = null): List<UsbDevice>? {
         return usbManager.deviceList?.values?.filter { dev ->
@@ -60,8 +60,11 @@ object UsbHelper {
 
     fun requestUsbPermission(dev: UsbDevice, reqCode: Int = 0) {
         if (hasPermission(dev)) return
-        val intent = PendingIntent.getBroadcast(AppHelper, reqCode, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE)
+        val intent = PendingIntent.getBroadcast(
+            AppHelper, reqCode, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE
+        )
 
+        log.logStr("requestUsbPermission")
         usbManager.requestPermission(dev, intent)
     }
 
@@ -74,16 +77,17 @@ object UsbHelper {
 
     private val usbPermissionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val dev = intent?.getParcelableCompat(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+
             when (intent?.action) {
                 ACTION_USB_PERMISSION -> {
-                    if (dev != null) {
-                        val isPermission = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
-                        update(UsbUpdate(dev, if (isPermission) State.PermissionGranted else State.PermissionDenied))
-                    }
+                    val isPermission = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                    log.logStr("onReceive usbPermissionReceiver: ACTION_USB_PERMISSION: $isPermission")
+                    update(UsbUpdate(null, if (isPermission) State.PermissionGranted else State.PermissionDenied))
                 }
 
                 UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    val dev = intent.getParcelableCompat(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                    log.logStr("onReceive usbPermissionReceiver: ${UsbManager.ACTION_USB_DEVICE_DETACHED}: ${dev?.productName}")
                     dev?.let { update(UsbUpdate(it, State.Detached)) }
                 }
             }
@@ -111,9 +115,18 @@ object UsbHelper {
         object Detached : State()
         object PermissionGranted : State()
         object PermissionDenied : State()
+
+        override fun toString() = when (this) {
+            Attached -> "Attached"
+            Detached -> "Detached"
+            PermissionDenied -> "PermissionDenied"
+            PermissionGranted -> "PermissionGranted"
+        }
     }
 
-    data class UsbUpdate(val dev: UsbDevice, val state: State)
+    data class UsbUpdate(val dev: UsbDevice?, val state: State) {
+        override fun toString() = "UsbUpdate(${dev?.let { "dev=${dev.productName}(pid=${dev.productId}, vid=${dev.vendorId})" } ?: "null"}, state=$state)"
+    }
 
     fun connect(intf: UsbInterface, connection: UsbDeviceConnection, receiverBuff: ByteArray = ByteArray(4096)): UsbDataHelper? {
         val points = List(intf.endpointCount) { intf.getEndpoint(it) }
