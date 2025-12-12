@@ -17,9 +17,11 @@ import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.OnUpdateListener
 import com.munch1182.lib.base.Releasable
 import com.munch1182.lib.base.log
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOn
 import java.io.File
 import kotlin.math.min
 
@@ -86,8 +88,10 @@ class RecordHelper(
             log.logStr("finally, stop record")
             if (record.state == AudioRecord.STATE_INITIALIZED) record.stop()
         }
-        awaitClose {}
-    }
+        awaitClose {
+            if (record.state == AudioRecord.STATE_INITIALIZED) record.stop()
+        }
+    }.flowOn(Dispatchers.IO)
 
     override fun release() {
         record.release()

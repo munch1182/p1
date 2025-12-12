@@ -3,7 +3,10 @@
     <!--<usb-device
         product-id="0x1600"
         vendor-id="0x35BB" />-->
-    <usb-device
+    <!--<usb-device
         product-id="5632"
-        vendor-id="13755" />
+        vendor-id="13755" />-->
+    <usb-device
+        product-id="16725"
+        vendor-id="12876" />
 </resources>

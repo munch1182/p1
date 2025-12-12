@@ -7,6 +7,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.annotation.RequiresApi
+import androidx.core.net.toUri
+import com.munch1182.lib.AppHelper
 
 fun <T> Intent.getParcelableCompat(name: String, clazz: Class<T>): T? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
     getParcelableExtra(name, clazz)
@@ -41,6 +44,11 @@ fun blueSetting() = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
 
 fun selectFile(type: String) = Intent(Intent.ACTION_GET_CONTENT).setType(type)
 fun selectDir() = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+
+@RequiresApi(Build.VERSION_CODES.R)
+fun managerAllFiles() = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+    data = "package:${AppHelper.packageName}".toUri()
+}
 
 // https://developer.android.com/training/monitoring-device-state/doze-standby?hl=zh-cn#support_for_other_use_cases
 

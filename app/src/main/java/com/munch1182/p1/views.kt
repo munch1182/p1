@@ -35,6 +35,7 @@ import com.munch1182.p1.views.QrCodeView
 import com.munch1182.p1.views.QrScanActivity
 import com.munch1182.p1.views.ResultView
 import com.munch1182.p1.views.TestView
+import com.munch1182.p1.views.TranslateView
 import com.munch1182.p1.views.WeightView
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
@@ -80,6 +81,9 @@ sealed class Screen(val name: String) {
 
     @Serializable
     object QrCode : Screen("QrCode")
+
+    @Serializable
+    object Translate : Screen("Translate")
 }
 
 private interface IntentScreen {
@@ -99,6 +103,7 @@ internal val mainScreens: Array<Pair<Screen, NavGraph>> by lazy {
         Screen.QrCode to { QrCodeView() },
         Screen.Net to { NetView() },
         Screen.FilExplorer to { FileExplorerView() },
+        Screen.Translate to { TranslateView() },
         Screen.Test to { TestView() },
         Screen.Weight to { WeightView() },
         Screen.About to { AboutView() })

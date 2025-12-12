@@ -5,8 +5,7 @@ import com.munch1182.p1.ui.ClickButton
 
 @Composable
 fun TestView() {
-    ClickButton("test1") { text1() }
+    ClickButton("test1") { test1() }
 }
 
-private fun text1() {
-}
+private fun test1() {}

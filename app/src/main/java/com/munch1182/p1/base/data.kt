@@ -14,5 +14,10 @@ object DataHelper {
     object StartIndex : DataHelperImpl<Int>("start_index") {
         suspend fun start() = get<Int>()?.takeIf { it != 0 }?.let { mainScreens.getOrNull(it)?.first }
     }
+
+    object Translate {
+        object Auth : DataHelperImpl<String>("xf_auth_file")
+        object WorkDir : DataHelperImpl<String>("xf_work_dir")
+    }
 }
 

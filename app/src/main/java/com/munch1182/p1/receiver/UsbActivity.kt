@@ -18,12 +18,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.munch1182.android.lib.helper.UsbDataHelper
+import com.munch1182.android.lib.helper.UsbHelper
+import com.munch1182.android.lib.helper.hasPermission
 import com.munch1182.lib.base.getParcelableCompat
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.toHexStr
-import com.munch1182.lib.helper.UsbDataHelper
-import com.munch1182.lib.helper.UsbHelper
-import com.munch1182.lib.helper.hasPermission
 import com.munch1182.p1.base.BaseActivity
 import com.munch1182.p1.ui.Items
 import com.munch1182.p1.ui.SpacerV
@@ -42,13 +42,13 @@ class UsbActivity : BaseActivity() {
         val dev = intent.getParcelableCompat(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
         UserUsbHelper.getDevFromActivity(dev)
         setContentWithTheme { p ->
-            UseView(Modifier.padding(p))
+            UsbView(Modifier.padding(p))
         }
     }
 }
 
 @Composable
-private fun UseView(modifier: Modifier, vm: UsbViewModel = viewModel()) {
+private fun UsbView(modifier: Modifier, vm: UsbViewModel = viewModel()) {
     val uiState by vm.uiState.collectAsState()
     Column(
         modifier = modifier
@@ -57,8 +57,8 @@ private fun UseView(modifier: Modifier, vm: UsbViewModel = viewModel()) {
     ) {
         uiState.dev?.let {
             Items {
+                Text(it.productName ?: "null")
                 Row {
-                    Text(it.productName ?: "null")
                     Text(
                         it.deviceName, fontSize = TextSm, modifier = Modifier.padding(start = 8.dp)
                     )
@@ -66,8 +66,8 @@ private fun UseView(modifier: Modifier, vm: UsbViewModel = viewModel()) {
                         it.hasPermission.toString(), fontSize = TextSm, modifier = Modifier.padding(start = 8.dp)
                     )
                 }
-                Text("${it.vendorId.toHexStr()}(${it.vendorId})")
-                Text("${it.productId.toHexStr()}(${it.productId})")
+                Text("vid: ${it.vendorId.toHexStr()}(${it.vendorId})")
+                Text("pid: ${it.productId.toHexStr()}(${it.productId})")
             }
         } ?: Text("error")
         SpacerV()
@@ -105,12 +105,11 @@ class UsbViewModel : ViewModel() {
                 _uiState.emit(_uiState.value.copy(dev, state = "开始连接"))
                 val connect = UsbHelper.usbManager.openDevice(dev)
                 if (connect != null) {
-                    val intf = List(dev.interfaceCount) { dev.getInterface(it) }
-                        .firstOrNull { it.interfaceClass == UsbConstants.USB_CLASS_HID }
+                    val intf = List(dev.interfaceCount) { dev.getInterface(it) }.firstOrNull { it.interfaceClass == UsbConstants.USB_CLASS_HID }
                     if (intf != null) {
                         connect.claimInterface(intf, true)
                         _uiState.emit(_uiState.value.copy(dev, state = "连接成功"))
-                        connector = UsbHelper.connect(dev, intf, connect)
+                        connector = UsbHelper.connect(intf, connect)
                         launchIO {
                             connector?.receiveAsFlow()?.filter { it !is UsbDataHelper.ReceiveDataEvent.Error }?.collect {
                                 if (it is UsbDataHelper.ReceiveDataEvent.Data) {

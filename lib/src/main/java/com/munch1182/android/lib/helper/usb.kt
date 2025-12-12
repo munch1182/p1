@@ -1,4 +1,4 @@
-package com.munch1182.lib.helper
+package com.munch1182.android.lib.helper
 
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -18,6 +18,8 @@ import com.munch1182.lib.base.getParcelableCompat
 import com.munch1182.lib.base.launchIO
 import com.munch1182.lib.base.log
 import com.munch1182.lib.base.toHexStr
+import com.munch1182.lib.helper.ARDefaultManager
+import com.munch1182.lib.helper.asFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -37,8 +39,10 @@ object UsbHelper {
     private val _devState = ARDefaultManager<OnUpdateListener<UsbUpdate>>()
     val devState = _devState.asFlow()
 
-    fun getDevs(vid: Int, pid: Int): List<UsbDevice>? {
-        return usbManager.deviceList?.values?.filter { it.vendorId == vid && it.productId == pid }
+    fun getDevs(vid: Int? = null, pid: Int? = null): List<UsbDevice>? {
+        return usbManager.deviceList?.values?.filter { dev ->
+            (vid?.let { v -> dev.vendorId == v } ?: true) && pid?.let { p -> dev.productId == p } ?: true
+        }
     }
 
     fun registerUsbStateUpdate() {
@@ -113,7 +117,7 @@ object UsbHelper {
 
     data class UsbUpdate(val dev: UsbDevice, val state: State)
 
-    fun connect(dev: UsbDevice, intf: UsbInterface, connection: UsbDeviceConnection, receiverBuff: ByteArray = ByteArray(4096)): UsbDataHelper? {
+    fun connect(intf: UsbInterface, connection: UsbDeviceConnection, receiverBuff: ByteArray = ByteArray(4096)): UsbDataHelper? {
         val points = List(intf.endpointCount) { intf.getEndpoint(it) }
         val inEndPoint = points.firstOrNull { it.direction == UsbConstants.USB_DIR_IN }
         val outEndPoint = points.firstOrNull { it.direction == UsbConstants.USB_DIR_OUT }

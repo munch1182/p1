@@ -2,10 +2,10 @@ package com.munch1182.p1.receiver
 
 import android.hardware.usb.UsbDevice
 import androidx.compose.runtime.Stable
+import com.munch1182.android.lib.helper.UsbHelper
+import com.munch1182.android.lib.helper.hasPermission
 import com.munch1182.lib.AppHelper
 import com.munch1182.lib.base.launchIO
-import com.munch1182.lib.helper.UsbHelper
-import com.munch1182.lib.helper.hasPermission
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -22,7 +22,7 @@ object UserUsbHelper {
                 when (it.state) {
                     UsbHelper.State.Attached -> init(it.dev)
                     UsbHelper.State.Detached -> {
-                        if (currUsb == it.dev) _curr.value = null
+                        _curr.value = null
                     }
 
                     UsbHelper.State.PermissionDenied -> init(it.dev)

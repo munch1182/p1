@@ -13,4 +13,8 @@
     <files-path
         name="audio"
         path="audio" />
+
+    <files-path
+        name="xf"
+        path="xf" />
 </paths>

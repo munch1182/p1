@@ -40,14 +40,14 @@ android {
     }
 
 
-    flavorDimensions += "blue"
+    flavorDimensions += "isDev"
     productFlavors {
-        create("zkeg") {
-            applicationIdSuffix = ".zkeg"
-            dimension = "blue"
+        create("dev") {
+            applicationIdSuffix = ".dev"
+            dimension = "isDev"
         }
-        create("core") {
-            dimension = "blue"
+        create("publish") {
+            dimension = "isDev"
         }
     }
 
@@ -55,6 +55,8 @@ android {
 }
 
 dependencies {
+
+    implementation(files("libs/AIKit.aar"))
     implementation(projects.lib)
     implementation(projects.libweight)
     implementation(projects.libscan)
