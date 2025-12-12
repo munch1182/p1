@@ -11,6 +11,21 @@ import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 
 val gson = Gson()
+
+inline fun <reified T> Gson.jsonCatch(str: String): T? = try {
+    fromJson(str, T::class.java)
+} catch (e: Exception) {
+    e.printStackTrace()
+    null
+}
+
+inline fun <reified T> Gson.stringCatch(value: T): String? = try {
+    toJson(value)
+} catch (e: Exception) {
+    e.printStackTrace()
+    null
+}
+
 private val httpClient: OkHttpClient.Builder
     get() = OkHttpClient.Builder().addInterceptor(HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -29,11 +44,7 @@ fun OkHttpClient.get(url: String, headers: Array<String> = arrayOf()): Response 
         newCall(request).execute()
     } catch (e: Exception) {
         e.printStackTrace()
-        Response.Builder().code(901)
-            .request(request)
-            .message(e.message ?: "call error")
-            .protocol(Protocol.HTTP_1_0)
-            .build()
+        Response.Builder().code(901).request(request).message(e.message ?: "call error").protocol(Protocol.HTTP_1_0).build()
     }
 }
 

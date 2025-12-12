@@ -29,6 +29,7 @@ import com.munch1182.p1.ui.RvPage
 import com.munch1182.p1.views.AboutView
 import com.munch1182.p1.views.AudioView
 import com.munch1182.p1.views.BluetoothView
+import com.munch1182.p1.views.ConfigView
 import com.munch1182.p1.views.FileExplorerView
 import com.munch1182.p1.views.NetView
 import com.munch1182.p1.views.QrCodeView
@@ -84,6 +85,9 @@ sealed class Screen(val name: String) {
 
     @Serializable
     object Translate : Screen("Translate")
+
+    @Serializable
+    object Config : Screen("Config")
 }
 
 private interface IntentScreen {
@@ -106,6 +110,7 @@ internal val mainScreens: Array<Pair<Screen, NavGraph>> by lazy {
         Screen.Translate to { TranslateView() },
         Screen.Test to { TestView() },
         Screen.Weight to { WeightView() },
+        Screen.Config to { ConfigView() },
         Screen.About to { AboutView() })
 
 }

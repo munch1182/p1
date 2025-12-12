@@ -26,11 +26,11 @@ import com.iflytek.aikit.core.AiStatus
 import com.iflytek.aikit.core.BaseLibrary
 import com.iflytek.aikit.core.CoreListener
 import com.iflytek.aikit.core.ErrType
+import com.munch1182.android.lib.AppHelper
 import com.munch1182.android.lib.base.Loglog
 import com.munch1182.android.lib.base.ReRunJob
-import com.munch1182.android.lib.base.launchIO
-import com.munch1182.android.lib.AppHelper
 import com.munch1182.android.lib.base.appSetting
+import com.munch1182.android.lib.base.launchIO
 import com.munch1182.android.lib.base.managerAllFiles
 import com.munch1182.android.lib.base.selectDir
 import com.munch1182.android.lib.helper.RecordHelper
@@ -110,14 +110,14 @@ class TranslateVM : ViewModel() {
 
     init {
         viewModelScope.launchIO {
-            var workDir = DataHelper.Translate.WorkDir.get<String?>()
+            var workDir = DataHelper.TranslateAuth.WorkDir.get<String?>()
             val uri = workDir?.toUri()
             if (uri != null) {
                 val isPermission = AppHelper.contentResolver.persistedUriPermissions.any { it.uri == uri && it.isWritePermission && it.isReadPermission }
                 workDir = if (isPermission) workDir else null
             }
             _uiState.value = _uiState.value.copy(
-                DataHelper.Translate.Auth.get() ?: "", workDir ?: ""
+                DataHelper.TranslateAuth.Auth.get() ?: "", workDir ?: ""
             )
         }
     }
@@ -131,8 +131,8 @@ class TranslateVM : ViewModel() {
 
     fun setFile(auth: String? = null, workDir: String? = null) {
         viewModelScope.launchIO {
-            auth?.let { DataHelper.Translate.Auth.save(it) }
-            workDir?.let { DataHelper.Translate.WorkDir.save(it) }
+            auth?.let { DataHelper.TranslateAuth.Auth.save(it) }
+            workDir?.let { DataHelper.TranslateAuth.WorkDir.save(it) }
             _uiState.value = _uiState.value.copy(
                 authFile = auth ?: _uiState.value.authFile, workDir = workDir ?: _uiState.value.workDir
             )
@@ -287,7 +287,7 @@ fun Flow<ByteArray>.recognize(langType: Int = 0) = callbackFlow {
         }
     }
     awaitClose {
-        Loglog.log("111111111 close222")
+        Loglog.log("close recognize")
         AiHelper.getInst().end(handle)
     }
 }.flowOn(Dispatchers.IO)
@@ -295,7 +295,14 @@ fun Flow<ByteArray>.recognize(langType: Int = 0) = callbackFlow {
 private fun initSdk(
     workDir: String, authFile: String? = null, authType: BaseLibrary.AuthType = BaseLibrary.AuthType.DEVICE
 ) = callbackFlow {
+
     launchIO {
+        val data = DataHelper.Config.Translate.get()
+        if (data == null) {
+            send(InitState.Failed("无配置文件"))
+            close()
+            return@launchIO
+        }
         AiHelper.getInst().registerListener(object : CoreListener {
             override fun onAuthStateChange(p0: ErrType?, p1: Int) {
                 Loglog.log("auth $p0, ${p1 == 0}, $p1")
@@ -322,9 +329,15 @@ private fun initSdk(
             return@launchIO
         }
         AiHelper.getInst().initEntry(
-            AppHelper, BaseLibrary.Params.Builder().appId("a7b21c86").apiSecret("NzljY2E3NzUxNTlhZmY1MTM5ZGY5MzM4").apiKey("9994f6ce9dc54ca97cb9d02082ca3137").workDir(workDir2).authInterval(30 * 25 * 60 * 60).authType(authType).apply {
-                authFile?.let { file -> licenseFile(file) }
-            }.build()
+            AppHelper, BaseLibrary.Params.Builder()
+                .appId(data.appId)
+                .apiSecret(data.appSecret)
+                .apiKey(data.apiKey)
+                .workDir(workDir2)
+                .authInterval(30 * 25 * 60 * 60)
+                .authType(authType).apply {
+                    authFile?.let { file -> licenseFile(file) }
+                }.build()
         )
     }
     awaitClose {

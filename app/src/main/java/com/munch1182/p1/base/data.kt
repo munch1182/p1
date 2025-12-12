@@ -1,6 +1,10 @@
 package com.munch1182.p1.base
 
+import com.google.gson.annotations.SerializedName
 import com.munch1182.android.lib.helper.DataStore
+import com.munch1182.android.net.gson
+import com.munch1182.android.net.jsonCatch
+import com.munch1182.android.net.stringCatch
 import com.munch1182.p1.mainScreens
 
 object DataHelper {
@@ -15,9 +19,28 @@ object DataHelper {
         suspend fun start() = get<Int>()?.takeIf { it != 0 }?.let { mainScreens.getOrNull(it)?.first }
     }
 
-    object Translate {
+    object TranslateAuth {
         object Auth : DataHelperImpl<String>("xf_auth_file")
         object WorkDir : DataHelperImpl<String>("xf_work_dir")
+    }
+
+    object Config {
+
+        private object TranslateImpl : DataHelperImpl<String>("xf_translate_config")
+        object Translate {
+            suspend fun get(): Data? = TranslateImpl.get<String>()?.let { gson.jsonCatch<Data>(it) }
+            suspend fun save(value: Data?) = gson.stringCatch(value)?.let { TranslateImpl.save(it) }
+            suspend fun save(value: String) = TranslateImpl.save(value)
+
+            data class Data(
+                @SerializedName("appid")
+                val appId: String,
+                @SerializedName("appsecret")
+                val appSecret: String,
+                @SerializedName("apikey")
+                val apiKey: String
+            )
+        }
     }
 }
 
