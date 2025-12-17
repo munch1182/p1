@@ -17,15 +17,6 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.iflytek.aikit.core.AiAudio
-import com.iflytek.aikit.core.AiHelper
-import com.iflytek.aikit.core.AiListener
-import com.iflytek.aikit.core.AiRequest
-import com.iflytek.aikit.core.AiResponse
-import com.iflytek.aikit.core.AiStatus
-import com.iflytek.aikit.core.BaseLibrary
-import com.iflytek.aikit.core.CoreListener
-import com.iflytek.aikit.core.ErrType
 import com.munch1182.android.lib.AppHelper
 import com.munch1182.android.lib.base.Loglog
 import com.munch1182.android.lib.base.ReRunJob
@@ -44,15 +35,18 @@ import com.munch1182.p1.base.onDialog
 import com.munch1182.p1.ui.Items
 import com.munch1182.p1.ui.SpacerV
 import com.munch1182.p1.ui.StateButton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
+import com.munch1182.p1.voice.InitState
+import com.munch1182.p1.voice.RecognizeException
+import com.munch1182.p1.voice.Recognized
+import com.munch1182.p1.voice.RecognizedState
+import com.munch1182.p1.voice.initSdk
+import com.munch1182.p1.voice.translate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import java.io.File
-import java.nio.charset.Charset
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -145,7 +139,13 @@ class TranslateVM : ViewModel() {
             val workDir = uiState.value.workDir
             Loglog.log("requestAuth: $authFile, $workDir")
             if (workDir.isEmpty()) return@launchIO
-            initSdk(workDir, authFile).collect {
+            val workDir2 = try {
+                uir2FilePart(workDir.toUri().toString())?.absolutePath ?: workDir
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return@launchIO
+            }
+            initSdk(workDir2, authFile).collect {
                 when (it) {
                     is InitState.Failed -> {
                         _uiState.value = _uiState.value.copy(isAuthed = false, state = it.e.message ?: "授权失败")
@@ -168,10 +168,36 @@ class TranslateVM : ViewModel() {
     private fun startRecord() {
 
         viewModelScope.launchIO(recordJob.newContext) {
-            _uiState.emit(_uiState.value.copy(isRecording = true))
-            val record = recordHelper.record()
-            val recognized = record.recognize()
-            recognized.collect(_result::emit)
+            val workDir = uiState.value.workDir
+            _uiState.emit(_uiState.value.copy(isRecording = true))/*val record = recordHelper.record()
+            val recognized = record.recognize()*/
+            val recognized = flow {
+                val state = RecognizedState.Recognized
+                emit(Result.success(Recognized("hello world", state)))
+                /* emit(Result.success(Recognized("今天", state)))
+                 emit(Result.success(Recognized("天气", state)))
+                 emit(Result.success(Recognized("怎么样", state)))*/
+            }
+            val trans = recognized
+                .filter { it.isSuccess }
+                .map { it.getOrNull()?.str ?: "" }
+                .translate("encn", workDir)
+            trans.collect {
+                when {
+                    it.isSuccess -> {
+                        _result.value = it.getOrNull() ?: ""
+                    }
+
+                    it.isFailure -> {
+                        val exception = it.exceptionOrNull()
+                        if (exception is RecognizeException) {
+                            _result.value = exception.message ?: "error"
+                        } else {
+                            _result.value = exception?.stackTraceToString() ?: "error"
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -202,155 +228,6 @@ private fun withPermission(any: () -> Unit) {
         ).onDialog("翻译相关权限", "翻译").onIntent(appSetting()).request {
             if (it.isAllGranted()) any()
         }
-    }
-}
-
-fun Flow<ByteArray>.recognize(langType: Int = 0) = callbackFlow {
-    val abilityId = "e0e26945b"
-
-    Loglog.log("abilityId: $abilityId")
-    AiHelper.getInst().registerListener(abilityId, object : AiListener {
-        /**
-         * 与varType无关，都是String
-         */
-        private fun AiResponse.getValueCompat(): String {
-            val value = value.copyOf(len)
-            val string = String(value, Charset.forName(if (langType == 0) "GBK" else "UTF-8"))
-            Loglog.log(key, type, varType, string)
-            return string
-        }
-
-        override fun onResult(handleId: Int, outputData: List<AiResponse?>?, userCtx: Any?) {
-            if (outputData != null && outputData.isNotEmpty()) {
-                val result = HashMap<String, String>(outputData.size)
-                outputData.forEach { i ->
-                    i ?: return@forEach
-                    val key = i.key ?: return@forEach
-                    val value = i.getValueCompat()
-                    result[key] = value
-                }
-                val str = result.get("pgs")
-                Loglog.log(str)
-                str?.let { trySend(str) }
-            }
-        }
-
-        override fun onEvent(handleId: Int, event: Int, eventData: List<AiResponse?>?, userCtx: Any?) {
-            Loglog.log("event: $event")
-        }
-
-        override fun onError(handleId: Int, err: Int, msg: String?, userCtx: Any?) {
-            Loglog.log("onError: $err, $msg")
-        }
-    })
-
-    val paramBuilder = AiRequest.Builder()
-
-    paramBuilder.param("languageType", langType)
-    paramBuilder.param("vadOn", true)
-    paramBuilder.param("rltSep", "blank")
-    paramBuilder.param("vadEnergyThreshold", 9)
-    paramBuilder.param("vadThreshold", 0.1332)
-    paramBuilder.param("vadSpeechEnd", 180)
-    paramBuilder.param("vadResponsetime", 1000)
-    paramBuilder.param("vadLinkOn", false)
-    paramBuilder.param("pureEnglish", false)
-    paramBuilder.param("outputType", 0)
-    paramBuilder.param("puncCache", true)
-    paramBuilder.param("postprocOn", true)
-    paramBuilder.param("vadEndGap", 40)
-
-    val handle = AiHelper.getInst().start(abilityId, paramBuilder.build(), 1)
-    if (!handle.isSuccess) {
-        Loglog.log("start Fail: ${handle.code}")
-        close()
-        return@callbackFlow
-    }
-
-    var isBegin = false
-
-    collect {
-        val builder = AiRequest.Builder()
-        val audioData = AiAudio.get("input").encoding(AiAudio.ENCODING_PCM).data(it)
-        audioData.status(if (isBegin) AiStatus.CONTINUE else AiStatus.BEGIN)
-        isBegin = true
-        builder.payload(audioData.valid())
-        val restWrite = AiHelper.getInst().write(builder.build(), handle)
-        if (restWrite != 0) {
-            Loglog.log("restWrite: $restWrite")
-            close()
-        }
-        val restRead = AiHelper.getInst().read(abilityId, handle)
-        if (restRead != 0) {
-            Loglog.log("restRead: $restRead")
-            close()
-        }
-    }
-    awaitClose {
-        Loglog.log("close recognize")
-        AiHelper.getInst().end(handle)
-    }
-}.flowOn(Dispatchers.IO)
-
-private fun initSdk(
-    workDir: String, authFile: String? = null, authType: BaseLibrary.AuthType = BaseLibrary.AuthType.DEVICE
-) = callbackFlow {
-
-    launchIO {
-        val data = DataHelper.Config.Translate.get()
-        if (data == null) {
-            send(InitState.Failed("无配置文件"))
-            close()
-            return@launchIO
-        }
-        AiHelper.getInst().registerListener(object : CoreListener {
-            override fun onAuthStateChange(p0: ErrType?, p1: Int) {
-                Loglog.log("auth $p0, ${p1 == 0}, $p1")
-                when (p0) {
-                    ErrType.AUTH -> {}
-                    ErrType.HTTP -> {}
-                    null, ErrType.UNKNOWN -> false
-                }
-                trySend(if (p1 == 0) InitState.Success else InitState.Failed("auth failed: $p1"))
-            }
-        })
-        val workDir2 = try {
-            uir2FilePart(workDir.toUri().toString())?.absolutePath ?: workDir
-        } catch (e: Exception) {
-            e.printStackTrace()
-            send(InitState.Failed("文件不支持：$workDir"))
-            close()
-            return@launchIO
-        }
-        val file = File(workDir2)
-        if (!file.canRead() || !file.canWrite()) {
-            send(InitState.Failed("文件没有读写权限：$workDir"))
-            close()
-            return@launchIO
-        }
-        AiHelper.getInst().initEntry(
-            AppHelper, BaseLibrary.Params.Builder()
-                .appId(data.appId)
-                .apiSecret(data.appSecret)
-                .apiKey(data.apiKey)
-                .workDir(workDir2)
-                .authInterval(30 * 25 * 60 * 60)
-                .authType(authType).apply {
-                    authFile?.let { file -> licenseFile(file) }
-                }.build()
-        )
-    }
-    awaitClose {
-        Loglog.log("close sdk")
-        AiHelper.getInst().unInit()
-    }
-}
-
-sealed class InitState {
-    object Success : InitState()
-    data class Failed(val e: Exception) : InitState() {
-
-        constructor(str: String) : this(IllegalStateException(str))
     }
 }
 
