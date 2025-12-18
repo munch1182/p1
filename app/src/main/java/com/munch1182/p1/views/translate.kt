@@ -3,6 +3,7 @@ package com.munch1182.p1.views
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.media.AudioFormat
 import android.os.Build
 import android.os.Environment
 import android.provider.DocumentsContract
@@ -24,6 +25,10 @@ import com.munch1182.android.lib.base.appSetting
 import com.munch1182.android.lib.base.launchIO
 import com.munch1182.android.lib.base.managerAllFiles
 import com.munch1182.android.lib.base.selectDir
+import com.munch1182.android.lib.base.splitArray
+import com.munch1182.android.lib.helper.AudioStreamHelper
+import com.munch1182.android.lib.helper.FileHelper
+import com.munch1182.android.lib.helper.FileWriteHelper
 import com.munch1182.android.lib.helper.RecordHelper
 import com.munch1182.android.lib.helper.result.ifAllGranted
 import com.munch1182.android.lib.helper.result.ifTrue
@@ -32,20 +37,18 @@ import com.munch1182.android.lib.helper.result.isAllGranted
 import com.munch1182.android.lib.helper.result.permission
 import com.munch1182.p1.base.DataHelper
 import com.munch1182.p1.base.onDialog
+import com.munch1182.p1.ui.ClickButton
 import com.munch1182.p1.ui.Items
 import com.munch1182.p1.ui.SpacerV
 import com.munch1182.p1.ui.StateButton
 import com.munch1182.p1.voice.InitState
-import com.munch1182.p1.voice.RecognizeException
-import com.munch1182.p1.voice.Recognized
-import com.munch1182.p1.voice.RecognizedState
+import com.munch1182.p1.voice.VoiceException
 import com.munch1182.p1.voice.initSdk
-import com.munch1182.p1.voice.translate
+import com.munch1182.p1.voice.speak
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import java.io.File
 
 @SuppressLint("MissingPermission")
@@ -77,6 +80,10 @@ fun TranslateView(vm: TranslateVM = viewModel()) {
             } else {
                 withPermission { vm.toggleRecord() }
             }
+        }
+
+        if (uiState.isRecording) {
+            ClickButton("发送") { vm.send() }
         }
 
         SpacerV()
@@ -139,13 +146,8 @@ class TranslateVM : ViewModel() {
             val workDir = uiState.value.workDir
             Loglog.log("requestAuth: $authFile, $workDir")
             if (workDir.isEmpty()) return@launchIO
-            val workDir2 = try {
-                uir2FilePart(workDir.toUri().toString())?.absolutePath ?: workDir
-            } catch (e: Exception) {
-                e.printStackTrace()
-                return@launchIO
-            }
-            initSdk(workDir2, authFile).collect {
+
+            initSdk(workDir.toTheFile(), authFile).collect {
                 when (it) {
                     is InitState.Failed -> {
                         _uiState.value = _uiState.value.copy(isAuthed = false, state = it.e.message ?: "授权失败")
@@ -164,33 +166,52 @@ class TranslateVM : ViewModel() {
         if (uiState.value.isRecording) stopRecord() else startRecord()
     }
 
+    private fun String.toTheFile(): String {
+        return try {
+            uir2FilePart(toUri().toString())?.absolutePath ?: this
+        } catch (e: Exception) {
+            e.printStackTrace()
+            this
+        }
+    }
+
+    private val record = Channel<String>()
+
     @SuppressLint("MissingPermission")
     private fun startRecord() {
-
+        val player = AudioStreamHelper(
+            24000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT
+        )
+        player.prepare()
         viewModelScope.launchIO(recordJob.newContext) {
-            val workDir = uiState.value.workDir
             _uiState.emit(_uiState.value.copy(isRecording = true))/*val record = recordHelper.record()
-            val recognized = record.recognize()*/
-            val recognized = flow {
-                val state = RecognizedState.Recognized
-                emit(Result.success(Recognized("hello world", state)))
-                /* emit(Result.success(Recognized("今天", state)))
-                 emit(Result.success(Recognized("天气", state)))
-                 emit(Result.success(Recognized("怎么样", state)))*/
-            }
-            val trans = recognized
-                .filter { it.isSuccess }
+            val recognized = record.recognize()
+            val trans = recognized.filter { it.isSuccess }
                 .map { it.getOrNull()?.str ?: "" }
-                .translate("encn", workDir)
+                .translate("cnen", workDir.toTheFile())*/
+
+            val trans = record.receiveAsFlow().speak(2)
+            val write = FileWriteHelper()
+
+            var a = 0
+            write.prepare(FileHelper.newFile("aaa", "aaa.pcm"))
             trans.collect {
                 when {
                     it.isSuccess -> {
-                        _result.value = it.getOrNull() ?: ""
+                        a += 1
+                        //_result.value = it.getOrNull() ?: ""
+                        it.getOrNull()?.let { b ->
+                            write.write(b)
+                            b.splitArray(player.bufferSize).forEach { d ->
+                                player.write(d)
+                            }
+                        }
+
                     }
 
                     it.isFailure -> {
                         val exception = it.exceptionOrNull()
-                        if (exception is RecognizeException) {
+                        if (exception is VoiceException) {
                             _result.value = exception.message ?: "error"
                         } else {
                             _result.value = exception?.stackTraceToString() ?: "error"
@@ -204,6 +225,12 @@ class TranslateVM : ViewModel() {
     private fun stopRecord() {
         _uiState.value = _uiState.value.copy(isRecording = false)
         recordJob.cancel()
+    }
+
+    fun send() {
+        viewModelScope.launchIO {
+            record.send("In boundless desert lonely smokes rise straight; Over endless river the sun sinks round")
+        }
     }
 }
 
@@ -234,7 +261,7 @@ private fun withPermission(any: () -> Unit) {
 /**
  * 仅支持部分转换，不能作为最终方法使用
  */
-private fun uir2FilePart(str: String): File? {
+fun uir2FilePart(str: String): File? {
     val uri = str.toUri()
     if (DocumentsContract.isTreeUri(uri)) {
         val docId = DocumentsContract.getTreeDocumentId(uri)

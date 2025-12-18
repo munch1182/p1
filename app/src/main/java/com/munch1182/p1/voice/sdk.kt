@@ -1,6 +1,7 @@
 package com.munch1182.p1.voice
 
 import com.iflytek.aikit.core.AiHelper
+import com.iflytek.aikit.core.AiResponse
 import com.iflytek.aikit.core.BaseLibrary
 import com.iflytek.aikit.core.CoreListener
 import com.iflytek.aikit.core.ErrType
@@ -11,6 +12,13 @@ import com.munch1182.p1.base.DataHelper
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import java.io.File
+
+class VoiceException(val code: Int, val msg: String? = null) : Exception("error: $code, msg: $msg")
+
+internal fun List<AiResponse?>?.asMap(): Map<String, String>? {
+    val list = this?.filterNotNull() ?: return null
+    return list.associate { it.key to String(it.value) }
+}
 
 fun initSdk(
     workDir: String, authFile: String? = null, authType: BaseLibrary.AuthType = BaseLibrary.AuthType.DEVICE

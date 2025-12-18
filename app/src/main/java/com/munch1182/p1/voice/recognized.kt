@@ -25,7 +25,6 @@ private data class Plain(val ws: List<PlainSc>)
 
 private data class PlainSc(val w: String)
 
-class RecognizeException(val code: Int, val msg: String? = null) : Exception("error: $code, msg: $msg")
 
 data class Recognized(val str: String, val state: RecognizedState)
 
@@ -58,19 +57,13 @@ fun Flow<ByteArray>.recognize(langType: Int = 0) = callbackFlow {
          */
         override fun onResult(handleId: Int, outputData: List<AiResponse?>?, userCtx: Any?) {
             if (outputData != null && outputData.isNotEmpty()) {
-                val result = HashMap<String, String>(outputData.size)
-                outputData.forEach { i ->
-                    i ?: return@forEach
-                    val key = i.key ?: return@forEach
-                    val value = i.getValueCompat()
-                    result[key] = value
-                }
-                val pgs = result.get("pgs")
+                val result = outputData.asMap() ?: return
+                val pgs = result["pgs"]
                 log.logStr("pgs: $pgs")
                 if (!pgs.isNullOrEmpty()) {
                     trySend(Result.success(Recognized(pgs, RecognizedState.Recognizing)))
                 }
-                val plain = result.get("plain")
+                val plain = result["plain"]
                 log.logStr("plain: $plain")
                 val str = fromStr(plain)
                 if (!str.isNullOrEmpty()) {
@@ -85,7 +78,7 @@ fun Flow<ByteArray>.recognize(langType: Int = 0) = callbackFlow {
 
         override fun onError(handleId: Int, err: Int, msg: String?, userCtx: Any?) {
             log.logStr("onError: $err, $msg")
-            trySend(Result.failure(RecognizeException(err, msg)))
+            trySend(Result.failure(VoiceException(err, msg)))
         }
     })
 
@@ -108,7 +101,7 @@ fun Flow<ByteArray>.recognize(langType: Int = 0) = callbackFlow {
     val handle = AiHelper.getInst().start(abilityId, pb.build(), 1)
     if (!handle.isSuccess) {
         log.logStr("start Fail: ${handle.code}")
-        trySend(Result.failure(RecognizeException(handle.code, "AiHelper.start Fail: ${handle.code}")))
+        trySend(Result.failure(VoiceException(handle.code, "AiHelper.start Fail: ${handle.code}")))
         close()
         return@callbackFlow
     }
@@ -125,19 +118,19 @@ fun Flow<ByteArray>.recognize(langType: Int = 0) = callbackFlow {
         val restWrite = AiHelper.getInst().write(newBuilder.build(), handle)
         if (restWrite != 0) {
             log.logStr("restWrite: $restWrite")
-            trySend(Result.failure(RecognizeException(restWrite, "AiHelper.write Fail: $restWrite")))
+            trySend(Result.failure(VoiceException(restWrite, "AiHelper.write Fail: $restWrite")))
             close()
         }
         val restRead = AiHelper.getInst().read(abilityId, handle)
         if (restRead != 0) {
             log.logStr("restRead: $restWrite")
-            trySend(Result.failure(RecognizeException(restRead, "AiHelper.read Fail: $restRead")))
+            trySend(Result.failure(VoiceException(restRead, "AiHelper.read Fail: $restRead")))
             close()
         }
     }
     awaitClose {
-        log.logStr("close recognize")
         AiHelper.getInst().end(handle)
+        log.logStr("close recognize")
     }
 }.flowOn(Dispatchers.IO)
 
