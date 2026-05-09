@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         maven { url = uri("https://mirrors.tencent.com/nexus/repository/maven-public/") }
         google {
@@ -26,5 +27,10 @@ dependencyResolutionManagement {
     }
 }
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 rootProject.name = "P1"
 include(":app")
+include(":core-common")
+include(":core-android")
+include(":lib-xlog")
