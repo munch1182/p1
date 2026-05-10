@@ -1,11 +1,16 @@
 [versions]
 agp = "9.1.1"
+kotlin = "2.3.21"
+composeBom = "2026.05.00"
+nav3Core = "1.1.1"
+
 
 [libraries]
 #
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.18.0" }
 # https://bugly.qq.com/docs/user-guide/instruction-manual-android/?v=1.0.0
 # https://bugly.qq.com/v2/downloads
+#noinspection Aligned16KB
 crashreport = { module = "com.tencent.bugly:crashreport", version = "4.1.9.3" }
 #
 gradle = { module = "com.android.tools.build:gradle", version = "9.1.1" }
@@ -30,8 +35,43 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 # https://developer.android.google.cn/topic/libraries/app-startup?hl=zh-cn
 androidx-startup = { module = "androidx.startup:startup-runtime", version = "1.2.0" }
 
+#
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version = "2.10.0" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.13.0" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+
+# https://developer.android.google.cn/reference/kotlin/androidx/compose/material/icons/package-summary?hl=en
+androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+androidx-compose-material-icons = { module = "androidx.compose.material:material-icons-extended" }
+#
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+#
+
+# https://developer.android.google.cn/guide/navigation/navigation-3/get-started?hl=zh_cn
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }
+
+# https://composedestinations.rafaelcosta.xyz/v2/setup
+# https://github.com/raamcosta/compose-destinations
+compose-destinations = { module = "io.github.raamcosta.compose-destinations:core", version = "2.3.0" }
+compose-destinations-ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version = "2.3.0" }
+
+# https://github.com/Tencent/MMKV
+mmkv = { module = "com.tencent:mmkv", version = "2.4.0" }
+
 [plugins]
 android-application = { id = "com.android.application", version = "9.1.1" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.3.21" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.3.21" }
+# https://kotlinlang.org/docs/ksp-quickstart.html
+# https://github.com/google/ksp/releases
+google-ksp = { id = "com.google.devtools.ksp", version = "2.3.7" }
 

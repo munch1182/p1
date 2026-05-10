@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">P1</string>
+    <string name="curr_lang">اللغة الحالية</string>
+    <string name="follow_system">اتباع النظام</string>
+    <string name="curr_theme">السمة الحالية</string>
+    <string name="dark_mode">الوضع الداكن</string>
+    <string name="light_mode">الوضع الفاتح</string>
+    <string name="reset_theme">إعادة تعيين السمة</string>
+    <string name="random_mode">الوضع العشوائي</string>
+</resources>

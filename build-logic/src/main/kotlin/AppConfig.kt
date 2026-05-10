@@ -1,7 +1,7 @@
-import org.gradle.api.Project
 import com.android.build.api.dsl.SigningConfig
-import java.util.Properties
+import org.gradle.api.Project
 import java.io.File
+import java.util.Properties
 
 object AppConfig {
     const val COMPILE_SDK = 36

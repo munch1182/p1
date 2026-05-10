@@ -1,7 +1,9 @@
 package com.munch1182.core.android
 
-import com.munch1182.core.common.Logger
+import android.os.Build
+import com.munch1182.core.android.Log.addLogger
 import com.munch1182.core.common.LogLevel
+import com.munch1182.core.common.Logger
 import com.tencent.mars.xlog.Xlog
 import java.io.Closeable
 import java.util.concurrent.CopyOnWriteArrayList
@@ -10,6 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  * 日志记录器
  *
  * 使用时需要先调用[addLogger], 传入的参数才是实际执行的对象
+ * 为简化调用，此方法不提供移除或关闭[Logger]的方法，如有需要，请使用自定义实现。
  */
 object Log : Logger {
     private val loggers = CopyOnWriteArrayList<Logger>()
@@ -32,7 +35,7 @@ object Log : Logger {
 
 /**
  * 默认初始化日志：
- * 默认添加一个Debug下的
+ * 默认添加一个Debug下的[ConsoleLogger]和一个随app生命周期一致的[FileLogger]
  *
  * 只能在[android.app.Application.onCreate]及其之后调用
  */
@@ -63,6 +66,8 @@ class ConsoleLogger(
     private val callerClass: List<String> = emptyList(), //
     private val compatTag: Boolean = true //
 ) : Logger {
+
+
     override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) {
         val tag = if (compatTag) "loglog-${tag}" else tag
         val message = if (enableCaller) "${message}\t\t--${collectCaller()}" else message
@@ -82,14 +87,27 @@ class ConsoleLogger(
         return "(${threadName})$elsStr"
     }
 
+    /**
+     * 查找第一个调用类的堆栈跟踪元素
+     * 根据Android系统版本使用不同的方法来获取调用信息
+     *
+     * @return 返回第一个调用类的StackTraceElement，如果没有找到则返回null
+     */
     private fun findFirstCallClass(): StackTraceElement? {
         val currClassName = this::class.java.name
-        for (ele in Throwable("").stackTrace) {
-            val eleClassName = ele.className
-            if (callerClass.contains(eleClassName) || eleClassName == currClassName) continue
-            return ele
+        val skipPredicate = { className: String ->
+            className == currClassName || callerClass.contains(className)
         }
-        return null
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // 对于较新的Android版本，使用Java 9+的StackWalker API
+            StackWalker.getInstance().walk { stream ->
+                stream.dropWhile { skipPredicate(it.className) }.findFirst().orElse(null)
+            }?.toStackTraceElement()
+        } else {
+            // 对于较旧的Android版本，使用传统的Thread.getStackTrace()
+            Thread.currentThread().stackTrace.firstOrNull { !skipPredicate(it.className) }
+        }
     }
 }
 
@@ -98,12 +116,7 @@ class ConsoleLogger(
  * 无需关闭的写入日志文件实现, 即其生命周期跟随整个app
  */
 class FileLogger(
-    fileDir: String,
-    cacheDir: String,
-    minLevel: LogLevel = LogLevel.DEBUG,
-    cacheDays: Int = 3,
-    namePrefix: String = "log",
-    pubkey: String = ""
+    fileDir: String, cacheDir: String, minLevel: LogLevel = LogLevel.DEBUG, cacheDays: Int = 3, namePrefix: String = "log", pubkey: String = ""
 ) : Logger, Closeable {
 
     init {

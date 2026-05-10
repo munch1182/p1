@@ -12,10 +12,11 @@ dependencies {
 
     implementation(libs.androidx.startup)
     implementation(projects.libXlog)
+    implementation(libs.mmkv)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.material)
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
