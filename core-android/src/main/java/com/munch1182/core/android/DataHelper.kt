@@ -1,70 +1,83 @@
 package com.munch1182.core.android
 
+import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.munch1182.core.common.Preferences
-import com.tencent.mmkv.MMKV
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+private val Context.dataStore by preferencesDataStore("app")
 
 object DataHelper : Preferences {
+    private val dataStore = AppHelper.dataStore
 
-    init {
-        MMKV.initialize(AppHelper)
+    override suspend fun put(key: String, value: String) {
+        dataStore.edit { it[stringPreferencesKey(key)] = value }
     }
 
-    private val mmkv = MMKV.defaultMMKV()
-
-    override fun put(key: String, value: String) {
-        mmkv.encode(key, value)
+    override suspend fun put(key: String, value: Int) {
+        dataStore.edit { it[intPreferencesKey(key)] = value }
     }
 
-    override fun put(key: String, value: Int) {
-        mmkv.encode(key, value)
+    override suspend fun put(key: String, value: Long) {
+        dataStore.edit { it[longPreferencesKey(key)] = value }
     }
 
-    override fun put(key: String, value: Long) {
-        mmkv.encode(key, value)
+    override suspend fun put(key: String, value: Float) {
+        dataStore.edit { it[floatPreferencesKey(key)] = value }
     }
 
-    override fun put(key: String, value: Float) {
-        mmkv.encode(key, value)
+    override suspend fun put(key: String, value: Boolean) {
+        dataStore.edit { it[booleanPreferencesKey(key)] = value }
     }
 
-    override fun put(key: String, value: Boolean) {
-        mmkv.encode(key, value)
+    override suspend fun put(key: String, value: Set<String>) {
+        dataStore.edit { it[stringSetPreferencesKey(key)] = value }
     }
 
-    override fun put(key: String, value: Set<String>) {
-        mmkv.encode(key, value)
+    override fun getString(key: String): Flow<String?> {
+        return dataStore.data.map { it[stringPreferencesKey(key)] }
     }
 
-    override fun getString(key: String): String? {
-        return if (mmkv.containsKey(key)) mmkv.decodeString(key) else null
+    override fun getInt(key: String): Flow<Int?> {
+        return dataStore.data.map { it[intPreferencesKey(key)] }
     }
 
-    override fun getInt(key: String): Int? {
-        return if (mmkv.containsKey(key)) mmkv.decodeInt(key) else null
+    override fun getLong(key: String): Flow<Long?> {
+        return dataStore.data.map { it[longPreferencesKey(key)] }
     }
 
-    override fun getLong(key: String): Long? {
-        return if (mmkv.containsKey(key)) mmkv.decodeLong(key) else null
+    override fun getFloat(key: String): Flow<Float?> {
+        return dataStore.data.map { it[floatPreferencesKey(key)] }
     }
 
-    override fun getFloat(key: String): Float? {
-        return if (mmkv.containsKey(key)) mmkv.decodeFloat(key) else null
+    override fun getBoolean(key: String): Flow<Boolean?> {
+        return dataStore.data.map { it[booleanPreferencesKey(key)] }
     }
 
-    override fun getBoolean(key: String): Boolean? {
-        return if (mmkv.containsKey(key)) mmkv.decodeBool(key) else null
+    override fun getStringSet(key: String): Flow<Set<String>?> {
+        return dataStore.data.map { it[stringSetPreferencesKey(key)] }
     }
 
-    override fun getStringSet(key: String): Set<String>? {
-        // MMKV 的 decodeStringSet 在 key 不存在时直接返回 null，无需额外 containsKey 判断
-        return mmkv.decodeStringSet(key)
+    override suspend fun remove(key: String) {
+        dataStore.edit { preferences ->
+            preferences.remove(stringPreferencesKey(key))
+            preferences.remove(intPreferencesKey(key))
+            preferences.remove(longPreferencesKey(key))
+            preferences.remove(floatPreferencesKey(key))
+            preferences.remove(booleanPreferencesKey(key))
+            preferences.remove(stringSetPreferencesKey(key))
+        }
     }
 
-    override fun remove(key: String) {
-        mmkv.removeValueForKey(key)
-    }
-
-    override fun clear() {
-        mmkv.clearAll()
+    override suspend fun clear() {
+        dataStore.edit { it.clear() }
     }
 }

@@ -13,10 +13,10 @@ import com.munch1182.p1.ui.theme.paddingPage
  * 不兼容页面内滑动
  */
 @Composable
-fun ScrollPage(content: @Composable () -> Unit) {
+fun ScrollPage(modifier: Modifier = Modifier, applyPadding: Boolean = true, content: @Composable () -> Unit) {
     Column(
-        Modifier
-            .paddingPage()
+        modifier
             .verticalScroll(rememberScrollState())
+            .then(if (applyPadding) Modifier.paddingPage() else Modifier)
     ) { content() }
 }

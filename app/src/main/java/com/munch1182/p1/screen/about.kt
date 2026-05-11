@@ -10,6 +10,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.munch1182.core.android.getDeviceInfo
+import com.munch1182.core.android.versionCodeCompat
+import com.munch1182.core.android.versionName
 import com.munch1182.p1.ui.theme.paddingPage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -20,7 +22,9 @@ fun AboutScreen() {
     var str by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        str = getDeviceInfo()
+        val info = getDeviceInfo()
+        val version = "Version: ${versionName}(${versionCodeCompat})"
+        str = "$info\n\n$version"
     }
 
     Column(Modifier.paddingPage()) {

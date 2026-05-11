@@ -7,6 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
+/**
+ * 提供一个带文本的Checkbox
+ */
 @Composable
 fun Checkbox(name: String, checked: Boolean, modifier: Modifier = Modifier, onCheckedChange: (Boolean) -> Unit = { }) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {

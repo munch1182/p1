@@ -59,7 +59,10 @@ fun Log.initDefault() {
 /**
  * 控制台日志记录器
  *
- * 因为使用了stackTrace，建议在debug模式下使用
+ * @param enableCaller 是否启用调用者文件和方法信息 (因为要在主线程遍历栈信息, 不建议非debug模式下使用)
+ * @param callerClass 调用者类名列表，用于过滤不需要的调用者类
+ * @param compatTag 是否启用兼容tag，默认启用，启用后tag前缀为"loglog-", 可用于统一过滤
+ *
  */
 class ConsoleLogger(
     private val enableCaller: Boolean = false, //
@@ -114,6 +117,13 @@ class ConsoleLogger(
 
 /**
  * 无需关闭的写入日志文件实现, 即其生命周期跟随整个app
+ *
+ * @param fileDir 日志文件目录
+ * @param cacheDir 日志缓存目录
+ * @param minLevel 最小日志级别
+ * @param cacheDays 缓存天数
+ * @param namePrefix 日志文件前缀
+ * @param pubkey 加密公钥
  */
 class FileLogger(
     fileDir: String, cacheDir: String, minLevel: LogLevel = LogLevel.DEBUG, cacheDays: Int = 3, namePrefix: String = "log", pubkey: String = ""

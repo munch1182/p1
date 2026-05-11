@@ -12,6 +12,11 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.navigation.NavBackStackEntry
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
 
+/**
+ * 防原左滑的页面切换动画
+ *
+ * 注意: 如果在compose中使用, 要保证compose函数是页面大小的, 否则会错位
+ */
 object PageAnimatedStyle : NavHostAnimatedDestinationStyle() {
 
     private const val TIME_FIRST = 400

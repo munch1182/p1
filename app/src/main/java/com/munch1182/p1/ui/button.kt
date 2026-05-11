@@ -11,6 +11,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.munch1182.p1.ui.theme.Dimens
 
 
+/**
+ * 提供一个默认的button
+ */
 @Composable
 fun PrimaryButton(
     text: String,
@@ -19,7 +22,7 @@ fun PrimaryButton(
     onClick: () -> Unit
 ) {
     Button(
-        modifier = modifier.height(Dimens.HeightBotton), // 统一项目中的按钮高度
+        modifier = modifier.height(Dimens.HeightBottom), // 统一项目中的按钮高度
         enabled = enabled,
         onClick = onClick,
     ) {

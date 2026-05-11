@@ -5,14 +5,16 @@ import com.munch1182.core.android.AppHelper
 import com.munch1182.core.android.Log
 import com.munch1182.core.android.initDefault
 import com.tencent.bugly.crashreport.CrashReport
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Log.initDefault()
         initBuglyFirst()
     }
-    
+
     /**
      * 作为初始化的特例，在主线程初始化
      */

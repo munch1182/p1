@@ -15,7 +15,9 @@ import com.munch1182.p1.ui.PageAnimatedStyle
 import com.munch1182.p1.ui.theme.P1Theme
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

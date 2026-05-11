@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.google.ksp)
+    alias(libs.plugins.google.hilt)
 }
 
 android {
@@ -36,6 +37,10 @@ dependencies {
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.crashreport)
+
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.ksp)
+    implementation(libs.hilt.navigation.compose)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

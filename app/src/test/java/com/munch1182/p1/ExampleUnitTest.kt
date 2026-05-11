@@ -1,6 +1,6 @@
 package com.munch1182.p1
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**

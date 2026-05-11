@@ -13,14 +13,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.material.color.utilities.DynamicScheme
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.SchemeTonalSpot
-import com.munch1182.p1.ui.DarkMode
-import com.munch1182.p1.ui.ThemeHelper
-import com.munch1182.p1.ui.ThemeType
+import com.munch1182.p1.domain.DarkMode
+import com.munch1182.p1.domain.ThemeType
+import com.munch1182.p1.domain.ThemeVM
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80, secondary = PurpleGrey80, tertiary = Pink80
@@ -32,17 +33,16 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun P1Theme(
-    themeHelper: ThemeHelper = ThemeHelper, content: @Composable () -> Unit
+    themeVM: ThemeVM = hiltViewModel(), content: @Composable () -> Unit
 ) {
-    val currThemeType by themeHelper.currThemeType.collectAsStateWithLifecycle()
-    val currDarkMode by themeHelper.currDarkMode.collectAsStateWithLifecycle()
+    val curr by themeVM.currThemeData.collectAsStateWithLifecycle()
 
-    val isDarkTheme = when (currDarkMode) {
+    val isDarkTheme = when (curr.second) {
         DarkMode.FollowSystem -> isSystemInDarkTheme()
         DarkMode.Light -> false
         DarkMode.Dark -> true
     }
-    val colorScheme = when (val themeType = currThemeType) {
+    val colorScheme = when (val themeType = curr.first) {
         ThemeType.FollowSystem -> defaultColorScheme(isDarkTheme)
         is ThemeType.Preset -> selectColorScheme(themeType, isDarkTheme)
     }

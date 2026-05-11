@@ -3,6 +3,7 @@ package com.munch1182.p1
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.munch1182.p1.ui.PrimaryButton
@@ -26,11 +27,9 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     LazyColumn(
         Modifier
             .fillMaxSize() // 全局高度
-            .paddingPage(),
-        verticalArrangement = Arrangement.spacedBy(Dimens.PaddingItem)
+            .paddingPage(), verticalArrangement = Arrangement.spacedBy(Dimens.PaddingItem)
     ) {
-        items(homeItems.size) {
-            val item = homeItems[it]
+        items(homeItems, key = { it.route }) { item ->
             PrimaryButton(item.route.removeSuffix("_screen").uppercase()) {
                 navigator.navigate(item)
             }

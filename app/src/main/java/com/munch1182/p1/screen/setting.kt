@@ -2,34 +2,42 @@ package com.munch1182.p1.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.munch1182.core.android.Log
 import com.munch1182.core.common.toARGBColorStr
 import com.munch1182.p1.R
-import com.munch1182.p1.log.TAG_USER_EVENT
+import com.munch1182.p1.domain.DarkMode
+import com.munch1182.p1.domain.LanguageType
+import com.munch1182.p1.domain.LanguageVM
+import com.munch1182.p1.domain.ThemeType
+import com.munch1182.p1.domain.ThemeVM
+import com.munch1182.p1.ui.AccordionLabelItem
 import com.munch1182.p1.ui.Checkbox
-import com.munch1182.p1.ui.DarkMode
-import com.munch1182.p1.ui.LangType
-import com.munch1182.p1.ui.LanguageHelper
 import com.munch1182.p1.ui.PrimaryButton
 import com.munch1182.p1.ui.ScrollPage
 import com.munch1182.p1.ui.SplitH
-import com.munch1182.p1.ui.ThemeHelper
-import com.munch1182.p1.ui.ThemeType
+import com.munch1182.p1.ui.SplitW
+import com.munch1182.p1.ui.theme.Dimens
 import com.munch1182.p1.ui.theme.colorRandom
+import com.munch1182.p1.ui.theme.paddingPage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
 @Destination<RootGraph>
 @Composable
 fun SettingScreen() {
-    ScrollPage {
+    ScrollPage(applyPadding = false) {
         ThemeSetting()
         SplitH()
         LangSetting()
@@ -37,74 +45,88 @@ fun SettingScreen() {
 }
 
 @Composable
-private fun LangSetting(langHelper: LanguageHelper = LanguageHelper) {
-    val currLangType by langHelper.currLangType.collectAsStateWithLifecycle()
-    val currLocale by langHelper.currLocale.collectAsStateWithLifecycle()
+private fun LangSetting(langVM: LanguageVM = hiltViewModel()) {
+    val currLangType by langVM.currLanguageType.collectAsStateWithLifecycle()
 
     val followSystem = stringResource(R.string.follow_system)
 
     val currLangStr by remember {
         derivedStateOf {
             when (currLangType) {
-                is LangType.FollowSystem -> followSystem
-                is LangType.Specific -> currLocale.toLanguageTag()
+                is LanguageType.FollowSystem -> followSystem
+                is LanguageType.Specific -> (currLangType as LanguageType.Specific).lang
             }
         }
     }
 
+    // 简化使用, 只做示例使用
     val langs = listOf(stringResource(R.string.follow_system), "zh", "en", "ar")
 
-    Column {
-        Row {
-            Text(text = stringResource(R.string.curr_lang))
-            Text(text = ": ")
-            Text(text = currLangStr)
-        }
+    var isSelect by remember { mutableStateOf(false) }
 
-        langs.forEachIndexed { idx, it ->
-            Checkbox(it, it == currLangStr) { select ->
-                if (select) {
-                    Log.d(TAG_USER_EVENT, "更改语言：$it")
-                    if (idx == 0) {
-                        langHelper.reset()
-                    } else {
-                        langHelper.switch(it)
+    AccordionLabelItem(
+        isSelect, modifier = Modifier.padding(end = Dimens.PaddingPage),
+        onToggle = { isSelect = !isSelect },
+        title = {
+            Row(modifier = Modifier.paddingPage()) {
+                Text(text = stringResource(R.string.curr_lang))
+                Text(text = ": ")
+                Text(text = currLangStr)
+            }
+        },
+        content = {
+            Column(modifier = Modifier.paddingPage()) {
+                langs.forEachIndexed { idx, it ->
+                    Checkbox(it, it == currLangStr) { select ->
+                        if (select) {
+                            if (idx == 0) {
+                                langVM.reset()
+                            } else {
+                                langVM.switch(it)
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
+        })
 }
 
 @Composable
-private fun ThemeSetting(themeHelper: ThemeHelper = ThemeHelper) {
-    val currThemeType by themeHelper.currThemeType.collectAsStateWithLifecycle()
-    val currDarkMode by themeHelper.currDarkMode.collectAsStateWithLifecycle()
+private fun ThemeSetting(vm: ThemeVM = hiltViewModel()) {
 
-
+    val curr by vm.currThemeData.collectAsStateWithLifecycle()
     val darkMode = listOf(DarkMode.FollowSystem, DarkMode.Light, DarkMode.Dark)
 
+    var isSelect by remember { mutableStateOf(false) }
 
-    Column {
-        Row {
+    AccordionLabelItem(isSelect, modifier = Modifier.padding(end = Dimens.PaddingPage), onToggle = { isSelect = !isSelect }, title = {
+        Row(modifier = Modifier.paddingPage()) {
             Text(text = stringResource(R.string.curr_theme))
             Text(text = ": ")
-            Text(text = currThemeType.mode2Str())
-            Text(text = "(${currDarkMode.mode2Str()})")
+            Text(text = curr.first.mode2Str())
+            Text(text = "(${curr.second.mode2Str()})")
         }
-        darkMode.forEach {
-            Checkbox(it.mode2Str(), it == currDarkMode) { select ->
-                if (select) themeHelper.switch(mode = it)
+    }, content = {
+        Column(
+            Modifier
+                .paddingPage()
+                .padding(top = 0.dp)
+        ) {
+            darkMode.forEach {
+                Checkbox(it.mode2Str(), it == curr.second) { select ->
+                    if (select) vm.switch(mode = it)
+                }
+            }
+            Row {
+                PrimaryButton(stringResource(R.string.reset_theme), onClick = vm::reset)
+                SplitW()
+                PrimaryButton(stringResource(R.string.random_mode)) {
+                    val color = colorRandom()
+                    vm.switch(type = ThemeType.Preset(color))
+                }
             }
         }
-        PrimaryButton(stringResource(R.string.reset_theme), onClick = themeHelper::reset)
-        SplitH()
-        PrimaryButton(stringResource(R.string.random_mode)) {
-            val color = colorRandom()
-            Log.d(TAG_USER_EVENT, "更改主题：${color}")
-            themeHelper.switch(type = ThemeType.Preset(color))
-        }
-    }
+    })
 }
 
 @Composable
