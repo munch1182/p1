@@ -15,12 +15,10 @@
  * @return 转换后的整型版本代码。
  */
 fun getGitVersionCode(): Int {
-    val tagName = getGitTagName()
+    val tagName = getRawTagName()
 
     // 使用正则提取所有数字部分，例如 "v1.22.5" -> ["1", "22", "5"]
-    val digits = Regex("\\d+").findAll(tagName)
-        .map { it.value.toInt() }
-        .toList()
+    val digits = Regex("\\d+").findAll(tagName).map { it.value.toInt() }.toList()
 
     val major = digits.getOrElse(0) { 0 }
     val minor = digits.getOrElse(1) { 0 }
@@ -36,14 +34,36 @@ fun getGitVersionCode(): Int {
 }
 
 /**
- * 获取 Git 仓库最近的一个标签名称。
+ * 获取用于展示的版本名称，包含 debug / dirty 后缀。
+ * 规则：
+ * - 如果 HEAD 恰好指向一个 Tag（exact match）且工作区干净 → 原样返回（release）
+ * - 如果工作区存在未提交修改 → 追加 "-dirty"
+ * - 如果工作区不存在未提交修改 HEAD 且 不是 exact tag → 追加 "-dev"
  *
- * 通过 `git describe --tags --abbrev=0` 查找。
- *
- * @return 最近的标签字符串（如 "v1.0.1" 或 "1.0.1"）。
- * @throws IllegalStateException 如果未发现任何标签，则中止构建并提示。
  */
-fun getGitTagName(): String {
+fun getVersionNameForDisplay(): String {
+    val rawTag = getRawTagName()  // 基础 Tag，如 "v1.2.3"
+
+    val isExactTag = runCatching {
+        runCommand("git describe --exact-match --tags HEAD")
+    }.getOrNull().isNullOrBlank().not()
+
+    val isDirty = runCatching {
+        runCommand("git status --porcelain")
+    }.getOrNull()?.isNotBlank() == true
+
+    val suffix = buildString {
+        if (isDirty) append("-dirty") else if (!isExactTag) append("-dev")
+
+    }
+
+    return rawTag + suffix
+}
+
+/**
+ * 供内部计算使用的原始 Tag（最近一个 tag 名，不含后缀）。
+ */
+private fun getRawTagName(): String {
     val tag = runCommand("git describe --tags --abbrev=0")
     if (tag.isEmpty()) {
         throw IllegalStateException(
@@ -56,9 +76,7 @@ fun getGitTagName(): String {
 
 private fun runCommand(command: String, timeoutSeconds: Long = 10): String {
     val parts = command.split("\\s".toRegex()) // 仍建议用健壮解析，此处略
-    val process = ProcessBuilder(parts)
-        .redirectErrorStream(true)
-        .start()
+    val process = ProcessBuilder(parts).redirectErrorStream(true).start()
 
     val finished = process.waitFor(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
     if (!finished) {
