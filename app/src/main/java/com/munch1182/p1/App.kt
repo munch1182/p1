@@ -1,6 +1,7 @@
 package com.munch1182.p1
 
 import android.app.Application
+import com.munch1182.core.android.ActivityCurrHelper
 import com.munch1182.core.android.AppHelper
 import com.munch1182.core.android.Log
 import com.munch1182.core.android.initDefault
@@ -12,6 +13,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Log.initDefault()
+        ActivityCurrHelper.register()
         initBuglyFirst()
     }
 

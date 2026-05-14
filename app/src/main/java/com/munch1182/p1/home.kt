@@ -11,15 +11,14 @@ import com.munch1182.p1.ui.theme.Dimens
 import com.munch1182.p1.ui.theme.paddingPage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.AboutScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.SettingScreenDestination
+import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.Direction
 
-private val homeItems = listOf<Direction>(
-    SettingScreenDestination,
-    AboutScreenDestination, // ScreenDestination是composedestinations使用ksp生成的实现
-)
+private val homeItems: List<Direction> = NavGraphs.root.destinations
+    .map { it as Direction }
+    .filter { it !is HomeScreenDestination }
 
 @Destination<RootGraph>(start = true)
 @Composable

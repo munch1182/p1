@@ -54,3 +54,29 @@ interface AnalyticsTracker {
      */
     fun setUserProperties(properties: Map<String, Any>)
 }
+
+class DefaultLogAnalyticsTracker(private val log: Logger) : AnalyticsTracker {
+    companion object {
+        private const val TAG = "AnalyticsTracker"
+    }
+
+    override fun trackScreen(screenName: String, properties: Map<String, Any>?) {
+        log.i(TAG, "trackScreen: $screenName, properties: $properties")
+    }
+
+    override fun trackEvent(eventName: String, properties: Map<String, Any>?) {
+        log.i(TAG, "trackEvent: $eventName, properties: $properties")
+    }
+
+    override fun trackUserProperty(key: String, value: Any) {
+        log.i(TAG, "trackUserProperty: $key, value: $value")
+    }
+
+    override fun identify(userId: String, traits: Map<String, Any>?) {
+        log.i(TAG, "identify: $userId, traits: $traits")
+    }
+
+    override fun setUserProperties(properties: Map<String, Any>) {
+        log.i(TAG, "setUserProperties: $properties")
+    }
+}
