@@ -6,5 +6,5 @@
     <string name="dark_mode">深色模式</string>
     <string name="light_mode">浅色模式</string>
     <string name="reset_theme">重置主题</string>
-    <string name="random_mode">随机模式</string>
+    <string name="random_mode">随机颜色</string>
 </resources>

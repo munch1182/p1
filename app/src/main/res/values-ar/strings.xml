@@ -6,5 +6,5 @@
     <string name="dark_mode">الوضع الداكن</string>
     <string name="light_mode">الوضع الفاتح</string>
     <string name="reset_theme">إعادة تعيين السمة</string>
-    <string name="random_mode">الوضع العشوائي</string>
+    <string name="random_mode">لون عشوائي</string>
 </resources>

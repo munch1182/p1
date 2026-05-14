@@ -12,8 +12,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.munch1182.core.android.awaitResult
 import com.munch1182.core.common.launchMain
-import com.munch1182.p1.base.Dialog
-import com.munch1182.p1.base.Notice
+import com.munch1182.p1.dialog.Dialog
+import com.munch1182.p1.dialog.Notice
 import com.munch1182.p1.ui.PrimaryButton
 import com.munch1182.p1.ui.theme.Dimens
 import com.munch1182.p1.ui.theme.paddingPage
@@ -34,7 +34,7 @@ fun DialogScreen() {
         PrimaryButton("提示弹窗") {
             reset()
             scope.launchMain {
-                val chose = Dialog.newYesNoDialog("选择是或者否").awaitResult()
+                val chose = Dialog.newYesNoDialog("选择是或者否", ok = "是", cancel = "否").awaitResult()
                 str = "选择了$chose"
             }
         }

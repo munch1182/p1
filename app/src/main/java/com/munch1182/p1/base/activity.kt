@@ -2,6 +2,14 @@ package com.munch1182.p1.base
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.munch1182.core.android.ActivityCurrHelper
+
+/**
+ * 获取当前Activity，
+ * 只有在[android.app.Activity.onResume]和[android.app.Activity.onPause]直接有效，其它时候会抛出异常
+ * 在非ui上下文需要慎重处理
+ */
+val currOrThrow get() = ActivityCurrHelper.curr ?: error("use context but ActivityCurrHelper.curr is null")
 
 /**
  * 基础活动类
