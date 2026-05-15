@@ -11,7 +11,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.LifecycleOwner
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.munch1182.core.android.IResultDialog
+import com.munch1182.core.android.IResultPrompt
 
 /**
  * 提供简化一个提供的消息弹窗；
@@ -27,7 +27,7 @@ class CommonDialog(
     cancelable: Boolean = true, //
     ok: String, //
     cancel: String, //
-) : IResultDialog<Boolean> {
+) : IResultPrompt<Boolean> {
 
     constructor(
         act: FragmentActivity, //
@@ -66,12 +66,12 @@ class CommonDialog(
         fm.clearFragmentResultListener(CommonDialogFragment.REQUIRE_KEY)
     }
 
-    override fun onShow(onShow: () -> Unit): IResultDialog<Boolean> {
+    override fun onShow(onShow: () -> Unit): IResultPrompt<Boolean> {
         onShowCallback = onShow
         return this
     }
 
-    override fun onDismiss(onDismiss: (Boolean) -> Unit): IResultDialog<Boolean> {
+    override fun onDismiss(onDismiss: (Boolean) -> Unit): IResultPrompt<Boolean> {
         onDismissCallback = onDismiss
         return this
     }

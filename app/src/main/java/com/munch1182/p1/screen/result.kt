@@ -1,5 +1,7 @@
 package com.munch1182.p1.screen
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
@@ -11,7 +13,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.munch1182.core.android.awaitResult
+import com.munch1182.core.android.developerOptionsIntent
+import com.munch1182.core.android.isDeveloperOpen
+import com.munch1182.core.android.result.requestResult
 import com.munch1182.core.common.launchMain
+import com.munch1182.p1.base.checkBluetoothPermission
+import com.munch1182.p1.base.currAsFragmentActivityOrThrow
 import com.munch1182.p1.dialog.Dialog
 import com.munch1182.p1.dialog.Notice
 import com.munch1182.p1.ui.PrimaryButton
@@ -22,7 +29,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 
 @Destination<RootGraph>
 @Composable
-fun DialogScreen() {
+fun ResultScreen() {
     val scope = rememberCoroutineScope()
     var str by remember { mutableStateOf("") }
     val reset = { str = "" }
@@ -38,6 +45,30 @@ fun DialogScreen() {
                 str = "选择了$chose"
             }
         }
+        PrimaryButton("蓝牙权限") {
+            reset()
+            scope.launchMain {
+                checkBluetoothPermission { permission -> str = "蓝牙权限: $permission" }
+            }
+        }
+        PrimaryButton("开发者选项") {
+            reset()
+            scope.launchMain { openDeveloperOptions() }
+        }
         Text(str)
+    }
+}
+
+private suspend fun openDeveloperOptions() {
+    val curr = currAsFragmentActivityOrThrow
+    if (!isDeveloperOpen) {
+        // 开发者选项未打开
+        val isGoto = Dialog.newYesNoDialog("开发者选项未打开, 是否千万打开", ok = "前往").awaitResult()
+        if (isGoto) {
+            curr.requestResult(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
+            return openDeveloperOptions()
+        }
+    } else {
+        curr.requestResult(developerOptionsIntent)
     }
 }

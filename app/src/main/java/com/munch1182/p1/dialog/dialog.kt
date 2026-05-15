@@ -2,7 +2,7 @@ package com.munch1182.p1.dialog
 
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
-import com.munch1182.core.android.IResultDialog
+import com.munch1182.core.android.IResultPrompt
 import com.munch1182.core.common.INotice
 import com.munch1182.p1.base.currOrThrow
 
@@ -19,7 +19,7 @@ object Dialog {
         cancelable: Boolean = true, //
         ok: String = ctx.getString(android.R.string.ok), //
         cancel: String = ctx.getString(android.R.string.cancel), //
-    ): IResultDialog<Boolean> =
+    ): IResultPrompt<Boolean> =
         CommonDialog(act = ctx, title = title, msg = msg, cancelable = cancelable, ok = ok, cancel = cancel)
 }
 

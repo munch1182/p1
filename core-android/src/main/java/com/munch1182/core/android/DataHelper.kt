@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore("app")
 
+/**
+ * 使用DataStore实现的[Preferences]
+ */
 object DataHelper : Preferences {
     private val dataStore = AppHelper.dataStore
 
