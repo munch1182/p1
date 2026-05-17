@@ -4,6 +4,16 @@ import android.content.Intent
 import android.location.LocationManager
 import android.os.Build
 import android.provider.Settings
+import androidx.core.net.toUri
+
+
+fun Intent.withPkgUri() = apply { data = "package:${AppHelper.packageName}".toUri() }
+
+/**
+ * 应用设置intent
+ */
+val appSetting
+    get() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).withPkgUri()
 
 /**
  * 判断开发者选项是否已打开

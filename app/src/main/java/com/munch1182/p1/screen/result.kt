@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.munch1182.core.android.appSetting
 import com.munch1182.core.android.awaitResult
 import com.munch1182.core.android.developerOptionsIntent
 import com.munch1182.core.android.isDeveloperOpen
@@ -51,6 +52,12 @@ fun ResultScreen() {
                 checkBluetoothPermission { permission -> str = "蓝牙权限: $permission" }
             }
         }
+        PrimaryButton("应用设置") {
+            reset()
+            scope.launchMain {
+                currAsFragmentActivityOrThrow.requestResult(appSetting)
+            }
+        }
         PrimaryButton("开发者选项") {
             reset()
             scope.launchMain { openDeveloperOptions() }
@@ -63,7 +70,7 @@ private suspend fun openDeveloperOptions() {
     val curr = currAsFragmentActivityOrThrow
     if (!isDeveloperOpen) {
         // 开发者选项未打开
-        val isGoto = Dialog.newYesNoDialog("开发者选项未打开, 是否千万打开", ok = "前往").awaitResult()
+        val isGoto = Dialog.newYesNoDialog("开发者选项未打开, 是否前往打开", ok = "前往").awaitResult()
         if (isGoto) {
             curr.requestResult(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
             return openDeveloperOptions()

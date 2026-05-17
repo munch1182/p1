@@ -12,7 +12,6 @@ import com.munch1182.p1.data.KEY_SAVE_LANG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import java.util.Locale
 import javax.inject.Inject
 
 sealed class LanguageType {
@@ -73,15 +72,7 @@ class LanguageVM @Inject constructor(private val repo: LanguageRepo) : ViewModel
         viewModelScope.launchIO {
             val locales = when (languageType) {
                 is LanguageType.FollowSystem -> LocaleListCompat.getEmptyLocaleList()
-                is LanguageType.Specific -> {
-                    val locale = if (languageType.lang.contains('-')) {
-                        val parts = languageType.lang.split('-')
-                        Locale.Builder().setLanguage(parts[0]).setRegion(parts[1]).build()
-                    } else {
-                        Locale.Builder().setLanguage(languageType.lang).build()
-                    }
-                    LocaleListCompat.create(locale)
-                }
+                is LanguageType.Specific -> LocaleListCompat.forLanguageTags(languageType.lang)
             }
             AppCompatDelegate.setApplicationLocales(locales)
             repo.saveLanguageType(languageType)

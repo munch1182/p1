@@ -2,8 +2,10 @@ package com.munch1182.core.android.result
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
+import com.munch1182.core.android.withPkgUri
 
 fun FragmentActivity.requestPermissionWithHelper(permission: Array<String>) =
     PermissionHelper(this, permission)
@@ -66,8 +68,6 @@ suspend fun FragmentActivity.requestPickContact() =
 // 10. 申请安装权限（Android 8+）: 需要注册权限
 // ----------------------------------------------------------------------
 suspend fun FragmentActivity.requestRequestInstallPackages() =
-    request(
-        ActivityResultContracts.RequestMultiplePermissions(),
-        arrayOf(android.Manifest.permission.REQUEST_INSTALL_PACKAGES)
+    requestResult(
+        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).withPkgUri()
     )
-        .values.all { it }

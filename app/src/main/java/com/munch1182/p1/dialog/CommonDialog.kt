@@ -26,7 +26,7 @@ class CommonDialog(
     msg: String, //
     cancelable: Boolean = true, //
     ok: String, //
-    cancel: String, //
+    cancel: String,
 ) : IResultPrompt<Boolean> {
 
     constructor(
@@ -35,7 +35,7 @@ class CommonDialog(
         msg: String, //
         cancelable: Boolean = true, //
         ok: String = act.getString(android.R.string.ok), //
-        cancel: String = act.getString(android.R.string.cancel) //
+        cancel: String = act.getString(android.R.string.cancel)
     ) : this(act.supportFragmentManager, act, title, msg, cancelable, ok, cancel)
 
     constructor(
@@ -44,7 +44,7 @@ class CommonDialog(
         msg: String, //
         cancelable: Boolean = true, //
         ok: String = fm.getString(android.R.string.ok), //
-        cancel: String = fm.getString(android.R.string.cancel) //
+        cancel: String = fm.getString(android.R.string.cancel)
     ) : this(fm.childFragmentManager, fm.viewLifecycleOwner, title, msg, cancelable, ok, cancel)
 
     private val impl = CommonDialogFragment.newInstance(title, msg, cancelable, ok, cancel)
@@ -57,8 +57,8 @@ class CommonDialog(
             val result = result.getBoolean(CommonDialogFragment.KEY_RESULT)
             onDismissCallback?.invoke(result)
         }
-        impl.dialog?.setOnShowListener { onShowCallback?.invoke() }
         impl.show(fm, "com.munch1182.p1.dialog.CommonDialog")
+        impl.dialog?.setOnShowListener { onShowCallback?.invoke() }
     }
 
     override fun dismiss() {

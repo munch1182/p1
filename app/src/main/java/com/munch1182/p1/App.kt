@@ -4,7 +4,9 @@ import android.app.Application
 import com.munch1182.core.android.ActivityCurrHelper
 import com.munch1182.core.android.AppHelper
 import com.munch1182.core.android.Log
+import com.munch1182.core.android.enableStrictMode
 import com.munch1182.core.android.initDefault
+import com.munch1182.core.common.launchIO
 import com.tencent.bugly.crashreport.CrashReport
 import dagger.hilt.android.HiltAndroidApp
 
@@ -12,9 +14,13 @@ import dagger.hilt.android.HiltAndroidApp
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        Log.initDefault()
+        if (AppHelper.isDebug) enableStrictMode()
+        AppHelper.launchIO {
+            Log.initDefault()
+            initBuglyFirst()
+        }
         ActivityCurrHelper.register()
-        initBuglyFirst()
+
     }
 
     /**
