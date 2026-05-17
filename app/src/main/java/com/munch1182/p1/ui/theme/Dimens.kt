@@ -8,4 +8,7 @@ object Dimens {
     val HeightBottom = 48.dp
 
     val Medium = 24.dp
+
+    val StrokeWidth = 2.dp
+    val CircularSize = 20.dp
 }

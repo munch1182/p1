@@ -3,6 +3,7 @@ package com.munch1182.core.android.result
 import android.content.Intent
 import androidx.fragment.app.FragmentActivity
 import com.munch1182.core.android.Log
+import com.munch1182.core.android.appSetting
 import com.munch1182.core.android.isPermissionGranted
 import com.munch1182.core.android.isPermissionShouldRationale
 
@@ -23,6 +24,7 @@ class PermissionHelper(private val act: FragmentActivity, permission: Array<Stri
     private var dialogProvider: PermissionDialogProvider? = null
     private var settingIntent: Intent? = null
     private val result: MutableMap<String, PermissionResult> = permission.associateWith { PermissionResult.Denied }.toMutableMap()
+    private var hasEverRequested = false // 是否实际执行过请求， 用于判断是否永久拒绝
 
     /**
      * 设置在操作前(请求权限/请求跳转设置等)显示的dialog
@@ -32,28 +34,30 @@ class PermissionHelper(private val act: FragmentActivity, permission: Array<Stri
     /**
      * 如果要跳转设置界面, 设置要跳转的目标
      */
-    fun settingIntent(intent: Intent) = apply { settingIntent = intent }
+    fun settingIntent(intent: Intent = appSetting) = apply { settingIntent = intent }
 
     /**
      * 实际执行请求, 返回请求结果
+     *
+     * 如果在请求前提示并被拒绝，则未被授予的权限会被视为([PermissionResult.Denied]);
+     * (实际无法区分[PermissionResult.Denied]和[PermissionResult.NeverAskAgain]);
+     * 其余状态下返回的权限是真实状态;
      */
     suspend fun request(): Map<String, PermissionResult> {
-        var target = PermissionDialogTarget.BEFORE
-        dispatchPermissionWithTarget(target)
-        Log.d(TAG, "$target: $result")
+        dispatchPermissionWithTarget(hasEverRequested)
+        Log.d(TAG, "1. hasEverRequested($hasEverRequested); checkedPermission($result)")
         if (result.isAllGranted()) return result
 
-        val isUserDenied = requestDeniedPermission(target)
+        val isUserDenied = requestDeniedPermissionReturnDenied()
+        Log.d(TAG, "2. requestDeniedPermission: isUserDenied(${isUserDenied}), result($result)")
 
-        Log.d(TAG, "requestDeniedPermission: ${isUserDenied}, $result")
         if (!isUserDenied) {
-            target = PermissionDialogTarget.NEVER_ASK_AGAIN
             requestNeverAskAgain()
+            Log.d(TAG, "3. requestNeverAskAgain: result($result)")
         }
 
-        dispatchPermissionWithTarget(target) // 最后检查权限
-
-        Log.d(TAG, "checkLast: $result")
+        dispatchPermissionWithTarget(hasEverRequested) // 最后检查权限
+        Log.d(TAG, "4. result: $result")
         return result
     }
 
@@ -62,6 +66,7 @@ class PermissionHelper(private val act: FragmentActivity, permission: Array<Stri
      */
     private suspend fun requestNeverAskAgain() {
         val neverAsk = result.filterValues { it == PermissionResult.NeverAskAgain }.keys.toTypedArray()
+        Log.d(TAG, "neverAsk(${neverAsk.joinToString()})")
         if (neverAsk.isEmpty()) return
         val intent = settingIntent ?: return
         val dialog = dialogProvider?.invoke(PermissionDialogTarget.NEVER_ASK_AGAIN, neverAsk) ?: return
@@ -72,38 +77,42 @@ class PermissionHelper(private val act: FragmentActivity, permission: Array<Stri
 
     /**
      * 处理被拒绝的权限的逻辑
+     *
+     * @return 如果被拒绝， 返回true
      */
-    private suspend fun requestDeniedPermission(target: PermissionDialogTarget): Boolean {
-        var target = target
+    private suspend fun requestDeniedPermissionReturnDenied(): Boolean {
+        var target = PermissionDialogTarget.BEFORE
         while (true) {
             val denied = result.filterValues { it == PermissionResult.Denied }.keys.toTypedArray()
+
             if (denied.isEmpty()) break // 没有可以处理的权限
-            val dialog = dialogProvider?.invoke(target, denied)  // 只有初次请求可以不谈弹窗或者dialog
-            val isContinue = dialog?.onBeforeRequest() ?: target.isBefore
-            if (isContinue) act.requestPermissions(denied)
+            val dialog = dialogProvider?.invoke(target, denied)
+            val isContinue = dialog?.onBeforeRequest() ?: target.isBefore // 只有初次请求可以不提示用户而直接进行实际请求
+            if (isContinue) {
+                act.requestPermissions(denied) // 执行实际请求
+                hasEverRequested = true
+            }
             dialog?.onAfterRequest()
             if (!isContinue) return true// 如果被拒绝, 停止流程
 
-            target = target.next()
-            dispatchPermissionWithTarget(target)
+            target = target.next() ?: break // 流程结束
+            dispatchPermissionWithTarget(hasEverRequested)
         }
         return false
     }
 
-    private fun dispatchPermissionWithTarget(target: PermissionDialogTarget) {
+    /**
+     * @param hasEverRequested 是否已经确切执行过权限请求
+     */
+    private fun dispatchPermissionWithTarget(hasEverRequested: Boolean) {
         for (permission in result.keys) {
-            val granted = permission.isPermissionGranted()
-            if (granted) {
+            if (permission.isPermissionGranted()) {
                 result[permission] = PermissionResult.Granted
             } else {
-                result[permission] = when (target) {
-                    PermissionDialogTarget.BEFORE -> PermissionResult.Denied
-                    PermissionDialogTarget.DENIED -> {
-                        // 如果已经出来DENIED阶段, 说明执行过权限请求, 因此可以作为NeverAskAgain的判断依据
-                        if (permission.isPermissionShouldRationale(act)) PermissionResult.Denied else PermissionResult.NeverAskAgain
-                    }
-
-                    PermissionDialogTarget.NEVER_ASK_AGAIN -> PermissionResult.NeverAskAgain
+                result[permission] = if (hasEverRequested && !permission.isPermissionShouldRationale(act)) {
+                    PermissionResult.NeverAskAgain
+                } else {
+                    PermissionResult.Denied // 如果没有执行过，总是推测为Denied
                 }
             }
         }
@@ -119,6 +128,12 @@ sealed class PermissionResult {
     object NeverAskAgain : PermissionResult()
 
     val isGranted: Boolean get() = this is Granted
+
+    override fun toString() = when (this) {
+        Denied -> "Denied"
+        Granted -> "Granted"
+        NeverAskAgain -> "NeverAskAgain"
+    }
 }
 
 /**
@@ -138,7 +153,13 @@ enum class PermissionDialogTarget {
     internal fun next() = when (this) {
         BEFORE -> DENIED
         DENIED -> NEVER_ASK_AGAIN
-        NEVER_ASK_AGAIN -> NEVER_ASK_AGAIN
+        NEVER_ASK_AGAIN -> null
+    }
+
+    override fun toString() = when (this) {
+        BEFORE -> "BEFORE"
+        DENIED -> "DENIED"
+        NEVER_ASK_AGAIN -> "NEVER_ASK_AGAIN"
     }
 }
 

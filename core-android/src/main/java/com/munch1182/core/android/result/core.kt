@@ -106,9 +106,9 @@ internal data class RequestParams(
 /**
  * 使用启动一个[ActivityResultLauncher]并获取结果
  */
-suspend fun <I, O> FragmentActivity.request(contact: ActivityResultContract<I, O>, input: I): O {
+suspend fun <I, O> FragmentActivity.request(contract: ActivityResultContract<I, O>, input: I): O {
     return suspendCancellableCoroutine { continuation ->
-        ResultRequestFragment.start(this, contact, input) {
+        ResultRequestFragment.start(this, contract, input) {
             if (continuation.isActive) continuation.resume(it)
         }
     }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--canRetrieveWindowContent="true"：必须，否则无法读取界面元素
+packageNames: com.android.settings，只监听设置界面
+notificationTimeout：两次事件回调的最小间隔（毫秒）
+accessibilityEventTypes：typeAllMask 可以监听所有事件类型-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="true"
+    android:notificationTimeout="100"
+    android:packageNames="com.android.settings" />
