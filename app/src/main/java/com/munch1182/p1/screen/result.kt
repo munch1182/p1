@@ -2,8 +2,6 @@ package com.munch1182.p1.screen
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -11,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import com.munch1182.core.android.appSetting
 import com.munch1182.core.android.awaitResult
 import com.munch1182.core.android.developerOptionsIntent
@@ -23,8 +20,7 @@ import com.munch1182.p1.base.currAsFragmentActivityOrThrow
 import com.munch1182.p1.dialog.Dialog
 import com.munch1182.p1.dialog.Notice
 import com.munch1182.p1.ui.PrimaryButton
-import com.munch1182.p1.ui.theme.Dimens
-import com.munch1182.p1.ui.theme.paddingPage
+import com.munch1182.p1.ui.ScrollPage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
@@ -34,7 +30,7 @@ fun ResultScreen() {
     val scope = rememberCoroutineScope()
     var str by remember { mutableStateOf("") }
     val reset = { str = "" }
-    Column(modifier = Modifier.paddingPage(), verticalArrangement = Arrangement.spacedBy(Dimens.PaddingItem)) {
+    ScrollPage {
         PrimaryButton("提示") {
             reset()
             Notice.toast("提示, 使用后台context")
