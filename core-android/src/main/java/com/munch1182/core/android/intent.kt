@@ -9,6 +9,8 @@ import androidx.core.net.toUri
 
 fun Intent.withPkgUri() = apply { data = "package:${AppHelper.packageName}".toUri() }
 
+val Intent.newTask get() = apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+
 /**
  * 应用设置intent
  */

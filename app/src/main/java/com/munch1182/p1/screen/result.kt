@@ -13,6 +13,7 @@ import com.munch1182.core.android.appSetting
 import com.munch1182.core.android.awaitResult
 import com.munch1182.core.android.developerOptionsIntent
 import com.munch1182.core.android.isDeveloperOpen
+import com.munch1182.core.android.newTask
 import com.munch1182.core.android.result.requestResult
 import com.munch1182.core.common.launchMain
 import com.munch1182.p1.base.checkBluetoothPermission
@@ -68,10 +69,10 @@ private suspend fun openDeveloperOptions() {
         // 开发者选项未打开
         val isGoto = Dialog.newYesNoDialog("开发者选项未打开, 是否前往打开", ok = "前往").awaitResult()
         if (isGoto) {
-            curr.requestResult(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS))
+            curr.requestResult(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS).newTask)
             return openDeveloperOptions()
         }
     } else {
-        curr.requestResult(developerOptionsIntent)
+        curr.requestResult(developerOptionsIntent.newTask)
     }
 }
