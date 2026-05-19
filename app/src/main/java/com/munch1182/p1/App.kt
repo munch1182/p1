@@ -24,7 +24,7 @@ class App : Application() {
     }
 
     /**
-     * 作为初始化的特例，在主线程初始化
+     * 作为初始化的特例
      */
     private fun initBuglyFirst() {
         // https://bugly.qq.com/docs/user-guide/instruction-manual-android/?v=1.0.0
