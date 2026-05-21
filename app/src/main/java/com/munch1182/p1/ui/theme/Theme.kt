@@ -31,6 +31,11 @@ private val LightColorScheme = lightColorScheme(
     primary = Purple40, secondary = PurpleGrey40, tertiary = Pink40
 )
 
+/**
+ * 使用theme包裹compose函数, 以统一主题并实现主题切换
+ *
+ * @see themeVM
+ */
 @Composable
 fun P1Theme(
     themeVM: ThemeVM = hiltViewModel(), content: @Composable () -> Unit

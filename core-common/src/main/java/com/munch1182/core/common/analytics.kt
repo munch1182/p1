@@ -55,6 +55,9 @@ interface AnalyticsTracker {
     fun setUserProperties(properties: Map<String, Any>)
 }
 
+/**
+ * 默认实现
+ */
 class DefaultLogAnalyticsTracker(private val log: Logger) : AnalyticsTracker {
     companion object {
         private const val TAG = "AnalyticsTracker"

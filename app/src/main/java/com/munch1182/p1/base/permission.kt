@@ -15,13 +15,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.munch1182.core.android.IPrompt
 import com.munch1182.core.android.awaitResult
+import com.munch1182.core.android.enableNotificationIntent
+import com.munch1182.core.android.hasNotificationPermission
 import com.munch1182.core.android.isLocationEnable
+import com.munch1182.core.android.isNotificationEnable
 import com.munch1182.core.android.isPermissionGranted
 import com.munch1182.core.android.locationEnableIntent
 import com.munch1182.core.android.result.PermissionDialogProvider
@@ -93,6 +95,38 @@ fun checkBluetoothPermission(
     }
 }
 
+/**
+ * 检查通知权限, 已处理兼容
+ */
+fun checkNotificationPermission(
+    act: FragmentActivity = currAsFragmentActivityOrThrow, granted: (Boolean) -> Unit
+) {
+    if (hasNotificationPermission()) {
+        return granted(true)
+    } else if (!isNotificationEnable) {
+        act.lifecycleScope.launchMain {
+            val result = Dialog.newYesNoDialog("请前往打开通知", "通知开关").awaitResult()
+            if (result) act.requestResult(enableNotificationIntent)
+            if (isNotificationEnable) {
+                checkNotificationPermission(act, granted)
+            } else {
+                granted(false)
+            }
+        }
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        act.lifecycleScope.launchMain {
+            val result = act.requestPermissionWithHelper(arrayOf(Manifest.permission.POST_NOTIFICATIONS)).dialogProvider(onNormalPermission("通知", "通知权限")) //
+                .settingIntent() //
+                .request()
+            granted(result.isAllGranted())
+        }
+    } else {
+        granted(true)
+    }
+
+
+}
+
 
 private fun newPermissionRequestDialog(msg: String, title: String = "权限请求") = object : PermissionPrompt {
     private val dialog = Dialog.newYesNoDialog(msg, title, ok = "允许", cancel = "拒绝")
@@ -153,7 +187,7 @@ private class NewPermissionNoticeHelper(
                         Column(
                             Modifier
                                 .fillMaxWidth()
-                                .background(Color.White)
+                                .background(MaterialTheme.colorScheme.surface)
                                 .paddingPage()
                         ) {
                             Text(title, style = MaterialTheme.typography.titleMedium)

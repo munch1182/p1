@@ -104,6 +104,9 @@ class CommonDialogFragment : DialogFragment() {
          */
         const val KEY_RESULT = "result"
 
+        /**
+         * 创建一个[CommonDialogFragment]
+         */
         fun newInstance(
             title: String, //
             msg: String, //

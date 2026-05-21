@@ -123,10 +123,26 @@ class PermissionHelper(private val act: FragmentActivity, permission: Array<Stri
  * 权限请求结果
  */
 sealed class PermissionResult {
+    /**
+     * 已授权
+     */
     object Granted : PermissionResult()
+
+    /**
+     * 已拒绝
+     *
+     * @see PermissionHelper.request
+     */
     object Denied : PermissionResult()
+
+    /**
+     * 已被永久拒绝
+     */
     object NeverAskAgain : PermissionResult()
 
+    /**
+     * 判断是否是已经授权
+     */
     val isGranted: Boolean get() = this is Granted
 
     override fun toString() = when (this) {

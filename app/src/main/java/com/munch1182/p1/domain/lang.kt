@@ -7,23 +7,52 @@ import androidx.lifecycle.viewModelScope
 import com.munch1182.core.android.DataHelper
 import com.munch1182.core.common.get
 import com.munch1182.core.common.launchIO
-import com.munch1182.p1.base.stateIn
+import com.munch1182.p1.base.stateInWithStarted
 import com.munch1182.p1.data.KEY_SAVE_LANG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+/**
+ * 语言类型
+ */
 sealed class LanguageType {
+    /**
+     * 跟随系统语言
+     */
     object FollowSystem : LanguageType()
+
+    /**
+     * 设置一种定义的语言
+     *
+     * 可以使用固定语言列表替换这个定义, 但也可以使用此定义以保留拓展性
+     *
+     * @param lang 语言标识符
+     */
     data class Specific(val lang: String) : LanguageType()
 }
 
+/**
+ * 提供语言数据
+ */
 interface LanguageRepo {
+    /**
+     * 获取当前语言类型
+     *
+     * 注意: 这里返回的是Flow, 主题更改时流会返回(除非被重启)
+     */
     fun getLanguageType(): Flow<LanguageType>
+
+    /**
+     * 保持当前数据
+     */
     suspend fun saveLanguageType(languageType: LanguageType)
 }
 
+/**
+ * 提供语言数据
+ */
 class LanguageRepoImpl @Inject constructor() : LanguageRepo {
 
     companion object {
@@ -50,10 +79,16 @@ class LanguageRepoImpl @Inject constructor() : LanguageRepo {
 
 }
 
+/**
+ * 语言vm
+ */
 @HiltViewModel
 class LanguageVM @Inject constructor(private val repo: LanguageRepo) : ViewModel() {
 
-    val currLanguageType = repo.getLanguageType().stateIn(viewModelScope, LanguageType.FollowSystem)
+    /**
+     * 当前语言类型, 注意: 当语言更改时, 此值会同步更新
+     */
+    val currLanguageType = repo.getLanguageType().stateInWithStarted(viewModelScope, LanguageType.FollowSystem)
 
     /**
      * 重置为默认

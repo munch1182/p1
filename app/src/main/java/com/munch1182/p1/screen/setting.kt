@@ -34,6 +34,9 @@ import com.munch1182.p1.ui.theme.paddingPage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
+/**
+ * 设置界面
+ */
 @Destination<RootGraph>
 @Composable
 fun SettingScreen() {

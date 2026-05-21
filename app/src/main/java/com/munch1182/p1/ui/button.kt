@@ -81,10 +81,24 @@ fun <S> StateButton(
     }
 }
 
+/**
+ * 表示三种按钮状态, 用于广泛使用的场景
+ */
 enum class RunButtonState {
-    IDLE,       // 默认状态
-    STARTING,   // 启动中（显示进度条）
-    RUNNING     // 运行中
+    /**
+     * 默认状态
+     */
+    IDLE,
+
+    /**
+     * 启动中（显示进度条）
+     */
+    STARTING,
+
+    /**
+     * 运行中
+     */
+    RUNNING
 }
 
 /**

@@ -6,9 +6,16 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.net.toUri
 
-
+/**
+ * [Intent]附加带包名的uri, 以在有些intent中调整至本app相关的页面;
+ *
+ * 注意: 不能乱用, 有些手机有些intent不应该附带也附带可能会引起崩溃
+ */
 fun Intent.withPkgUri() = apply { data = "package:${AppHelper.packageName}".toUri() }
 
+/**
+ * [Intent]启动在另一个task中
+ */
 val Intent.newTask get() = apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
 
 /**

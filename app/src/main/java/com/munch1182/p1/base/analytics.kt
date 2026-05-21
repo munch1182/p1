@@ -3,6 +3,11 @@ package com.munch1182.p1.base
 import com.munch1182.core.android.Log
 import com.munch1182.core.common.AnalyticsTracker
 
+/**
+ * [AnalyticsTracker]的实现
+ *
+ * 建议无论有没有实际实现功能, 都先定义
+ */
 object AppAnalytics : AnalyticsTracker {
     private const val TAG = "AppAnalytics"
     override fun trackScreen(screenName: String, properties: Map<String, Any>?) {

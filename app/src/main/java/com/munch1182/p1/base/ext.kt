@@ -17,7 +17,10 @@ fun <T> Result<T>.logFailure(msg: String = ""): Result<T> = apply {
     }
 }
 
-fun <T> Flow<T>.stateIn(
+/**
+ * 通过[stateIn]将flow转为[kotlinx.coroutines.flow.SharedFlow], 此方法填充了通用的started
+ */
+fun <T> Flow<T>.stateInWithStarted(
     scope: CoroutineScope, initValue: T,
     started: SharingStarted = SharingStarted.WhileSubscribed(5000)
 ) = stateIn(
