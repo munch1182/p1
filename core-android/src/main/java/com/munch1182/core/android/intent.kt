@@ -45,7 +45,6 @@ fun isLocationEnable(manger: LocationManager = AppHelper.getSystemService(Locati
             @Suppress("DEPRECATION")
             Settings.Secure.getInt(AppHelper.contentResolver, Settings.Secure.LOCATION_MODE) != Settings.Secure.LOCATION_MODE_OFF
         }.getOrNull() ?: false
-
     }
 }
 
@@ -53,3 +52,14 @@ fun isLocationEnable(manger: LocationManager = AppHelper.getSystemService(Locati
  * 去打开/关闭定位开关
  */
 val locationEnableIntent get() = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+
+/**
+ * 获取[Intent]中的`Parcelable`对象, 兼容低版本
+ */
+inline fun <reified T> Intent.getParcelableCompat(name: String, clazz: Class<T>): T? {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        getParcelableExtra<T>(name, clazz)
+    } else {
+        @Suppress("DEPRECATION") getParcelableExtra(name)
+    }
+}

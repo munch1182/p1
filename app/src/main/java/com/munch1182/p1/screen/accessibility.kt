@@ -20,12 +20,12 @@ import com.munch1182.core.android.accessibility.windowType
 import com.munch1182.core.android.awaitResult
 import com.munch1182.core.android.developerOptionsIntent
 import com.munch1182.core.android.isDeveloperOpen
+import com.munch1182.core.android.logFailure
 import com.munch1182.core.android.newTask
 import com.munch1182.core.android.result.requestResult
 import com.munch1182.core.common.launchMain
 import com.munch1182.p1.base.AppAccessibilityService
 import com.munch1182.p1.base.currAsFragmentActivityOrThrow
-import com.munch1182.p1.base.logFailure
 import com.munch1182.p1.dialog.Dialog
 import com.munch1182.p1.ui.RunningStateButton
 import com.munch1182.p1.ui.ScrollPage

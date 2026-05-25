@@ -62,14 +62,19 @@ fun <S> StateButton(
 ) {
     val cfg = config(state)
     Button(
-        modifier = modifier, onClick = onClick, enabled = cfg.enabled, colors = ButtonDefaults.buttonColors(
+        modifier = modifier.height(Dimens.HeightBottom), //
+        onClick = onClick, //
+        enabled = cfg.enabled, //
+        colors = ButtonDefaults.buttonColors(
             containerColor = cfg.containerColor, contentColor = cfg.contentColor
         )
     ) {
         if (cfg.showProgress) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(Dimens.CircularSize), strokeWidth = Dimens.StrokeWidth, color = cfg.contentColor
+                    modifier = Modifier.size(Dimens.CircularSize), //
+                    strokeWidth = Dimens.StrokeWidth, //
+                    color = cfg.contentColor //
                 )
                 Text(
                     text = cfg.text, modifier = Modifier.padding(start = Dimens.PaddingItem), style = MaterialTheme.typography.labelLarge
