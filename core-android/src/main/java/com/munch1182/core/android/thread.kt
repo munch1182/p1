@@ -99,7 +99,7 @@ class NameThreadFactory(private val prefix: String = "named-thread") : ThreadFac
  *
  * @param parentScope 父协程作用域，用于启动内部监听协程，以及作为新建作用域的父上下文。
  * @param isActiveFlow 表示活跃状态的 Flow（例如连接状态的流），当值为 true 时视为活跃，false 视为非活跃。
- * @param scopeContextAddition 额外添加到作用域中的上下文元素，例如 [SupervisorJob] 或自定义调度器。
+ * @param scopeContextAddition 额外添加到作用域中的上下文元素
  *
  * 最终创建的作用域为：`CoroutineScope(parentScope.coroutineContext + scopeContextAddition + Job())`
  *
@@ -113,7 +113,7 @@ class NameThreadFactory(private val prefix: String = "named-thread") : ThreadFac
  *      fun logout() { _isLoggedIn.value = false }
  *
  *      // 只有登录后才能执行的网络请求
- *      fun fetchUserProfile(): Deferred<Profile> = sessionScope.getActiveScope().async {
+ *      fun fetchUserProfile(): Deferred<Profile> = sessionScope.currScopeOrEmpty().async {
  *      // 若 logout，此请求自动取消
  *          api.getProfile()
  *      }

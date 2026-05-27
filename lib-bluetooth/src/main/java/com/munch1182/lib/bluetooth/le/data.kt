@@ -120,7 +120,7 @@ interface BLECommand<T, R> {
  */
 sealed class DataResult<out R> {
     /**
-     * 已接收到完整数据并返回，不再等待后续数据
+     * 返回完整数据;
      */
     data class Full<R>(val data: R?) : DataResult<R>()
 
@@ -145,8 +145,9 @@ sealed class DataResult<out R> {
      */
     object TimeOut : DataResult<Nothing>()
 
-    val isSuccess get() = this is Full
-
+    /**
+     * 成功则返回数据, 否则返回null;
+     */
     val getOrNull get() = if (this is Full<R>) data else null
 }
 
@@ -158,6 +159,10 @@ sealed class DataPackParseResult<out T> {
      * 已接收到完整数据并返回，不再等待后续数据
      */
     data class Full<T>(val data: T?) : DataPackParseResult<T>()
+
+    /**
+     * 解析失败
+     */
     data class Fail(val msg: String) : DataPackParseResult<Nothing>()
 
     /**
@@ -208,7 +213,7 @@ class BLEDataHelper<T : Any>(
         }
     }
 
-    // 使用 ARManager 管理订阅（线程安全）
+    // 管理订阅（线程安全）
     private val subscriptions = CopyOnWriteArrayList<Subscription<T>>()
 
     // 串行化发送的互斥锁
@@ -293,26 +298,34 @@ class BLEDataHelper<T : Any>(
      *
      * ### 调用方行为（重要）
      * - 本函数是 **挂起函数**，调用它的协程会 **挂起等待** 结果返回，然后才继续执行后续代码。
-     * - 结果可以是：成功解析的数据（`Full`）、发送/解析失败（`Fail`）、超时（`TimeOut`）。
      *
      * ### 内部发送与响应的串行/并行规则
      * - **数据发送是串行的**：所有命令按调用顺序依次发送（前一个 `sender.send` 完成后才发下一个）。
      * - **发送后不等待响应**：发送完成后，若需要等待响应（`target != null`）会立即注册等待，并**继续处理队列中的下一个命令**（不会阻塞整个发送循环）。
      *   - 因此，不同 `target` 的命令可以**并发等待**响应，但相同 `target` 的命令不能并发（第二个会直接返回[DataResult.Conflict]）。
+     *   - **重要**：调用方必须保证相同 `target` 的请求串行化发送（例如使用队列或互斥锁），否则后一个请求会立即收到 `Conflict`。
      * - **发送与调用方挂起无关**：调用方的挂起等待不会影响下一个发送执行。
+     *
+     * ### 设备并发能力与业务层策略
+     * - 即使不同 `target` 的命令可以在本类内部并发等待，**最终能否真正并行处理取决于设备端**。
+     * - 许多 BLE 设备不支持同时处理多个协议请求（即同一时刻只能处理一个命令，直到响应返回后才能接收下一个命令）。
+     * - 如果设备不支持并发（即一次只能处理一个请求），调用方应在业务层做好串行化，例如：
+     *   - 使用一个共享的队列或 `Mutex`，确保同一设备同一时刻只发送一个 `send` 调用。
+     *   - 或者根据协议类型（如“占用型协议”）选择不同的并行策略。
+     * - **建议**：在编写业务代码前，查阅设备协议文档，确认设备是否支持命令并发。若不支持，请自行实现请求串行化。
      *
      * ### 结果返回时机
      * - **`target == null`**（无需响应）：`sender.send` 执行完成后立即返回结果（成功或失败）。
      * - **`target != null`**（需要响应）：
      *   - 等待设备上报匹配 `target` 的数据，且 `parseData` 返回 `Full` 或 `Fail`。
      *   - 若 `parseData` 返回 `NeedMoreData`，会持续等待后续数据包直至解析完成。
-     *   - 若超过 `timeout` 未完成，返回 `TimeOut`。
+     *   - 若超过 `timeout` 未接收到带有目标T的数据包返回，或者多包组合超过了设定的超时时间，返回 `TimeOut`。
      *
      * ### 线程/协程上下文
      * - 调用方：可在任意协程中调用，挂起恢复时回到调用前的协程上下文（即调用时的调度器）。
-     * - 内部执行：发送及数据解析在 `scope` 指定的协程中运行（通常为 `launchIO`）。
+     * - 内部执行：发送及数据解析在[BLEDataHelper.scope]指定的协程上下文中异步执行。
      *
-     * @param command 待执行的命令，注意如果是多宝数据，超时时间是整体时间而不是每个包的时间；
+     * @param command 待执行的命令，注意如果是多包数据，超时时间是整体时间而不是每个包的时间；
      * @param timeout 等待响应的超时时间（仅当 `target != null` 时生效），默认 15 秒
      * @return 结果：`Full(data)`, `Fail(msg)`, `TimeOut`
      */

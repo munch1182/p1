@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +54,7 @@ class BLEConnector(
         private const val NAME_SERVER = "00001800-0000-1000-8000-00805F9B34FB"
         private const val NAME_CHAR = "00002A00-0000-1000-8000-00805F9B34FB"
         private const val TAG = "BLEConnector"
+        private const val RECONNECT_DELAY_MS = 500L // 等待底层释放资源
     }
 
     /** 当前连接状态 */
@@ -190,6 +192,7 @@ class BLEConnector(
                     _gatt = null
                 }
                 _state.value = BluetoothConnectState.Disconnected
+                delay(RECONNECT_DELAY_MS)
             }
             Log.d(TAG, "connect")
             _state.value = BluetoothConnectState.Connecting
@@ -229,14 +232,12 @@ class BLEConnector(
     suspend fun discoverServices(
         timeout: Duration = 15000.milliseconds,
         filter: (GattResult.DiscoverServices) -> Boolean = { true }
-    ): GattResult.DiscoverServices? {
-        return waitForGattResult(
-            operation = { synchronized(_gattLock) { _gatt?.discoverServices() ?: false } },
-            name = "discoverServices",
-            timeout = timeout,
-            filter = filter
-        )
-    }
+    ) = waitForGattResult(
+        operation = { synchronized(_gattLock) { _gatt?.discoverServices() ?: false } },
+        name = "discoverServices",
+        timeout = timeout,
+        filter = filter
+    )
 
     /** 根据正则表达式查找服务（线程安全） */
     fun findService(pattern: String): BluetoothGattService? {
@@ -290,23 +291,18 @@ class BLEConnector(
         mtu: Int = 512,
         timeout: Duration = 15000.milliseconds,
         filter: (GattResult.MtuChanged) -> Boolean = { true }
-    ): GattResult.MtuChanged? {
-        return waitForGattResult(
-            operation = { synchronized(_gattLock) { _gatt?.requestMtu(mtu) ?: false } },
-            name = "requestMtu",
-            timeout = timeout,
-            filter = filter
-        )
-    }
+    ) = waitForGattResult(
+        operation = { synchronized(_gattLock) { _gatt?.requestMtu(mtu) ?: false } },
+        name = "requestMtu",
+        timeout = timeout,
+        filter = filter
+    )
 
     /** 开启或关闭特征的通知 */
-    fun setNotification(characteristic: BluetoothGattCharacteristic, enable: Boolean): Boolean {
-        return synchronized(_gattLock) {
-            _gatt?.setCharacteristicNotification(characteristic, enable) ?: false
-        }
-    }
+    fun setNotification(characteristic: BluetoothGattCharacteristic, enable: Boolean) =
+        synchronized(_gattLock) { _gatt?.setCharacteristicNotification(characteristic, enable) ?: false }
 
-    /** 写入描述符（如 CCCD），挂起直到写入完成或超时 */
+    /** 写入描述符，挂起直到写入完成或超时 */
     suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor,
         value: ByteArray = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE,
@@ -314,26 +310,24 @@ class BLEConnector(
         filter: (GattResult.WriteDescriptor) -> Boolean = {
             descriptor.uuid.toString().equals(it.uuid?.toString(), true)
         }
-    ): GattResult.WriteDescriptor? {
-        return waitForGattResult(
-            operation = {
-                synchronized(_gattLock) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        _gatt?.writeDescriptor(descriptor, value) == BluetoothStatusCodes.SUCCESS
-                    } else {
-                        @Suppress("DEPRECATION")
-                        _gatt?.let {
-                            descriptor.value = value
-                            it.writeDescriptor(descriptor)
-                        } == true
-                    }
+    ) = waitForGattResult(
+        operation = {
+            synchronized(_gattLock) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    _gatt?.writeDescriptor(descriptor, value) == BluetoothStatusCodes.SUCCESS
+                } else {
+                    @Suppress("DEPRECATION")
+                    _gatt?.let {
+                        descriptor.value = value
+                        it.writeDescriptor(descriptor)
+                    } == true
                 }
-            },
-            name = "writeDescriptor",
-            timeout = timeout,
-            filter = filter
-        )
-    }
+            }
+        },
+        name = "writeDescriptor",
+        timeout = timeout,
+        filter = filter
+    )
 
     /** 向特征值写入数据，返回 0 成功，-1 失败 */
     fun write(
@@ -349,6 +343,7 @@ class BLEConnector(
                 @Suppress("DEPRECATION")
                 writer.value = data
                 writer.writeType = type
+                @Suppress("DEPRECATION")
                 if (gatt.writeCharacteristic(writer)) 0 else -1
             }
             Log.d(TAG, "write: size=${data.size}, hex=${data.toHexString()}, success=${result == 0}")
@@ -409,7 +404,7 @@ class BLEConnector(
         data class WriteDescriptor(val uuid: UUID?, override val status: Int) : GattResult()
 
         /** MTU 变更结果 */
-        data class MtuChanged(val mut: Int, override val status: Int) : GattResult()
+        data class MtuChanged(val mtu: Int, override val status: Int) : GattResult()
 
         /** 读取设备名称结果 */
         data class ReadName(override val status: Int, val name: String?) : GattResult()

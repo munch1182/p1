@@ -5,7 +5,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import com.munch1182.core.android.Log
-import com.munch1182.lib.bluetooth.BluetoothIBluetoothEnv
+import com.munch1182.lib.bluetooth.BluetoothEnv
 import com.munch1182.lib.bluetooth.IBluetoothEnv
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +24,7 @@ fun CoroutineScope.leScanFlow(): Flow<ScanResult> = BLEScanner.Default.scanFlow(
 
 /** BLE 扫描管理器，提供共享扫描流，多收集者共享同一硬件扫描资源 */
 @SuppressLint("MissingPermission")
-class BLEScanner(private val env: IBluetoothEnv = BluetoothIBluetoothEnv) : IBluetoothEnv by env {
+class BLEScanner(private val env: IBluetoothEnv = BluetoothEnv) : IBluetoothEnv by env {
 
     companion object {
         /** 默认单例实例，用于一般场景 */

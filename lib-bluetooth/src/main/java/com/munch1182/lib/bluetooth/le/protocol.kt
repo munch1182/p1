@@ -8,7 +8,7 @@ import android.bluetooth.BluetoothGattCharacteristic
  */
 interface BLEProtocolProvider {
     /** 协议唯一标识 */
-    val protocolID: Int
+    val protocolId: Int
 
     /** 判断设备是否支持当前协议 */
     suspend fun isSupport(dev: BluetoothDevice, connector: BLEConnector): Boolean
@@ -38,7 +38,7 @@ class BLESender(private val connector: BLEConnector, private val writer: Bluetoo
  * 作为兜底协议，优先级最低
  */
 object GattConnectProtocol : BLEProtocol<String> {
-    override val protocolID = Int.MIN_VALUE
+    override val protocolId = Int.MIN_VALUE
     override fun identifyType(data: ByteArray) = null
     override suspend fun isSupport(dev: BluetoothDevice, connector: BLEConnector) = true
     override suspend fun connect(connector: BLEConnector) = Result.success(Unit)
