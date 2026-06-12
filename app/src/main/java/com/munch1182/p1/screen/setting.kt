@@ -1,4 +1,4 @@
-package com.munch1182.p1.screen
+﻿package com.munch1182.p1.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,29 +15,29 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.munch1182.core.common.toARGBColorStr
+import com.munch1182.core.ui.AccordionLabelItem
+import com.munch1182.core.ui.Checkbox
+import com.munch1182.core.ui.PrimaryButton
+import com.munch1182.core.ui.ScrollPage
+import com.munch1182.core.ui.SplitH
+import com.munch1182.core.ui.SplitW
+import com.munch1182.core.ui.theme.DarkMode
+import com.munch1182.core.ui.theme.Dimens
+import com.munch1182.core.ui.theme.ThemeType
+import com.munch1182.core.ui.theme.ThemeVM
+import com.munch1182.core.ui.theme.colorRandom
+import com.munch1182.core.ui.theme.paddingPage
+import com.munch1182.lib.common.toARGBColorStr
 import com.munch1182.p1.R
-import com.munch1182.p1.domain.DarkMode
-import com.munch1182.p1.domain.LanguageType
-import com.munch1182.p1.domain.LanguageVM
-import com.munch1182.p1.domain.ThemeType
-import com.munch1182.p1.domain.ThemeVM
-import com.munch1182.p1.ui.AccordionLabelItem
-import com.munch1182.p1.ui.Checkbox
-import com.munch1182.p1.ui.PrimaryButton
-import com.munch1182.p1.ui.ScrollPage
-import com.munch1182.p1.ui.SplitH
-import com.munch1182.p1.ui.SplitW
-import com.munch1182.p1.ui.theme.Dimens
-import com.munch1182.p1.ui.theme.colorRandom
-import com.munch1182.p1.ui.theme.paddingPage
+import com.munch1182.core.ui.LanguageType
+import com.munch1182.core.ui.LanguageVM
+import com.munch1182.p1.AppGraph
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
 
 /**
  * 设置界面
  */
-@Destination<RootGraph>
+@Destination<AppGraph>
 @Composable
 fun SettingScreen() {
     ScrollPage(applyPadding = false) {

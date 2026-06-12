@@ -7,8 +7,8 @@ android {
 }
 dependencies {
     implementation(libs.androidx.annotation.jvm)
-    implementation(projects.coreCommon)
-    implementation(projects.coreAndroid)
+    implementation(projects.libCommon)
+    implementation(projects.libAndroid)
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)

@@ -1,8 +1,8 @@
-package com.munch1182.lib.bluetooth.le
+﻿package com.munch1182.lib.bluetooth.le
 
-import com.munch1182.core.android.Log
-import com.munch1182.core.android.invokeOnCompletion
-import com.munch1182.core.common.launchIO
+import com.munch1182.lib.android.Log
+import com.munch1182.lib.android.invokeOnCompletion
+import com.munch1182.lib.common.launchIO
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel

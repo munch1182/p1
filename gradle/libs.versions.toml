@@ -47,6 +47,7 @@ androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecyc
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.13.0" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 #
@@ -83,6 +84,8 @@ hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", ve
 
 # https://github.com/Tencent/MMKV
 mmkv = { module = "com.tencent:mmkv", version = "2.4.0" }
+# https://developer.android.com/develop/ui/views/launch/splash-screen
+splashscreen = { module = "androidx.core:core-splashscreen", version = "1.0.1" }
 
 [plugins]
 android-application = { id = "com.android.application", version = "9.1.1" }

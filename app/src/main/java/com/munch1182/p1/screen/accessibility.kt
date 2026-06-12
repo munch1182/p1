@@ -1,4 +1,4 @@
-package com.munch1182.p1.screen
+﻿package com.munch1182.p1.screen
 
 import android.content.Context
 import android.content.Intent
@@ -9,35 +9,35 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import com.munch1182.core.android.AppHelper
-import com.munch1182.core.android.accessibility.AccessibilityServiceHelper
-import com.munch1182.core.android.accessibility.className
-import com.munch1182.core.android.accessibility.findByScrollOrNull
-import com.munch1182.core.android.accessibility.isAccessibilityEnabled
-import com.munch1182.core.android.accessibility.plus
-import com.munch1182.core.android.accessibility.startClickIfCan
-import com.munch1182.core.android.accessibility.windowType
-import com.munch1182.core.android.awaitResult
-import com.munch1182.core.android.developerOptionsIntent
-import com.munch1182.core.android.isDeveloperOpen
-import com.munch1182.core.android.logFailure
-import com.munch1182.core.android.newTask
-import com.munch1182.core.android.result.requestResult
-import com.munch1182.core.common.launchMain
+import com.munch1182.core.ui.RunningStateButton
+import com.munch1182.core.ui.ScrollPage
+import com.munch1182.core.ui.currAsFragmentActivityOrThrow
+import com.munch1182.core.ui.dialog.DialogFactory
+import com.munch1182.lib.android.AppHelper
+import com.munch1182.lib.android.accessibility.AccessibilityServiceHelper
+import com.munch1182.lib.android.accessibility.className
+import com.munch1182.lib.android.accessibility.findByScrollOrNull
+import com.munch1182.lib.android.accessibility.isAccessibilityEnabled
+import com.munch1182.lib.android.accessibility.plus
+import com.munch1182.lib.android.accessibility.startClickIfCan
+import com.munch1182.lib.android.accessibility.windowType
+import com.munch1182.lib.android.awaitResult
+import com.munch1182.lib.android.developerOptionsIntent
+import com.munch1182.lib.android.isDeveloperOpen
+import com.munch1182.lib.android.logFailure
+import com.munch1182.lib.android.newTask
+import com.munch1182.lib.android.result.requestResult
+import com.munch1182.lib.common.launchMain
 import com.munch1182.p1.base.AppAccessibilityService
-import com.munch1182.p1.base.currAsFragmentActivityOrThrow
-import com.munch1182.p1.dialog.Dialog
-import com.munch1182.p1.ui.RunningStateButton
-import com.munch1182.p1.ui.ScrollPage
+import com.munch1182.p1.AppGraph
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
  * 无障碍相关设置ui
  */
-@Destination<RootGraph>
+@Destination<AppGraph>
 @Composable
 fun AccessibilityScreen() {
     val check = { isAccessibilityEnabled(AppAccessibilityService::class.java) }
@@ -84,7 +84,7 @@ private suspend fun openDeveloperOptions() {
     val curr = currAsFragmentActivityOrThrow
     if (!isDeveloperOpen) {
         // 开发者选项未打开
-        val isGoto = Dialog.newYesNoDialog("开发者选项未打开, 是否前往打开", ok = "前往").awaitResult()
+        val isGoto = DialogFactory.newYesNoDialog("开发者选项未打开, 是否前往打开", ok = "前往").awaitResult() ?: false
         if (isGoto) {
             curr.requestResult(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS).newTask)
             return openDeveloperOptions()
@@ -106,7 +106,7 @@ private fun isWirelessAdbEnabled(context: Context = AppHelper): Boolean {
 }
 
 private suspend fun enableAccessibilityServer() {
-    val result = Dialog.newYesNoDialog("请前往无障碍服务器进行授权").awaitResult()
+    val result = DialogFactory.newYesNoDialog("请前往无障碍服务器进行授权").awaitResult() ?: false
     if (!result) return
     currAsFragmentActivityOrThrow.requestResult(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
 }

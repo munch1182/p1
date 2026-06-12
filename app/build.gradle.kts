@@ -13,8 +13,12 @@ android {
     }
 }
 dependencies {
-    implementation(projects.coreCommon)
-    implementation(projects.coreAndroid)
+    implementation(projects.libCommon)
+    implementation(projects.libAndroid)
+    implementation(projects.coreBase)
+    implementation(projects.coreUi)
+
+    implementation(projects.featureBluetooth)
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)
@@ -48,6 +52,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 
+    implementation(libs.splashscreen)
     debugImplementation(libs.leakcanary.android)
 
     debugImplementation(libs.junit)

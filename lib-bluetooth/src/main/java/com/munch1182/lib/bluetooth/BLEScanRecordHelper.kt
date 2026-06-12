@@ -1,6 +1,7 @@
 package com.munch1182.lib.bluetooth
 
 import android.bluetooth.le.ScanRecord
+import kotlin.experimental.and
 
 
 /**
@@ -55,9 +56,10 @@ object BLEScanRecordHelper {
         class Flags(len: Byte, type: Byte, value: ByteArray) : BlueRecord(len, type, value) {
             val flags: Byte = value[0]
 
-            val flagStr get() = flags.toHexString()
+            val flagStr: String get() = Integer.toBinaryString((flags and 0xff.toByte()).toInt())
 
-            val typeStr get() = if (flagStr.reversed()[2] == '0') "CLASSIC and LE" else "LE only"
+            val typeStr: String
+                get() = if (flagStr.length >= 2 && flagStr.reversed()[2] == '0') "CLASSIC and LE" else "LE only"
         }
 
         /** 设备名称记录 */
@@ -108,7 +110,7 @@ object BLEScanRecordHelper {
                 ScanRecord.DATA_TYPE_INDOOR_POSITIONING -> "DATA_TYPE_INDOOR_POSITIONING"
                 ScanRecord.DATA_TYPE_TRANSPORT_DISCOVERY_DATA -> "DATA_TYPE_TRANSPORT_DISCOVERY_DATA"
                 ScanRecord.DATA_TYPE_MANUFACTURER_SPECIFIC_DATA -> "DATA_TYPE_MANUFACTURER_SPECIFIC_DATA"
-                else -> type.toString()
+                else -> type.toHexString()
             }
         }
     }

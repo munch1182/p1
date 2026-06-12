@@ -1,7 +1,7 @@
-package com.munch1182.lib.bluetooth.le
+﻿package com.munch1182.lib.bluetooth.le
 
 import android.bluetooth.BluetoothDevice
-import com.munch1182.core.android.Log
+import com.munch1182.lib.android.Log
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow

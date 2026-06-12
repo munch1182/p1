@@ -1,11 +1,11 @@
-package com.munch1182.lib.bluetooth
+﻿package com.munch1182.lib.bluetooth
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import androidx.annotation.RequiresPermission
-import com.munch1182.core.android.AppHelper
+import com.munch1182.lib.android.AppHelper
 
 /**
  * 提供蓝牙环境, 主要是[BluetoothManager]和[BluetoothAdapter]

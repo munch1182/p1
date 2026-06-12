@@ -1,5 +1,5 @@
-package com.munch1182.p1.base
+﻿package com.munch1182.p1.base
 
-import com.munch1182.core.android.accessibility.BaseAccessibilityService
+import com.munch1182.lib.android.accessibility.BaseAccessibilityService
 
 class AppAccessibilityService : BaseAccessibilityService()

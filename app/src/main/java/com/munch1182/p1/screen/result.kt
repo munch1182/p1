@@ -1,4 +1,4 @@
-package com.munch1182.p1.screen
+﻿package com.munch1182.p1.screen
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -7,28 +7,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import com.munch1182.core.android.appSetting
-import com.munch1182.core.android.awaitResult
-import com.munch1182.core.android.createNotification
-import com.munch1182.core.android.createNotificationChannel
-import com.munch1182.core.android.notify
-import com.munch1182.core.android.result.requestResult
+import com.munch1182.core.base.AppAnalytics
+import com.munch1182.core.ui.PrimaryButton
+import com.munch1182.core.ui.ScrollPage
+import com.munch1182.core.ui.currAsFragmentActivityOrThrow
+import com.munch1182.core.ui.dialog.DialogFactory
+import com.munch1182.core.ui.dialog.Notice
+import com.munch1182.core.ui.permission.checkBluetoothPermission
+import com.munch1182.core.ui.permission.checkNotificationPermission
+import com.munch1182.lib.android.appSetting
+import com.munch1182.lib.android.awaitResult
+import com.munch1182.lib.android.createNotification
+import com.munch1182.lib.android.createNotificationChannel
+import com.munch1182.lib.android.notify
+import com.munch1182.lib.android.result.requestResult
 import com.munch1182.p1.R
-import com.munch1182.p1.base.checkBluetoothPermission
-import com.munch1182.p1.base.checkNotificationPermission
-import com.munch1182.p1.base.currAsFragmentActivityOrThrow
-import com.munch1182.p1.dialog.Dialog
-import com.munch1182.p1.dialog.Notice
-import com.munch1182.p1.ui.PrimaryButton
-import com.munch1182.p1.ui.ScrollPage
+import com.munch1182.p1.AppGraph
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.launch
 
 /**
  * 测试dialog或者权限/结果相关ui
  */
-@Destination<RootGraph>
+@Destination<AppGraph>
 @Composable
 fun ResultScreen() {
     val scope = rememberCoroutineScope()
@@ -42,14 +43,14 @@ fun ResultScreen() {
         PrimaryButton("提示弹窗") {
             reset()
             scope.launch {
-                val chose = Dialog.newYesNoDialog("选择是或者否", ok = "是", cancel = "否").awaitResult()
+                val chose = DialogFactory.newYesNoDialog("选择是或者否", ok = "是", cancel = "否").awaitResult()
                 str = "选择了$chose"
             }
         }
         PrimaryButton("蓝牙权限") {
             reset()
             scope.launch {
-                checkBluetoothPermission { permission -> str = "蓝牙权限: $permission" }
+                checkBluetoothPermission(analytics = AppAnalytics) { permission -> str = "蓝牙权限: $permission" }
             }
         }
         PrimaryButton("发出通知") {

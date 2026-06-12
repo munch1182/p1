@@ -1,4 +1,4 @@
-package com.munch1182.lib.bluetooth
+﻿package com.munch1182.lib.bluetooth
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -7,14 +7,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Handler
-import com.munch1182.core.android.ARManager
-import com.munch1182.core.android.ARSyncManager
-import com.munch1182.core.android.AppHelper
-import com.munch1182.core.android.LifecycleBoundScope
-import com.munch1182.core.android.Log
-import com.munch1182.core.android.OnUpdateListener
-import com.munch1182.core.android.getParcelableCompat
-import com.munch1182.core.android.invokeOnCompletion
+import com.munch1182.lib.android.ARManager
+import com.munch1182.lib.android.ARSyncManager
+import com.munch1182.lib.android.AppHelper
+import com.munch1182.lib.android.LifecycleBoundScope
+import com.munch1182.lib.android.Log
+import com.munch1182.lib.android.OnUpdateListener
+import com.munch1182.lib.android.getParcelableCompat
+import com.munch1182.lib.android.invokeOnCompletion
 import com.munch1182.lib.bluetooth.BluetoothEventFlow.event
 import com.munch1182.lib.bluetooth.BluetoothEventFlow.onOffState
 import kotlinx.coroutines.CoroutineName
