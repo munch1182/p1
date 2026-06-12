@@ -22,3 +22,4 @@ internal fun BluetoothScanScreen() {
 internal fun BluetoothConnectScreen(mac: String) {
     BluetoothConnect(mac)
 }
+

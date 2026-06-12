@@ -37,7 +37,12 @@ fun AccordionItem(
  */
 @Composable
 fun AccordionLabelItem(
-    expanded: Boolean, modifier: Modifier = Modifier, onToggle: () -> Unit, title: @Composable () -> Unit, content: @Composable () -> Unit
+    expanded: Boolean, //
+    modifier: Modifier = Modifier, //
+    isEmptyContent: Boolean = false, //
+    onToggle: () -> Unit = {}, //
+    title: @Composable () -> Unit, //
+    content: @Composable () -> Unit //
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f, label = "arrow_rotation"
@@ -46,11 +51,13 @@ fun AccordionLabelItem(
         Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
             title()
             Spacer(Modifier.weight(1f))
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier
-                    .size(Dimens.Medium)
-                    .rotate(rotation)
-            )
+            if (!isEmptyContent) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier
+                        .size(Dimens.Medium)
+                        .rotate(rotation)
+                )
+            }
         }
     }, content)
 }

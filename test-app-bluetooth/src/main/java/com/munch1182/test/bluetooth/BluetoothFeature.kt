@@ -7,7 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.munch1182.feature.bluetooth.connect.BluetoothConnect
+import com.munch1182.feature.bluetooth.scan.BleScanViewModel
 import com.munch1182.feature.bluetooth.scan.BluetoothScan
 
 @SuppressLint("MissingPermission")

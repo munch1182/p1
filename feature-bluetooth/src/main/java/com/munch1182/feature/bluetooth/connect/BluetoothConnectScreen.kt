@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,10 +31,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.munch1182.core.ui.AccordionLabelItem
 import com.munch1182.core.ui.SplitH
 import com.munch1182.core.ui.theme.Dimens
 import com.munch1182.core.ui.theme.paddingPage
+import com.munch1182.lib.bluetooth.le.isConnected
+import com.munch1182.lib.bluetooth.le.isDisconnected
 
 //region Mock Data Models
 
@@ -43,7 +48,7 @@ data class MockCharacteristic(
     val value: String? = null,
 )
 
-data class MockService(
+data class BLEServiceInfo(
     val uuid: String,
     val name: String,
     val characteristics: List<MockCharacteristic>,
@@ -57,99 +62,61 @@ data class MockTestProtocol(
 
 //endregion
 
-//region Mock Data
-
-private val mockServices = listOf(
-    MockService(
-        uuid = "00001800-0000-1000-8000-00805F9B34FB",
-        name = "Generic Access",
-        characteristics = listOf(
-            MockCharacteristic("2A00", listOf("Read", "Write"), "LILYGO T-Display"),
-            MockCharacteristic("2A01", listOf("Read", "Notify"), "0x0600"),
-            MockCharacteristic("2A04", listOf("Read", "Write", "Indicate"), "0x0014-0x0054"),
-        ),
-    ),
-    MockService(
-        uuid = "0000180A-0000-1000-8000-00805F9B34FB",
-        name = "Device Information",
-        characteristics = listOf(
-            MockCharacteristic("2A29", listOf("Read"), "LILYGO"),
-            MockCharacteristic("2A24", listOf("Read"), "T-Display"),
-            MockCharacteristic("2A26", listOf("Read"), "1.0.0"),
-        ),
-    ),
-    MockService(
-        uuid = "0000180F-0000-1000-8000-00805F9B34FB",
-        name = "Battery Service",
-        characteristics = listOf(
-            MockCharacteristic("2A19", listOf("Read", "Notify"), "85%"),
-        ),
-    ),
-    MockService(
-        uuid = "0000FFE0-0000-1000-8000-00805F9B34FB",
-        name = "Custom Service",
-        characteristics = listOf(
-            MockCharacteristic("FFE1", listOf("Write", "Indicate"), null),
-            MockCharacteristic("FFE2", listOf("Read", "Write", "Notify"), "0x0A-0x0B-0x0C"),
-        ),
-    ),
-)
-
-private val mockTestProtocols = listOf(
-    MockTestProtocol(
-        name = "Ping Protocol",
-        status = "等待连接",
-        description = "发送 Ping 到设备并等待响应，超时 5s",
-    ),
-    MockTestProtocol(
-        name = "Echo Protocol",
-        status = "未启动",
-        description = "回显所有接收到的数据包，用于测试数据通道",
-    ),
-)
-
-//endregion
-
 @Composable
 fun BluetoothConnect(
     address: String,
     modifier: Modifier = Modifier,
+    vm: BluetoothConnectViewModel = hiltViewModel(),
     deviceName: String = "Unknown",
     mtu: Int = 512,
-    isConnected: Boolean = false,
-    services: List<MockService> = mockServices,
-    testProtocols: List<MockTestProtocol> = mockTestProtocols,
-    onConnectToggle: () -> Unit = {},
+    onConnectToggle: (Boolean) -> Unit = {},
 ) {
-    var showServices by remember { mutableStateOf(true) }
-    var showTestProtocols by remember { mutableStateOf(false) }
+    var showServices by remember { mutableStateOf(false) }
+    val state by vm.state.collectAsStateWithLifecycle()
+    val errMsg by vm.errMsg.collectAsStateWithLifecycle("")
 
-    Column(modifier = Modifier
-        .paddingPage()
-        .then(modifier)) {
+    LaunchedEffect(state.connectState) {
+        if (state.connectState.isConnected) {
+            onConnectToggle(true)
+        } else if (state.connectState.isDisconnected) {
+            onConnectToggle(false)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .paddingPage()
+            .then(modifier)
+    ) {
         DeviceHeader(
             name = deviceName,
             address = address,
             mtu = mtu,
-            isConnected = isConnected,
-            onConnectToggle = onConnectToggle,
+            isConnected = state.connectState.isConnected,
+            onConnectToggle = { vm.toggleConnect(address) },
         )
 
         SplitH()
 
-        ServicesSection(
-            expanded = showServices,
-            onToggle = { showServices = !showServices },
-            services = services,
-        )
+        if (errMsg.isEmpty()) {
+            if (state.services.isNotEmpty()) {
+                ServicesSection(
+                    expanded = showServices,
+                    onToggle = { showServices = !showServices },
+                    services = state.services,
+                )
+            }
 
-        SplitH()
+            SplitH()
 
-        TestProtocolSection(
-            expanded = showTestProtocols,
-            onToggle = { showTestProtocols = !showTestProtocols },
-            protocols = testProtocols,
-        )
+            /*TestProtocolSection(
+                expanded = showTestProtocols,
+                onToggle = { showTestProtocols = !showTestProtocols },
+                protocols = testProtocols,
+            )*/
+        } else {
+            Text(text = errMsg, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+        }
     }
 }
 
@@ -226,7 +193,7 @@ private fun MtuBadge(mtu: Int) {
 private fun ServicesSection(
     expanded: Boolean,
     onToggle: () -> Unit,
-    services: List<MockService>,
+    services: List<BLEServiceInfo>,
 ) {
     AccordionLabelItem(
         expanded = expanded,
@@ -240,16 +207,14 @@ private fun ServicesSection(
         },
         content = {
             LazyColumn {
-                items(services, key = { it.uuid }) { service ->
-                    ServiceCard(service)
-                }
+                items(services, key = { it.uuid }) { service -> ServiceCard(service) }
             }
         },
     )
 }
 
 @Composable
-private fun ServiceCard(service: MockService) {
+private fun ServiceCard(service: BLEServiceInfo) {
     var expanded by remember { mutableStateOf(false) }
 
     AccordionLabelItem(

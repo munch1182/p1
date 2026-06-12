@@ -59,7 +59,7 @@ class BLEConnector(
     private val logger = logger()
 
     /** 当前连接状态 */
-    private val _state = MutableStateFlow<BluetoothConnectState>(BluetoothConnectState.Disconnected)
+    private val _state = MutableStateFlow(BluetoothConnectState.Disconnected)
 
     private val boundScope = LifecycleBoundScope(
         parentScope = scope, isActiveFlow = _state.map { it.isConnected },  // 转为是否连接的 Boolean 流
@@ -373,23 +373,15 @@ class BLEConnector(
 }
 
 /** 蓝牙连接状态枚举 */
-sealed class BluetoothConnectState {
-    object Disconnected : BluetoothConnectState()
-    object Connecting : BluetoothConnectState()
-    object Connected : BluetoothConnectState()
-    object Disconnecting : BluetoothConnectState()
-
-    val isConnected get() = this is Connected
-    val isDisconnecting get() = this is Disconnecting
-    val isConnecting get() = this is Connecting
-    val isDisconnected get() = this is Disconnected
-
-    override fun toString(): String {
-        return when (this) {
-            Disconnected -> "Disconnected"
-            Connecting -> "Connecting"
-            Connected -> "Connected"
-            Disconnecting -> "Disconnecting"
-        }
-    }
+enum class BluetoothConnectState {
+    Disconnected,
+    Connecting,
+    Connected,
+    Disconnecting
 }
+
+/** 状态判断简化 */
+val BluetoothConnectState.isConnected get() = this == BluetoothConnectState.Connected
+val BluetoothConnectState.isDisconnected get() = this == BluetoothConnectState.Disconnected
+val BluetoothConnectState.isConnecting get() = this == BluetoothConnectState.Connecting
+val BluetoothConnectState.isDisconnecting get() = this == BluetoothConnectState.Disconnecting

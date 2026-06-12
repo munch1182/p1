@@ -2,8 +2,10 @@
 
 import android.bluetooth.BluetoothDevice
 import com.munch1182.lib.android.Log
+import com.munch1182.lib.common.launchIO
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -16,7 +18,7 @@ import kotlin.time.Duration.Companion.milliseconds
 /**
  * 代表一个已建立 GATT 连接的 BLE 设备。
  *
- * **生命周期**：从 [IBLEDeviceManager.connect] 成功返回开始，到连接断开（主动、异常或关联的 [devScope] 取消）为止。
+ * **生命周期**：从 [IBLEDeviceManager.connect] 成功返回开始，到连接断开（主动、异常）为止。
  * **断开后不可复用**：失效的实例无法重新连接，任何操作都会返回 [DataResult.Fail] 或 [Result.failure]。
  *
  * @param T 数据类型标识符类型（由协议定义）
@@ -25,7 +27,6 @@ import kotlin.time.Duration.Companion.milliseconds
  * @param identifier 协议类型定义
  * @param sender 数据发送实现
  * @param dataHelper 数据解析实现
- * @param onDisconnected 连接断开时的回调
  */
 class BLEDevice<T : Any>(
     val dev: BluetoothDevice, //
@@ -33,15 +34,7 @@ class BLEDevice<T : Any>(
     identifier: BLETypeIdentifier<T>, //
     sender: BLEDataSender, //
     private val dataHelper: BLEDataHelper<T> = BLEDataHelper(connector.connectScopeOrEmpty(), identifier, sender, connector),
-    private val onDisconnected: ((String) -> Unit)? = null,
 ) {
-
-    init {
-        connector.connectScopeOrEmpty().launch {
-            connector.connectState.first { it.isDisconnected }
-            onDisconnected?.invoke(dev.address)
-        }
-    }
 
     /** 当前连接状态流 */
     val state = connector.connectState
@@ -56,6 +49,19 @@ class BLEDevice<T : Any>(
 
     /** 注册数据监听 */
     fun onType(target: T? = null, block: (ByteArray) -> Unit) = dataHelper.onType(target, block)
+
+    /**
+     * 等待设备断开连接
+     *
+     * 注意: 该回调判执行在[BLEConnector.connectScopeOrEmpty]协程中
+     *
+     * @param action 断开连接时的回调
+     */
+    fun onDisconnect(action: () -> Unit): Job {
+        return connector.connectScopeOrEmpty().launch {
+            connector.connectState.first { it == BluetoothConnectState.Disconnected }.also { action() }
+        }
+    }
 }
 
 /**
@@ -142,8 +148,7 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
         protocols.remove(protocol)
     }
 
-    private suspend fun findProtocol(dev: BluetoothDevice, connector: BLEConnector): BLEProtocol<T>? =
-        protocols.firstOrNull { it.isSupport(dev, connector) }
+    private suspend fun findProtocol(dev: BluetoothDevice, connector: BLEConnector): BLEProtocol<T>? = protocols.firstOrNull { it.isSupport(dev, connector) }
 
     override suspend fun connect(dev: BluetoothDevice, devScope: CoroutineScope): Result<BLEDevice<T>> {
         val mac = dev.address
@@ -193,13 +198,13 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
                 dev = dev, //
                 connector = connector, //
                 identifier = protocol, //
-                sender = sender, //
-                onDisconnected = { mac ->
-                    Log.d(TAG, "$mac: 设备已断开连接, 移除持有对象")
-                    devsMap.remove(mac)
-                }
+                sender = sender
             )
             devsMap[mac] = bleDevice
+            bleDevice.onDisconnect {
+                Log.d(TAG, "$mac: 设备已断开连接, 移除持有对象")
+                devsMap.remove(mac)
+            }
             Log.d(TAG, "$mac: 连接流程结束, 连接成功")
             return Result.success(bleDevice)
         }
@@ -233,8 +238,7 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
 
     override fun state(mac: String): Flow<BluetoothConnectState>? = get(mac)?.state
 
-    override fun onType(mac: String, target: T?, block: (ByteArray) -> Unit) =
-        get(mac)?.onType(target, block) ?: {}
+    override fun onType(mac: String, target: T?, block: (ByteArray) -> Unit) = get(mac)?.onType(target, block) ?: {}
 }
 
 /**
