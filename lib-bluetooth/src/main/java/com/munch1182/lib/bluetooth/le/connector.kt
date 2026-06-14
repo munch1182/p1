@@ -232,6 +232,9 @@ class BLEConnector(
         }
     }
 
+    /** 返回所有服务， 应该在执行[discoverServices]之后才能查询 */
+    fun allServices() = synchronized(_gattLock) { _gatt?.services }
+
     /** 在指定服务中根据正则查找特征 */
     fun findCharacteristic(service: BluetoothGattService, pattern: String): BluetoothGattCharacteristic? {
         val regex = Regex(pattern, RegexOption.IGNORE_CASE)
@@ -286,10 +289,9 @@ class BLEConnector(
                     _gatt?.writeDescriptor(descriptor, value) == BluetoothStatusCodes.SUCCESS
                 } else {
                     _gatt?.let {
-                        @Suppress("DEPRECATION")
+                        @Suppress("DEPRECATION")  //
                         descriptor.value = value
-                        @Suppress("DEPRECATION")
-                        it.writeDescriptor(descriptor)
+                        @Suppress("DEPRECATION") it.writeDescriptor(descriptor)
                     } == true
                 }
             }
@@ -374,10 +376,7 @@ class BLEConnector(
 
 /** 蓝牙连接状态枚举 */
 enum class BluetoothConnectState {
-    Disconnected,
-    Connecting,
-    Connected,
-    Disconnecting
+    Disconnected, Connecting, Connected, Disconnecting
 }
 
 /** 状态判断简化 */

@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.sample
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
@@ -83,13 +85,15 @@ class BleScanViewModel @Inject constructor() : ViewModel() {
         deviceMap.clear()
         _devices.value = emptyList()
 
+        val scanBuffMap = mutableMapOf<String, ScanResult>()
+
         scanJob = viewModelScope.launchIO {
             leScanFlow()
+                .onEach { scanBuffMap[it.device.address] = it }
                 .sample(500.milliseconds)
+                .map { scanBuffMap.values.toList() }
                 .catch { _isScanning.value = false }
-                .collect { result ->
-                    addOrUpdateDevice(result)
-                }
+                .collect(::addOrUpdateDevice)
         }
     }
 
@@ -101,19 +105,21 @@ class BleScanViewModel @Inject constructor() : ViewModel() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun addOrUpdateDevice(result: ScanResult) {
-        val dev = result.device
-        val rawBytes = result.scanRecord?.bytes
-        val records = rawBytes?.let { BLEScanRecordHelper.parseScanRecord(it) } ?: emptyList()
-        val name = result.scanRecord?.deviceName ?: runCatching { dev.name }.getOrNull()
+    private fun addOrUpdateDevice(scanned: List<ScanResult>) {
+        scanned.forEach { result ->
+            val dev = result.device
+            val rawBytes = result.scanRecord?.bytes
+            val records = rawBytes?.let { BLEScanRecordHelper.parseScanRecord(it) } ?: emptyList()
+            val name = result.scanRecord?.deviceName ?: runCatching { dev.name }.getOrNull()
 
-        deviceMap[dev.address] = ScannedDevice(
-            device = dev,
-            name = name,
-            records = records,
-            rawBytes = rawBytes,
-            rssi = result.rssi,
-        )
+            deviceMap[dev.address] = ScannedDevice(
+                device = dev,
+                name = name,
+                records = records,
+                rawBytes = rawBytes,
+                rssi = result.rssi,
+            )
+        }
         _devices.value = deviceMap.values.toList()
     }
 

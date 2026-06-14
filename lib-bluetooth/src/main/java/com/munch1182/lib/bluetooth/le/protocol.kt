@@ -37,7 +37,7 @@ class BLESender(private val connector: BLEConnector, private val writer: Bluetoo
  * 最简协议：仅建立 GATT 连接，不进行任何业务初始化
  * 作为兜底协议，优先级最低
  */
-object GattConnectProtocol : BLEProtocol<String> {
+class GattConnectProtocol<T> : BLEProtocol<T> {
     override val protocolId = Int.MIN_VALUE
     override fun identifyType(data: ByteArray) = null
     override suspend fun isSupport(dev: BluetoothDevice, connector: BLEConnector) = true

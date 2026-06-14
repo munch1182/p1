@@ -2,7 +2,7 @@
 
 import android.bluetooth.BluetoothDevice
 import com.munch1182.lib.android.Log
-import com.munch1182.lib.common.launchIO
+import com.munch1182.lib.android.logger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -30,7 +30,7 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 class BLEDevice<T : Any>(
     val dev: BluetoothDevice, //
-    private val connector: BLEConnector, //
+    val connector: BLEConnector, //
     identifier: BLETypeIdentifier<T>, //
     sender: BLEDataSender, //
     private val dataHelper: BLEDataHelper<T> = BLEDataHelper(connector.connectScopeOrEmpty(), identifier, sender, connector),
@@ -152,12 +152,13 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
 
     override suspend fun connect(dev: BluetoothDevice, devScope: CoroutineScope): Result<BLEDevice<T>> {
         val mac = dev.address
+        val log = logger("connect-$mac")
         get(mac)?.let {
-            Log.d(TAG, "$mac: 发起连接但设备已经连接, 返回该对象")
+            log.e("$mac: 发起连接但设备已经连接, 返回该对象")
             return Result.success(it)
         }
         connectTask[mac]?.let {
-            Log.d(TAG, "$mac: 发起连接但已经有连接任务在执行, 等待连接结果")
+            log.e("$mac: 发起连接但已经有连接任务在执行, 等待连接结果")
             return it.await()
         }
         val deferred = CompletableDeferred<Result<BLEDevice<T>>>()
@@ -169,18 +170,18 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
 
             fun cleanupAndFail(error: BLEConnectErr): Result<BLEDevice<T>> {
                 connector.disconnect()
-                Log.d(TAG, "$mac: 连接流程结束, 连接失败: $error")
+                log.e("$mac: 连接流程结束, 连接失败: $error")
                 return Result.failure(BLEConnectException(error))
             }
 
             connector.connect()
-            Log.d(TAG, "$mac: 开始连接流程, 发起连接, 等待连接结果")
+            log.d("$mac: 开始连接流程, 发起连接, 等待连接结果")
             if (!connector.awaitConnected()) return cleanupAndFail(BLEConnectErr.Connect)
             if (connector.discoverServices()?.isSuccess != true) return cleanupAndFail(BLEConnectErr.DiscoverService)
-            Log.d(TAG, "$mac: 连接成功, 发现服务成功")
+            log.d("$mac: 连接成功, 发现服务成功")
 
             val protocol = findProtocol(dev, connector) ?: return cleanupAndFail(BLEConnectErr.FindProtocol)
-            Log.d(TAG, "$mac: 找到协议: ${protocol.protocolId}, 执行协议处理")
+            log.d("$mac: 找到协议: ${protocol.protocolId}, 执行协议处理")
 
             val protocolResult = protocol.connect(connector)
             if (protocolResult.isFailure) {
@@ -202,10 +203,10 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
             )
             devsMap[mac] = bleDevice
             bleDevice.onDisconnect {
-                Log.d(TAG, "$mac: 设备已断开连接, 移除持有对象")
+                log.d("$mac: 设备已断开连接, 移除持有对象")
                 devsMap.remove(mac)
             }
-            Log.d(TAG, "$mac: 连接流程结束, 连接成功")
+            log.d("$mac: 连接流程结束, 连接成功")
             return Result.success(bleDevice)
         }
 

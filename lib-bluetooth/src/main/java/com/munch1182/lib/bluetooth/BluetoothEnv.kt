@@ -4,6 +4,7 @@ import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.content.Intent
 import androidx.annotation.RequiresPermission
 import com.munch1182.lib.android.AppHelper
 
@@ -28,7 +29,13 @@ interface IBluetoothEnv {
      */
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun getConnectedDevs() = bm?.getConnectedDevices(BluetoothProfile.GATT)
+
 }
+
+/**
+ * 请求打开蓝牙开关的intent
+ */
+val enableBluetoothIntent get() = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
 
 /**
  * 实现一个[IBluetoothEnv]

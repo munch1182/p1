@@ -1,6 +1,7 @@
 package com.munch1182.feature.bluetooth.connect
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
@@ -28,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -37,30 +40,20 @@ import com.munch1182.core.ui.AccordionLabelItem
 import com.munch1182.core.ui.SplitH
 import com.munch1182.core.ui.theme.Dimens
 import com.munch1182.core.ui.theme.paddingPage
+import com.munch1182.lib.bluetooth.le.BLECharacteristic
+import com.munch1182.lib.bluetooth.le.BLEServiceInfo
+import com.munch1182.lib.bluetooth.le.BluetoothConnectState
+import com.munch1182.lib.bluetooth.le.asBleUuid2ShortIfCan
 import com.munch1182.lib.bluetooth.le.isConnected
 import com.munch1182.lib.bluetooth.le.isDisconnected
 
-//region Mock Data Models
 
-data class MockCharacteristic(
-    val uuid: String,
-    val properties: List<String>,
-    val value: String? = null,
-)
-
-data class BLEServiceInfo(
-    val uuid: String,
-    val name: String,
-    val characteristics: List<MockCharacteristic>,
-)
-
-data class MockTestProtocol(
+data class BLECommonProtocol(
     val name: String,
     val status: String,
     val description: String,
 )
 
-//endregion
 
 @Composable
 fun BluetoothConnect(
@@ -74,6 +67,9 @@ fun BluetoothConnect(
     var showServices by remember { mutableStateOf(false) }
     val state by vm.state.collectAsStateWithLifecycle()
     val errMsg by vm.errMsg.collectAsStateWithLifecycle("")
+
+    LaunchedEffect(Unit) { vm.initProtocols() }
+    LaunchedEffect(Unit) { vm.toggleConnect(address) }
 
     LaunchedEffect(state.connectState) {
         if (state.connectState.isConnected) {
@@ -92,7 +88,7 @@ fun BluetoothConnect(
             name = deviceName,
             address = address,
             mtu = mtu,
-            isConnected = state.connectState.isConnected,
+            connectState = state.connectState,
             onConnectToggle = { vm.toggleConnect(address) },
         )
 
@@ -109,11 +105,7 @@ fun BluetoothConnect(
 
             SplitH()
 
-            /*TestProtocolSection(
-                expanded = showTestProtocols,
-                onToggle = { showTestProtocols = !showTestProtocols },
-                protocols = testProtocols,
-            )*/
+            BTSppSection(address, vm)
         } else {
             Text(text = errMsg, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
         }
@@ -121,13 +113,19 @@ fun BluetoothConnect(
 }
 
 @Composable
+private fun BTSppSection(address: String, vm: BluetoothConnectViewModel) {
+    
+}
+
+@Composable
 private fun DeviceHeader(
     name: String,
     address: String,
     mtu: Int,
-    isConnected: Boolean,
+    connectState: BluetoothConnectState,
     onConnectToggle: () -> Unit,
 ) {
+    val isConnected = connectState.isConnected
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(Dimens.PaddingPage)) {
             Row(
@@ -155,19 +153,25 @@ private fun DeviceHeader(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                MtuBadge(mtu)
+                if (isConnected) MtuBadge(mtu)
             }
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = Dimens.PaddingItem),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
                 Text(
-                    text = if (isConnected) "断开" else "连接",
+                    text = when (connectState) {
+                        BluetoothConnectState.Disconnected -> "连接蓝牙"
+                        BluetoothConnectState.Connecting -> "连接中..."
+                        BluetoothConnectState.Connected -> "已连接,点击断开"
+                        BluetoothConnectState.Disconnecting -> "断开中..."
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     color = if (isConnected) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = Dimens.PaddingItem, vertical = Dimens.PaddingItemHalf),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Dimens.PaddingItem))
+                        .clickable(onClick = onConnectToggle)
+                        .padding(horizontal = Dimens.PaddingPage, vertical = Dimens.PaddingItemHalf),
                 )
             }
         }
@@ -206,9 +210,7 @@ private fun ServicesSection(
             )
         },
         content = {
-            LazyColumn {
-                items(services, key = { it.uuid }) { service -> ServiceCard(service) }
-            }
+            LazyColumn { items(services, key = { it.uuid }) { service -> ServiceCard(service) } }
         },
     )
 }
@@ -248,30 +250,29 @@ private fun ServiceCard(service: BLEServiceInfo) {
 }
 
 @Composable
-private fun CharacteristicRow(ch: MockCharacteristic) {
+private fun CharacteristicRow(ch: BLECharacteristic) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = Dimens.PaddingItem / 2),
+            .padding(vertical = Dimens.PaddingItemHalf),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = ch.uuid,
+            text = ch.uuid.asBleUuid2ShortIfCan(),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.width(48.dp),
         )
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Dimens.PaddingItem),
+            modifier = Modifier.padding(start = Dimens.PaddingItem),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 ch.properties.forEach { prop -> PropertyChip(prop) }
             }
-            if (ch.value != null) {
+            val value = ch.value
+            if (value != null) {
                 Text(
-                    text = ch.value,
+                    text = value,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -308,7 +309,7 @@ private fun PropertyChip(property: String) {
 private fun TestProtocolSection(
     expanded: Boolean,
     onToggle: () -> Unit,
-    protocols: List<MockTestProtocol>,
+    protocols: List<BLECommonProtocol>,
 ) {
     AccordionLabelItem(
         expanded = expanded,
@@ -350,7 +351,7 @@ private fun TestProtocolSection(
 }
 
 @Composable
-private fun TestProtocolRow(protocol: MockTestProtocol) {
+private fun TestProtocolRow(protocol: BLECommonProtocol) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

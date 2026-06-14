@@ -11,23 +11,13 @@ import com.munch1182.core.ui.theme.Dimens
 import com.munch1182.core.ui.theme.paddingPage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.Direction
 
 private val homeItems: List<Direction>
-    get() {
-        val list = mutableListOf<Direction>()
-        NavGraphs.app.destinations.forEach {
-            if (it is Direction) list.add(it)
-
-        }
-        NavGraphs.app.nestedNavGraphs.forEach {
-            for (it in it.destinations) {
-                if (it is Direction) list.add(it)
-            }
-        }
-        return list
-    }
+    get() = NavGraphs.app.destinations.filterIsInstance<Direction>().filter { it !is HomeScreenDestination } +
+            NavGraphs.app.nestedNavGraphs.flatMap { it.destinations.filterIsInstance<Direction>() }
 
 @Destination<AppGraph>(start = true)
 @Composable

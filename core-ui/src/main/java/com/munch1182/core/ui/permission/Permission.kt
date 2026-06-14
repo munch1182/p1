@@ -1,7 +1,9 @@
 package com.munch1182.core.ui.permission
 
 import android.Manifest
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.content.Intent
 import android.os.Build
 import android.view.View
 import android.view.ViewGroup
@@ -24,12 +26,12 @@ import com.munch1182.core.ui.dialog.DialogFactory
 import com.munch1182.core.ui.theme.paddingPage
 import com.munch1182.lib.android.IPrompt
 import com.munch1182.lib.android.awaitResult
+import com.munch1182.lib.android.enableLocationIntent
 import com.munch1182.lib.android.enableNotificationIntent
 import com.munch1182.lib.android.hasNotificationPermission
 import com.munch1182.lib.android.isLocationEnable
 import com.munch1182.lib.android.isNotificationEnable
 import com.munch1182.lib.android.isPermissionGranted
-import com.munch1182.lib.android.locationEnableIntent
 import com.munch1182.lib.android.result.PermissionDialogProvider
 import com.munch1182.lib.android.result.PermissionDialogTarget
 import com.munch1182.lib.android.result.PermissionPrompt
@@ -43,54 +45,45 @@ import com.munch1182.lib.common.launchMain
  * 检查蓝牙权限，兼容不同 Android 版本。
  */
 fun checkBluetoothPermission(
-    act: FragmentActivity = currAsFragmentActivityOrThrow,
-    analytics: AnalyticsTracker? = null,
-    granted: (Boolean) -> Unit
+    act: FragmentActivity = currAsFragmentActivityOrThrow, analytics: AnalyticsTracker? = null, granted: (Boolean) -> Unit
 ) {
-    val onGranted = { result: Boolean ->
+    val onGranted: (Boolean) -> Unit = { result: Boolean ->
         analytics?.trackEvent("checkBluetoothPermission", mapOf("授权状态" to result))
-        granted.invoke(result)
+        if (result) {
+            act.lifecycleScope.launchMain {
+                val bm = act.getSystemService(BluetoothManager::class.java)
+                val allResult = if (!bm.adapter.isEnabled) {
+                    act.requestResult(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+                    bm.adapter.isEnabled
+                } else true
+                granted.invoke(allResult)
+            }
+        } else {
+            granted.invoke(false)
+        }
     }
 
     act.lifecycleScope.launchMain {
-        val bm = act.getSystemService(BluetoothManager::class.java)
-        if (!bm.adapter.isEnabled) {
-            act.requestResult(enableNotificationIntent)
-            if (!bm.adapter.isEnabled) return@launchMain onGranted.invoke(false)
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val permission = arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
             if (permission.all { it.isPermissionGranted() }) return@launchMain onGranted.invoke(true)
-            val result = act.requestPermissionWithHelper(permission)
-                .dialogProvider(onNormalPermission("蓝牙", "扫描和查找附近蓝牙设备"))
-                .settingIntent()
-                .request()
-                .isAllGranted()
+            val result = act.requestPermissionWithHelper(permission).dialogProvider(onNormalPermission("蓝牙", "扫描和查找附近蓝牙设备")).settingIntent().request().isAllGranted()
             onGranted.invoke(result)
         } else {
             if (!isLocationEnable()) {
                 val isAllow = DialogFactory.newYesNoDialog("蓝牙需要开启定位权限", "定位权限").awaitResult() ?: false
                 if (!isAllow) return@launchMain onGranted.invoke(false)
-                act.requestResult(locationEnableIntent)
+                act.requestResult(enableLocationIntent)
                 if (!isLocationEnable()) return@launchMain onGranted.invoke(false)
             }
             val locPermission = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
             if (!locPermission.all { it.isPermissionGranted() }) {
-                val locGranted = act.requestPermissionWithHelper(locPermission)
-                    .dialogProvider(onNormalPermission("定位", "扫描和查找附近蓝牙设备"))
-                    .settingIntent()
-                    .request()
-                    .isAllGranted()
+                val locGranted = act.requestPermissionWithHelper(locPermission).dialogProvider(onNormalPermission("定位", "扫描和查找附近蓝牙设备")).settingIntent().request().isAllGranted()
                 if (!locGranted) return@launchMain onGranted.invoke(false)
             }
             val bluePermission = arrayOf(Manifest.permission.BLUETOOTH)
             if (!bluePermission.all { it.isPermissionGranted() }) {
-                val result = act.requestPermissionWithHelper(bluePermission)
-                    .dialogProvider(onNormalPermission("蓝牙", "扫描/连接蓝牙设备"))
-                    .settingIntent()
-                    .request()
-                    .isAllGranted()
+                val result = act.requestPermissionWithHelper(bluePermission).dialogProvider(onNormalPermission("蓝牙", "扫描/连接蓝牙设备")).settingIntent().request().isAllGranted()
                 return@launchMain onGranted.invoke(result)
             }
             return@launchMain onGranted.invoke(true)
@@ -102,8 +95,7 @@ fun checkBluetoothPermission(
  * 检查通知权限，兼容不同 Android 版本。
  */
 fun checkNotificationPermission(
-    act: FragmentActivity = currAsFragmentActivityOrThrow,
-    granted: (Boolean) -> Unit
+    act: FragmentActivity = currAsFragmentActivityOrThrow, granted: (Boolean) -> Unit
 ) {
     if (hasNotificationPermission()) {
         return granted(true)
@@ -119,10 +111,7 @@ fun checkNotificationPermission(
         }
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         act.lifecycleScope.launchMain {
-            val result = act.requestPermissionWithHelper(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
-                .dialogProvider(onNormalPermission("通知", "通知权限"))
-                .settingIntent()
-                .request()
+            val result = act.requestPermissionWithHelper(arrayOf(Manifest.permission.POST_NOTIFICATIONS)).dialogProvider(onNormalPermission("通知", "通知权限")).settingIntent().request()
             granted(result.isAllGranted())
         }
     } else {
