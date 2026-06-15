@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
@@ -14,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Shape
 import com.munch1182.core.ui.theme.Dimens
 
 /**
@@ -25,7 +28,11 @@ fun AccordionItem(
     expanded: Boolean, modifier: Modifier = Modifier, onToggle: () -> Unit, title: @Composable () -> Unit, content: @Composable () -> Unit
 ) {
     Column(modifier = modifier) {
-        Row(modifier = Modifier.clickable(onClick = onToggle)) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(Dimens.PaddingItem))
+                .clickable(onClick = onToggle)
+        ) {
             title()
         }
         AnimatedVisibility(visible = expanded) { content() }

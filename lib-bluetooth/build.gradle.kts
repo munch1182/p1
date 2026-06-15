@@ -5,8 +5,10 @@ plugins {
 android {
     namespace = "com.munch1182.lib.bluetooth"
 }
+
+
 dependencies {
-    implementation(libs.androidx.annotation.jvm)
+    compileOnly(libs.androidx.annotation.jvm)
     implementation(projects.libCommon)
     implementation(projects.libAndroid)
     implementation(libs.kotlinx.coroutines.core)

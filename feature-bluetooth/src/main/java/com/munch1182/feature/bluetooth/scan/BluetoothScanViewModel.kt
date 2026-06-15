@@ -96,7 +96,7 @@ class BluetoothScanViewModel @Inject constructor(private val analytics: Analytic
         scanJob = viewModelScope.launchIO {
             leScanFlow()
                 .onEach { scanBuffMap[it.device.address] = it }
-                .sample(600.milliseconds)
+                .sample(1000.milliseconds)
                 .map { scanBuffMap.values.toList() }
                 .catch { _isScanning.value = false }
                 .collect(::addOrUpdateDevice)

@@ -27,7 +27,7 @@ build/
 
 # Signing files
 .signing/
-signing.properties
+# signing.properties 示例使用
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -51,7 +51,7 @@ captures/
 *.swp
 
 # Keystore files
-*.jks
+# *.jks # 作为示例app, 不禁用密钥上传, 正式项目不得上传到公开库中
 *.keystore
 
 # Google Services (e.g. APIs or Firebase)
@@ -139,5 +139,6 @@ fabric.properties
 # End of https://www.toptal.com/developers/gitignore/api/androidstudio
 
 .kotlin
-gradle/signing.properties
 .code
+/release
+/apk

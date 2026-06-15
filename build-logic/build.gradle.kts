@@ -15,7 +15,7 @@ dependencies {
 gradlePlugin {
     plugins {
         create("renameApk") {
-            id = "com.munch1182.android.rename-apk"
+            id = "com.munch1182.android.renameApk"
             implementationClass = "ApkCopyRenamePlugin"
         }
     }

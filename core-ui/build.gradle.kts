@@ -20,6 +20,8 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.fragment.ktx)
 
+    implementation(libs.kotlinx.coroutines.core)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

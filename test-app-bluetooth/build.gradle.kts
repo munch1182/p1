@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.google.hilt)
+    id("com.munch1182.android.renameApk")
 }
 
 android {
@@ -11,6 +12,10 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+renameApk {
+    toDir = file("../apk")
 }
 
 dependencies {

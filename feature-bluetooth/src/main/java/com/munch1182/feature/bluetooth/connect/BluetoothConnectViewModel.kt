@@ -35,7 +35,6 @@ class BluetoothConnectViewModel @Inject constructor(
     private val log = logger()
 
     fun toggleConnect(address: String) {
-        log.d("toggleConnect $address, curr(${_state.value})")
         _errMsg.tryEmit("")
         when (_state.value.connectState) {
             BluetoothConnectState.Disconnected -> startConnect(address)
@@ -45,7 +44,6 @@ class BluetoothConnectViewModel @Inject constructor(
     }
 
     fun toggleSppConnect(address: String, sppUuid: String = SPP_DEFAULT_UUID.toString()) {
-
     }
 
     private fun waitUntilDisconnected(address: String) {}

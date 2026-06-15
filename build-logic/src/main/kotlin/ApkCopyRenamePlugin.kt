@@ -56,6 +56,7 @@ class ApkCopyRenamePlugin : Plugin<Project> {
                 return@rename fileName
             }
             doLast {
+                from.get().asFile.deleteRecursively() // 删除生成的文件
                 println("文件已重命名并复制到: ${extension.toDir.get()}")
             }
         }
