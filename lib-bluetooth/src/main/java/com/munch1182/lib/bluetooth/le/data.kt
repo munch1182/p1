@@ -5,17 +5,15 @@ import com.munch1182.lib.android.invokeOnCompletion
 import com.munch1182.lib.common.launchIO
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.coroutines.resume
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -214,7 +212,7 @@ class BLEDataHelper<T : Any>(
     }
 
     // 管理订阅（线程安全）
-    private val subscriptions = CopyOnWriteArrayList<Subscription<T>>()
+    private val subscriptions = ConcurrentHashMap.newKeySet<Subscription<T>>()
 
     // 串行化发送的互斥锁
     private val sendMutex = Mutex()
@@ -254,43 +252,35 @@ class BLEDataHelper<T : Any>(
         }
     }
 
-
     /**
-     * 根据数据包类型监听数据接收。
+     * 创建一个 [Flow]，用于接收指定类型 `T` 的数据。
      *
-     * 当设备上报的数据经 [BLETypeIdentifier.identifyType] 识别出的类型与 [type] 匹配时（或 [type] 为 `null` 时匹配所有数据），
-     * 会回调 [block] 并传入原始字节数据。
-     * 此方法不会受到其它方法影响接收的数据，也不会影响其它方法接收到的数据；
+     * 该函数基于 [callbackFlow] 实现，内部将订阅信息存入 `subscriptions` 集合。
+     * 当 Flow 的收集结束时（例如协程取消或 Flow 完成），会自动从 `subscriptions` 中移除订阅，
+     * 无需手动调用取消函数，从而避免内存泄露。
      *
+     * @param type 可选的目标类型，用于过滤需要接收的数据。
+     *             当 `type == null` 时，订阅所有类型的数据。
+     * @return 返回一个 [Flow]<[ByteArray]>，收集该 Flow 即可收到匹配 `type` 的数据。
+     *         建议在生命周期感知的协程作用域内收集（如 `lifecycleScope`、`viewModelScope`），
+     *         收集结束时订阅会自动清理。
      *
-     * ### 生成周期说明
-     * 返回一个取消函数（`() -> Unit`）。
-     * 未调用该函数则会一直接收数据。
-     * 调用该函数可移除本次注册的监听器，并停止接收后续数据。
-     * 当[scope]取消时，仍未被取消的监听器也会被自动取消；
-     *
-     * 典型用法：
-     * ```kotlin
-     * val cancel = helper.onType(MyType.TEMP) { data ->
-     *     // 处理温度数据
+     * 使用示例：
+     * ```
+     * // 在 Activity 中接收类型为 "image" 的数据
+     * lifecycleScope.launch {
+     *     onType<String>("image").collect { bytes ->
+     *         // 处理 bytes
+     *     }
      * }
-     * // 当不再需要监听时：
-     * cancel()
      * ```
      *
-     * ### 重复注册的处理
-     * - 如果使用**完全相同的** `(type, block)` 多次调用本函数，每次调用都会创建一个独立的订阅。
-     * - 因此，同一个 `block` 可能会被多次添加，当匹配的数据到达时，该 [block] 会被调用**多次**（每次订阅独立回调）。
-     * - 如果需要避免重复，建议调用方自行维护去重逻辑，或在添加前先手动取消已有的相同订阅。
-     *
-     * @param type 要监听的数据类型；若为 `null` 则监听所有类型的数据。
-     * @param block 数据接收回调，参数为原始字节数组。回调在 [scope] 指定的协程上下文中异步执行。
-     * @return 取消函数，调用后该订阅立即失效。多次调用取消函数是安全的，重复取消不会有副作用。
+     * @see callbackFlow 底层实现，注意在协程作用域外收集可能导致泄露。
      */
-    fun onType(type: T? = null, block: (ByteArray) -> Unit): () -> Unit {
-        val sub = Subscription(type, block)
+    fun onType(type: T? = null) = callbackFlow {
+        val sub = Subscription(type) { trySend(it) }
         subscriptions.add(sub)
-        return { subscriptions.remove(sub) }
+        awaitClose { subscriptions.remove(sub) }
     }
 
     /**
@@ -378,19 +368,4 @@ class BLEDataHelper<T : Any>(
 
     // 内部包装：一个类型可以对应多个回调
     private data class Subscription<T>(val target: T?, val onData: (ByteArray) -> Unit)
-}
-
-/**
- * 监听下一包的数据，然后取消监听; 如果超时，返回null；
- */
-suspend fun <T : Any> BLEDataHelper<T>.onNext(type: T? = null, timeout: Duration = 3000.milliseconds) = withTimeoutOrNull(timeout) {
-    suspendCancellableCoroutine { cont ->
-        val cancelOnType = onType(type) { data ->
-            if (cont.isActive) {
-                cont.resume(data)
-                cancel()
-            }
-        }
-        cont.invokeOnCancellation { cancelOnType() }
-    }
 }

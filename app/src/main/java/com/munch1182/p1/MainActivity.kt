@@ -9,8 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.munch1182.core.base.BaseActivity
 import com.munch1182.core.ui.PageAnimatedStyle
 import com.munch1182.core.ui.theme.P1Theme
@@ -53,12 +57,28 @@ annotation class AppGraph {
  * 导航
  */
 @Composable
-fun AppNavigation() {
+fun AppNavigation(env: EnvViewModel = hiltViewModel()) {
+    val navController = rememberNavController()
+    DisposableEffect(navController) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, arguments ->
+            env.analytics.trackScreen(
+                "OnDestinationChanged",
+                mapOf(
+                    "name" to (destination.route ?: "null"),
+                    "arguments" to (arguments?.toString() ?: "null")
+                )
+            )
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose {
+            navController.removeOnDestinationChangedListener(listener)
+        }
+    }
     P1Theme {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             DestinationsNavHost(
                 navGraph = NavGraphs.app, // NavGraphs是一个ksp生成的类
-                modifier = Modifier
+                navController = navController, modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
                     .padding(innerPadding), defaultTransitions = PageAnimatedStyle

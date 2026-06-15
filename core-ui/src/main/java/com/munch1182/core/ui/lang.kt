@@ -8,9 +8,9 @@ import com.munch1182.lib.android.DataHelper
 import com.munch1182.lib.common.get
 import com.munch1182.lib.common.launchIO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 private const val KEY_SAVE_LANG = "KEY_SAVE_LANG"
 

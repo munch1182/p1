@@ -1,7 +1,6 @@
 ﻿package com.munch1182.lib.bluetooth.le
 
 import android.bluetooth.BluetoothDevice
-import com.munch1182.lib.android.Log
 import com.munch1182.lib.android.logger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -48,7 +47,7 @@ class BLEDevice<T : Any>(
     suspend fun <R> send(cmd: BLECommand<T, R>, timeout: Duration = 15000.milliseconds) = dataHelper.send(cmd, timeout)
 
     /** 注册数据监听 */
-    fun onType(target: T? = null, block: (ByteArray) -> Unit) = dataHelper.onType(target, block)
+    fun onType(target: T? = null) = dataHelper.onType(target)
 
     /**
      * 等待设备断开连接
@@ -104,12 +103,18 @@ interface IBLEDeviceManager<T : Any> : Closeable {
     fun state(mac: String): Flow<BluetoothConnectState>?
 
     /**
-     * 注册数据接收回调
+     * 接收该设备的该类型的后续所有接收数据;
+     * 如果该设备未连接, 则会注册失败返回null;
+     * 如果target为null, 则会注册该设备的所有数据;
+     *
+     * 协程取消时会自动取消注册
      */
-    fun onType(mac: String, target: T?, block: (ByteArray) -> Unit): () -> Unit
+    fun onType(mac: String, target: T?): Flow<ByteArray>?
 
     /**
-     * 注册协议
+     * 注册协议, 当设备连接时, 会自动选择协议并执行相关操作;
+     *
+     * 协议注册应该在连接之前进行, 且不要重复注册
      */
     fun registerProtocol(protocol: BLEProtocol<T>)
 
@@ -124,13 +129,14 @@ interface IBLEDeviceManager<T : Any> : Closeable {
  */
 class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
 
-    companion object {
-        private const val TAG = "DefaultBLEDeviceManager"
-    }
-
     private val devsMap = ConcurrentHashMap<String, BLEDevice<T>>()
     private val protocols = CopyOnWriteArrayList<BLEProtocol<T>>()
     private val connectTask = ConcurrentHashMap<String, CompletableDeferred<Result<BLEDevice<T>>>>()
+    private val logger = logger()
+
+    init {
+        logger.d("IBLEDeviceManager: init")
+    }
 
     override fun close() {
         devsMap.values.forEach { it.disconnect() }
@@ -138,9 +144,11 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
         protocols.clear()
         connectTask.values.forEach { it.cancel() }
         connectTask.clear()
+        logger.d("IBLEDeviceManager: close all")
     }
 
     override fun registerProtocol(protocol: BLEProtocol<T>) {
+
         protocols.add(protocol)
     }
 
@@ -164,6 +172,7 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
         val deferred = CompletableDeferred<Result<BLEDevice<T>>>()
         val existing = connectTask.putIfAbsent(mac, deferred) // 阻止并发重复创建
         if (existing != null) return existing.await()
+        logger.d("开始连接, 添加(${mac})连接任务")
 
         suspend fun doConnect(): Result<BLEDevice<T>> {
             val connector = BLEConnector(dev, devScope)
@@ -220,12 +229,13 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
             result
         } finally {
             connectTask.remove(mac)
+            logger.d("连接结束, 移除(${mac})连接任务")
         }
     }
 
     override fun disconnect(mac: String) {
         val device = devsMap.remove(mac)
-        Log.d(TAG, "$mac: 断开连接${device?.dev?.address?.let { " ($it)" } ?: ""}")
+        logger.d("$mac: 断开连接${device?.dev?.address?.let { " ($it)" } ?: ""}")
         device?.disconnect()
     }
 
@@ -239,7 +249,7 @@ class DefaultBLEDeviceManager<T : Any> : IBLEDeviceManager<T> {
 
     override fun state(mac: String): Flow<BluetoothConnectState>? = get(mac)?.state
 
-    override fun onType(mac: String, target: T?, block: (ByteArray) -> Unit) = get(mac)?.onType(target, block) ?: {}
+    override fun onType(mac: String, target: T?) = get(mac)?.onType(target)
 }
 
 /**

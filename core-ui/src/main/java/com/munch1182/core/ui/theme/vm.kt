@@ -8,10 +8,10 @@ import com.munch1182.lib.common.AnalyticsTracker
 import com.munch1182.lib.common.get
 import com.munch1182.lib.common.launchIO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 /**
  * 主题类型。
@@ -19,6 +19,7 @@ import javax.inject.Inject
 sealed class ThemeType {
     /** 跟随系统动态颜色与深色模式。 */
     object FollowSystem : ThemeType()
+
     /** 手动选择的预设主题颜色。 */
     data class Preset(val id: Long) : ThemeType()
 }
@@ -41,6 +42,7 @@ typealias ThemeData = Pair<ThemeType, DarkMode>
 interface ThemeRepo {
     /** 获取当前主题数据 Flow。 */
     fun getThemeData(): Flow<ThemeData>
+
     /** 持久化保存主题设置。 */
     suspend fun setThemeData(type: ThemeType, mode: DarkMode)
 }

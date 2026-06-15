@@ -9,8 +9,10 @@ import com.munch1182.lib.android.logger
 import com.munch1182.lib.bluetooth.BLEScanRecordHelper
 import com.munch1182.lib.bluetooth.BLEScanRecordHelper.BlueRecord
 import com.munch1182.lib.bluetooth.le.leScanFlow
+import com.munch1182.lib.common.AnalyticsTracker
 import com.munch1182.lib.common.launchIO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +22,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.sample
-import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
 data class ScannedDevice(
@@ -57,7 +58,7 @@ data class ScannedDevice(
 }
 
 @HiltViewModel
-class BleScanViewModel @Inject constructor() : ViewModel() {
+class BluetoothScanViewModel @Inject constructor(private val analytics: AnalyticsTracker) : ViewModel() {
 
     private val _devices = MutableStateFlow<List<ScannedDevice>>(emptyList())
     val devices: StateFlow<List<ScannedDevice>> = _devices.asStateFlow()
@@ -70,6 +71,11 @@ class BleScanViewModel @Inject constructor() : ViewModel() {
 
     private val log = logger()
 
+    companion object {
+        private const val EVENT_START_SCAN = "BT_START_SCAN"
+        private const val EVENT_STOP_SCAN = "BT_STOP_SCAN"
+    }
+
     fun toggleScan() {
         if (isScanning.value) {
             stopScan()
@@ -80,7 +86,7 @@ class BleScanViewModel @Inject constructor() : ViewModel() {
 
     @OptIn(FlowPreview::class)
     private fun startScan() {
-        log.log("start scan")
+        analytics.trackEvent(EVENT_START_SCAN)
         _isScanning.value = true
         deviceMap.clear()
         _devices.value = emptyList()
@@ -90,18 +96,18 @@ class BleScanViewModel @Inject constructor() : ViewModel() {
         scanJob = viewModelScope.launchIO {
             leScanFlow()
                 .onEach { scanBuffMap[it.device.address] = it }
-                .sample(500.milliseconds)
+                .sample(600.milliseconds)
                 .map { scanBuffMap.values.toList() }
                 .catch { _isScanning.value = false }
                 .collect(::addOrUpdateDevice)
         }
     }
 
-    private fun stopScan() {
+    fun stopScan() {
         scanJob?.cancel()
         scanJob = null
         _isScanning.value = false
-        log.log("stopScan")
+        analytics.trackEvent(EVENT_STOP_SCAN)
     }
 
     @SuppressLint("MissingPermission")

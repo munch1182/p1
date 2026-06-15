@@ -37,4 +37,7 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.ksp)
     implementation(libs.hilt.navigation.compose)
+
+    implementation(libs.compose.destinations)
+    ksp(libs.compose.destinations.ksp)
 }

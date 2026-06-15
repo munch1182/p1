@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.munch1182.core.base.NotSingleton
 import com.munch1182.lib.android.logger
 import com.munch1182.lib.bluetooth.BluetoothEnv
 import com.munch1182.lib.bluetooth.classic.SPP_DEFAULT_UUID
@@ -13,16 +14,19 @@ import com.munch1182.lib.bluetooth.le.BluetoothConnectState
 import com.munch1182.lib.bluetooth.le.GattConnectProtocol
 import com.munch1182.lib.bluetooth.le.IBLEDeviceManager
 import com.munch1182.lib.bluetooth.le.collectServiceInfo
+import com.munch1182.lib.common.closeQuietly
 import com.munch1182.lib.common.launchIO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
 
 @HiltViewModel
-class BluetoothConnectViewModel @Inject constructor(private val manager: IBLEDeviceManager<String>) : ViewModel() {
+class BluetoothConnectViewModel @Inject constructor(
+    @param:NotSingleton private val manager: IBLEDeviceManager<String>
+) : ViewModel() {
 
     private val _state = MutableStateFlow(BluetoothState())
     val state = _state.asStateFlow()
@@ -32,6 +36,7 @@ class BluetoothConnectViewModel @Inject constructor(private val manager: IBLEDev
 
     fun toggleConnect(address: String) {
         log.d("toggleConnect $address, curr(${_state.value})")
+        _errMsg.tryEmit("")
         when (_state.value.connectState) {
             BluetoothConnectState.Disconnected -> startConnect(address)
             BluetoothConnectState.Disconnecting -> waitUntilDisconnected(address)
@@ -88,11 +93,14 @@ class BluetoothConnectViewModel @Inject constructor(private val manager: IBLEDev
         _state.value = _state.value.copy(mtu = mtu, services = service)
     }
 
-    /**
-     * 初始化协议
-     */
-    fun initProtocols() {
-        manager.registerProtocol(GattConnectProtocol())
+    private val protocol = GattConnectProtocol<String>()
+
+    init {
+        manager.registerProtocol(protocol)
+    }
+
+    override fun onCleared() {
+        manager.closeQuietly() // 只在vm生命周期中使用, 配合IBLEDeviceManager的provider
     }
 }
 

@@ -1,7 +1,6 @@
 package com.munch1182.feature.bluetooth.scan
 
 import android.bluetooth.BluetoothDevice
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,15 +39,11 @@ import com.munch1182.lib.bluetooth.BLEScanRecordHelper.BlueRecord
 @Composable
 fun BluetoothScan(
     modifier: Modifier = Modifier,
-    vm: BleScanViewModel = hiltViewModel(),
+    vm: BluetoothScanViewModel = hiltViewModel(),
     onDeviceClick: (BluetoothDevice) -> Unit = {},
 ) {
     val devices by vm.devices.collectAsStateWithLifecycle()
     val isScanning by vm.isScanning.collectAsStateWithLifecycle()
-
-    DisposableEffect(Unit) {
-        onDispose { if (isScanning) vm.toggleScan() }
-    }
 
     Column(
         Modifier
@@ -61,7 +55,7 @@ fun BluetoothScan(
             text = if (isScanning) "停止扫描" else "开始扫描", //
             modifier = Modifier.fillMaxWidth(), //
             onClick = {
-                checkBluetoothPermission { if (it) vm.toggleScan() }
+                checkBluetoothPermission { if (it) vm.toggleScan() } // BleScanViewModel清除时会自动关闭扫描
             })
 
         if (isScanning && devices.isEmpty()) {
@@ -81,7 +75,10 @@ fun BluetoothScan(
             items(devices, key = { it.device.address }) { device ->
                 DeviceCard(
                     scanned = device,
-                    onClick = { onDeviceClick(device.device) },
+                    onClick = {
+                        vm.stopScan() // 操作前关闭扫描
+                        onDeviceClick(device.device)
+                    },
                     onLongClick = { showScanRecord(device) },
                 )
             }
@@ -89,7 +86,6 @@ fun BluetoothScan(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DeviceCard(scanned: ScannedDevice, onClick: () -> Unit, onLongClick: () -> Unit = {}) {
     Card(modifier = Modifier.fillMaxWidth()) {

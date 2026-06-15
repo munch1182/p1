@@ -17,6 +17,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.munch1182.core.ui.AccordionLabelItem
 import com.munch1182.core.ui.Checkbox
+import com.munch1182.core.ui.LanguageType
+import com.munch1182.core.ui.LanguageVM
 import com.munch1182.core.ui.PrimaryButton
 import com.munch1182.core.ui.ScrollPage
 import com.munch1182.core.ui.SplitH
@@ -28,10 +30,8 @@ import com.munch1182.core.ui.theme.ThemeVM
 import com.munch1182.core.ui.theme.colorRandom
 import com.munch1182.core.ui.theme.paddingPage
 import com.munch1182.lib.common.toARGBColorStr
-import com.munch1182.p1.R
-import com.munch1182.core.ui.LanguageType
-import com.munch1182.core.ui.LanguageVM
 import com.munch1182.p1.AppGraph
+import com.munch1182.p1.R
 import com.ramcosta.composedestinations.annotation.Destination
 
 /**

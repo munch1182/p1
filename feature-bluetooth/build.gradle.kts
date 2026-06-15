@@ -22,6 +22,7 @@ dependencies {
     implementation(projects.libAndroid)
     implementation(projects.libBluetooth)
     implementation(projects.coreUi)
+    implementation(projects.coreBase)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

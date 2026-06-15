@@ -54,21 +54,26 @@ data class BLECommonProtocol(
     val description: String,
 )
 
-
+/**
+ * 蓝牙连接ui及其相关逻辑
+ *
+ * @param address 蓝牙地址, 注意连接蓝牙设备时不会再去扫描设备是否存在, 而是直接使用此地址构建设备并连接,
+ *                因此在调用前需确定设备可连接
+ * @param deviceName 蓝牙设备名称
+ * @param onConnectToggle 连接状态改变时调用, 参数为连接成功/失败
+ */
 @Composable
 fun BluetoothConnect(
     address: String,
+    deviceName: String,
     modifier: Modifier = Modifier,
     vm: BluetoothConnectViewModel = hiltViewModel(),
-    deviceName: String = "Unknown",
-    mtu: Int = 512,
     onConnectToggle: (Boolean) -> Unit = {},
 ) {
     var showServices by remember { mutableStateOf(false) }
     val state by vm.state.collectAsStateWithLifecycle()
     val errMsg by vm.errMsg.collectAsStateWithLifecycle("")
 
-    LaunchedEffect(Unit) { vm.initProtocols() }
     LaunchedEffect(Unit) { vm.toggleConnect(address) }
 
     LaunchedEffect(state.connectState) {
@@ -87,7 +92,7 @@ fun BluetoothConnect(
         DeviceHeader(
             name = deviceName,
             address = address,
-            mtu = mtu,
+            mtu = state.mtu,
             connectState = state.connectState,
             onConnectToggle = { vm.toggleConnect(address) },
         )
@@ -114,7 +119,7 @@ fun BluetoothConnect(
 
 @Composable
 private fun BTSppSection(address: String, vm: BluetoothConnectViewModel) {
-    
+
 }
 
 @Composable
