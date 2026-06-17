@@ -5,7 +5,6 @@ import android.bluetooth.BluetoothAdapter
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.munch1182.core.base.NotSingleton
-import com.munch1182.lib.android.logger
 import com.munch1182.lib.bluetooth.BluetoothEnv
 import com.munch1182.lib.bluetooth.classic.SPP_DEFAULT_UUID
 import com.munch1182.lib.bluetooth.le.BLEDevice
@@ -32,7 +31,6 @@ class BluetoothConnectViewModel @Inject constructor(
     val state = _state.asStateFlow()
     private val _errMsg = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
     val errMsg = _errMsg.asSharedFlow()
-    private val log = logger()
 
     fun toggleConnect(address: String) {
         _errMsg.tryEmit("")

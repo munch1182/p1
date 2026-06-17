@@ -10,24 +10,9 @@ import android.os.Handler
 import com.munch1182.lib.android.ARManager
 import com.munch1182.lib.android.ARSyncManager
 import com.munch1182.lib.android.AppHelper
-import com.munch1182.lib.android.LifecycleBoundScope
 import com.munch1182.lib.android.Log
 import com.munch1182.lib.android.OnUpdateListener
 import com.munch1182.lib.android.getParcelableCompat
-import com.munch1182.lib.android.invokeOnCompletion
-import com.munch1182.lib.bluetooth.BluetoothEventFlow.event
-import com.munch1182.lib.bluetooth.BluetoothEventFlow.onOffState
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -92,72 +77,4 @@ class BluetoothReceiver : BroadcastReceiver(), IBluetoothStateHelper, ARManager<
         Log.d(TAG, "onBlueStateChange: $state")
         forEach { it.onUpdate(state) }
     }
-}
-
-/**
- * 蓝牙状态变更事件
- *
- * 会自动动态注册[BluetoothReceiver]
- *
- * @see onOffState
- * @see event
- */
-object BluetoothEventFlow {
-    private val receiver = BluetoothReceiver()
-
-    /**
-     * 监听广播的生命周期应该是全局的, 即使因为某些原因取消了广播监听, 也不影响事件流
-     */
-    private val scope = AppHelper
-
-    // 原始事件共享流（所有 BlueReceiverState 事件）
-    private val _events = MutableSharedFlow<BlueReceiverState>(
-        replay = 0, extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-
-    /**
-     * 获取蓝牙状态变更事件流
-     *
-     * 可使用filterIsInstance<BlueReceiverState.XXX>来过滤出指定的事件
-     *
-     * @see BlueReceiverState
-     */
-    val event = _events.asSharedFlow()
-
-    init {
-        receiver.register()
-        val listener = OnUpdateListener<BlueReceiverState> { event ->
-            _events.tryEmit(event)
-        }
-        receiver.add(listener)
-
-        // scope 取消时清理资源
-        scope.invokeOnCompletion {
-            receiver.remove(listener)
-            receiver.unregister()
-        }
-    }
-
-    /**
-     * 全局的蓝牙开关监听流
-     */
-    val onOffState: StateFlow<Boolean> = _events //
-        .filterIsInstance<BlueReceiverState.BlueOnOffStateChanged>() //
-        .map { it.state == BlueOnOffState.On } //
-        .distinctUntilChanged() //
-        .stateIn( //
-            scope = scope, started = SharingStarted.Eagerly, initialValue = BluetoothEnv.adapter?.isEnabled ?: false
-        )
-
-    /**
-     * 返回一个应用周期内, 蓝牙打开时有效关闭时无效的[LifecycleBoundScope];
-     *
-     * @see LifecycleBoundScope.currScopeOrEmpty 可以作为蓝牙活动的父scope, 以获取蓝牙关闭时自动关闭蓝牙连接/蓝牙发送的效果(但同时要处理对象的重建)
-     */
-    val onOffLifeBoundScope
-        get() = LifecycleBoundScope(
-            parentScope = AppHelper,
-            isActiveFlow = onOffState,
-            scopeContextAddition = SupervisorJob() + CoroutineName("BluetoothOnOffLifecycle")
-        )
 }

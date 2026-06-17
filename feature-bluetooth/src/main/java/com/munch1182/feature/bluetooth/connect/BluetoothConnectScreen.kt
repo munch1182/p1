@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,9 +38,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.munch1182.core.ui.AccordionLabelItem
+import com.munch1182.core.ui.PrimaryButton
+import com.munch1182.core.ui.RunningStateButton
 import com.munch1182.core.ui.SplitH
 import com.munch1182.core.ui.theme.Dimens
 import com.munch1182.core.ui.theme.paddingPage
+import com.munch1182.lib.bluetooth.BluetoothEnv
 import com.munch1182.lib.bluetooth.le.BLECharacteristic
 import com.munch1182.lib.bluetooth.le.BLEServiceInfo
 import com.munch1182.lib.bluetooth.le.BluetoothConnectState
@@ -110,7 +114,7 @@ fun BluetoothConnect(
 
             SplitH()
 
-            BTSppSection(address, vm)
+            if (state.connectState.isConnected) BTSppSection(address)
         } else {
             Text(text = errMsg, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
         }
@@ -118,8 +122,25 @@ fun BluetoothConnect(
 }
 
 @Composable
-private fun BTSppSection(address: String, vm: BluetoothConnectViewModel) {
+private fun BTSppSection(mac: String, vm: BluetoothSppViewModel = hiltViewModel()) {
+    val dev = BluetoothEnv.adapter?.getRemoteDevice(mac)
+    if (dev != null) {
+        val state by vm.state.collectAsStateWithLifecycle()
+        val receiver by vm.receiver.collectAsStateWithLifecycle(byteArrayOf())
+        val isConnected by remember { derivedStateOf { state.connectState.isConnected } }
+        Column {
+            RunningStateButton(isConnected, text = if (isConnected) "断开spp连接" else "发起spp连接") {
+                if (isConnected) vm.disconnect() else vm.connect(dev)
+            }
+            SplitH()
+            Text(state.msg, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
 
+            if (isConnected) {
+                SplitH()
+                PrimaryButton("发送") { vm.send(byteArrayOf(0x01)) }
+            }
+        }
+    }
 }
 
 @Composable
