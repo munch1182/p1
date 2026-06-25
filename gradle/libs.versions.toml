@@ -1,7 +1,7 @@
 [versions]
 agp = "9.1.1"
 hiltNavigationCompose = "1.4.0-beta01"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 composeBom = "2026.05.00"
 nav3Core = "1.1.1"
 hilt = "2.59.2"
@@ -49,6 +49,7 @@ androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", versi
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+# https://developer.android.google.cn/jetpack/androidx/releases/compose-material3?hl=zh-cn
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 #
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version = "2.11.0-beta01" }
@@ -81,18 +82,23 @@ compose-destinations-ksp = { module = "io.github.raamcosta.compose-destinations:
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-ksp = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+# 兼容hilt和kotlin, 使用ksp
+kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version = "2.4.0" }
 
 # https://github.com/Tencent/MMKV
 mmkv = { module = "com.tencent:mmkv", version = "2.4.0" }
 # https://developer.android.com/develop/ui/views/launch/splash-screen
-splashscreen = { module = "androidx.core:core-splashscreen", version = "1.0.1" }
+splashscreen = { module = "androidx.core:core-splashscreen", version = "1.2.0" }
+
+# https://github.com/Kotlin/kotlinx.serialization#android
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.11.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version = "9.1.1" }
-jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.3.21" }
+jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.4.0" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.3.21" }
+jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.4.0" }
 # https://kotlinlang.org/docs/ksp-quickstart.html
 # https://github.com/google/ksp/releases
 google-ksp = { id = "com.google.devtools.ksp", version = "2.3.7" }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,7 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import com.munch1182.core.ui.theme.Dimens
 
 /**
@@ -25,28 +26,36 @@ import com.munch1182.core.ui.theme.Dimens
  */
 @Composable
 fun AccordionItem(
-    expanded: Boolean, modifier: Modifier = Modifier, onToggle: () -> Unit, title: @Composable () -> Unit, content: @Composable () -> Unit
+    expanded: Boolean, modifier: Modifier = Modifier, space: Dp = Dimens.PaddingItem, onToggle: () -> Unit, title: @Composable () -> Unit, content: @Composable () -> Unit
 ) {
     Column(modifier = modifier) {
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(Dimens.PaddingItem))
+                .clip(RoundedCornerShape(space))
                 .clickable(onClick = onToggle)
         ) {
             title()
         }
-        AnimatedVisibility(visible = expanded) { content() }
+        Spacer(Modifier.height(space))
+        AnimatedVisibility(visible = expanded) {
+            Spacer(Modifier.height(space))
+            content()
+        }
     }
 }
 
 /**
  * 可折叠的内容区域组件，标题右侧带旋转箭头图标。
+ *
+ * @param modifier 标题内容的样式, 即title+icon的容器
+ * @param space 标题和内容之间的间距
  */
 @Composable
 fun AccordionLabelItem(
     expanded: Boolean, //
     modifier: Modifier = Modifier, //
     isEmptyContent: Boolean = false, //
+    space: Dp = Dimens.PaddingItem, //
     onToggle: () -> Unit = {}, //
     title: @Composable () -> Unit, //
     content: @Composable () -> Unit //
@@ -54,10 +63,11 @@ fun AccordionLabelItem(
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f, label = "arrow_rotation"
     )
-    AccordionItem(expanded, Modifier, onToggle, title = {
-        Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-            title()
-            Spacer(Modifier.weight(1f))
+    AccordionItem(expanded, Modifier, space = space, onToggle = onToggle, title = {
+        Row(
+            modifier = modifier, verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) { title() }
             if (!isEmptyContent) {
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier
@@ -66,5 +76,5 @@ fun AccordionLabelItem(
                 )
             }
         }
-    }, content)
+    }, content = content)
 }

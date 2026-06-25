@@ -28,9 +28,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.resume
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.coroutines.resume
 
 /**
  * 提供蓝牙环境, 主要是[BluetoothManager]和[BluetoothAdapter]
@@ -54,10 +54,29 @@ interface IBluetoothEnv {
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun getConnectedDevs() = bm?.getConnectedDevices(BluetoothProfile.GATT)
 
+    /**
+     * 回调蓝牙开关状态
+     */
     val onOffState: StateFlow<Boolean>
 
+    /**
+     * 回调蓝牙广播监听事件
+     */
     val event: SharedFlow<BlueReceiverState>
 
+    /**
+     * 返回一个应用周期内, 蓝牙打开时有效关闭时无效的[LifecycleBoundScope];
+     *
+     * @see LifecycleBoundScope.currScopeOrEmpty 可以作为蓝牙活动的父scope, 以获取蓝牙关闭时自动关闭蓝牙连接/蓝牙发送的效果(但同时要处理对象的重建)
+     */
+    val onOffLifeBoundScope: LifecycleBoundScope
+
+    /**
+     * 创建配对;
+     * 如果已配对, 直接返回true; 否则发起配对并监听配对成功/失败事件;
+     *
+     * 注意: 蓝牙配对需要用户确认, 因此超时时间应该更宽松;
+     */
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     suspend fun createBond(dev: BluetoothDevice, timeout: Duration = 15000.milliseconds): Boolean
 }
@@ -156,7 +175,7 @@ object BluetoothEnv : IBluetoothEnv {
      *
      * @see LifecycleBoundScope.currScopeOrEmpty 可以作为蓝牙活动的父scope, 以获取蓝牙关闭时自动关闭蓝牙连接/蓝牙发送的效果(但同时要处理对象的重建)
      */
-    val onOffLifeBoundScope
+    override val onOffLifeBoundScope
         get() = LifecycleBoundScope(
             parentScope = AppHelper,
             isActiveFlow = onOffState,

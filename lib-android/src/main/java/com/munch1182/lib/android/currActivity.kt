@@ -50,13 +50,14 @@ object ActivityCurrHelper {
             currentResumedActivity = null
             resumedCount--
             if (resumedCount == 0) _isAppForeground.value = false
+            Log.d(TAG, "onActivityPaused: curr: ${currentResumedActivity?.get()}: ${_isAppForeground.value}")
         }
 
         override fun onActivityResumed(p0: Activity) {
             currentResumedActivity = WeakReference(p0)
-            Log.d(TAG, "onActivityResumed: curr: ${currentResumedActivity?.get()}")
             if (resumedCount == 0) _isAppForeground.value = true
             resumedCount++
+            Log.d(TAG, "onActivityResumed: curr: ${currentResumedActivity?.get()}: ${_isAppForeground.value}")
         }
 
         override fun onActivitySaveInstanceState(p0: Activity, p1: Bundle) {

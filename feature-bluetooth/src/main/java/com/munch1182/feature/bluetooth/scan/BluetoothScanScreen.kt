@@ -55,7 +55,7 @@ fun BluetoothScan(
             text = if (isScanning) "停止扫描" else "开始扫描", //
             modifier = Modifier.fillMaxWidth(), //
             onClick = {
-                checkBluetoothPermission { if (it) vm.toggleScan() } // BleScanViewModel清除时会自动关闭扫描
+                checkBluetoothPermission { if (it) vm.toggleScan() } // BleScanViewModel清除时(等同页面退出)会自动关闭扫描
             })
 
         if (isScanning && devices.isEmpty()) {

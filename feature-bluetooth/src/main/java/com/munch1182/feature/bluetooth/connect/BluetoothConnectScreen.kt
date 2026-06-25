@@ -1,6 +1,5 @@
 package com.munch1182.feature.bluetooth.connect
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +22,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,12 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.munch1182.core.ui.AccordionLabelItem
-import com.munch1182.core.ui.PrimaryButton
-import com.munch1182.core.ui.RunningStateButton
 import com.munch1182.core.ui.SplitH
 import com.munch1182.core.ui.theme.Dimens
 import com.munch1182.core.ui.theme.paddingPage
-import com.munch1182.lib.bluetooth.BluetoothEnv
 import com.munch1182.lib.bluetooth.le.BLECharacteristic
 import com.munch1182.lib.bluetooth.le.BLEServiceInfo
 import com.munch1182.lib.bluetooth.le.BluetoothConnectState
@@ -111,34 +105,8 @@ fun BluetoothConnect(
                     services = state.services,
                 )
             }
-
-            SplitH()
-
-            if (state.connectState.isConnected) BTSppSection(address)
         } else {
             Text(text = errMsg, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-        }
-    }
-}
-
-@Composable
-private fun BTSppSection(mac: String, vm: BluetoothSppViewModel = hiltViewModel()) {
-    val dev = BluetoothEnv.adapter?.getRemoteDevice(mac)
-    if (dev != null) {
-        val state by vm.state.collectAsStateWithLifecycle()
-        val receiver by vm.receiver.collectAsStateWithLifecycle(byteArrayOf())
-        val isConnected by remember { derivedStateOf { state.connectState.isConnected } }
-        Column {
-            RunningStateButton(isConnected, text = if (isConnected) "断开spp连接" else "发起spp连接") {
-                if (isConnected) vm.disconnect() else vm.connect(dev)
-            }
-            SplitH()
-            Text(state.msg, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-
-            if (isConnected) {
-                SplitH()
-                PrimaryButton("发送") { vm.send(byteArrayOf(0x01)) }
-            }
         }
     }
 }
@@ -228,15 +196,21 @@ private fun ServicesSection(
     AccordionLabelItem(
         expanded = expanded,
         onToggle = onToggle,
+        modifier = Modifier.padding(horizontal = Dimens.PaddingItem),
         title = {
             Text(
                 "服务与特征 (${services.size})",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.paddingPage(),
+                modifier = Modifier.padding(Dimens.PaddingItem),
             )
         },
         content = {
-            LazyColumn { items(services, key = { it.uuid }) { service -> ServiceCard(service) } }
+            LazyColumn {
+                items(services, key = { it.uuid }) { service ->
+                    ServiceCard(service)
+                    Spacer(Modifier.size(Dimens.PaddingItemHalf))
+                }
+            }
         },
     )
 }
@@ -245,34 +219,38 @@ private fun ServicesSection(
 private fun ServiceCard(service: BLEServiceInfo) {
     var expanded by remember { mutableStateOf(false) }
 
-    AccordionLabelItem(
-        expanded = expanded,
-        modifier = Modifier.padding(start = Dimens.PaddingItem, end = Dimens.PaddingItem),
-        onToggle = { expanded = !expanded },
-        title = {
-            Column(modifier = Modifier.padding(vertical = Dimens.PaddingItem)) {
-                Text(
-                    text = service.name,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                )
-                Text(
-                    text = service.uuid,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        },
-        content = {
-            Column(modifier = Modifier.padding(start = Dimens.PaddingPage)) {
-                service.characteristics.forEach { characteristic ->
-                    CharacteristicRow(characteristic)
+    Card(modifier = Modifier.fillMaxWidth()) {
+        AccordionLabelItem(
+            expanded = expanded,
+            onToggle = { expanded = !expanded },
+            modifier = Modifier.padding(horizontal = Dimens.PaddingItem),
+            space = 0.dp,
+            title = {
+                Column(modifier = Modifier.padding(horizontal = Dimens.PaddingItem, vertical = Dimens.PaddingPage)) {
+                    Text(
+                        text = service.name,
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = service.uuid,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
-            }
-        },
-    )
+            },
+            content = {
+                Column(Modifier.padding(horizontal = Dimens.PaddingItem + Dimens.PaddingItem, vertical = Dimens.PaddingPage)) {
+                    service.characteristics.forEach { characteristic ->
+                        CharacteristicRow(characteristic)
+                    }
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -282,15 +260,19 @@ private fun CharacteristicRow(ch: BLECharacteristic) {
             .fillMaxWidth()
             .padding(vertical = Dimens.PaddingItemHalf),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start // 从左排列，无多余间距
     ) {
+        // 左侧 Text：占用剩余空间但“不强制填满”，即宽度 = min(内容宽度, 剩余宽度)
         Text(
             text = ch.uuid.asBleUuid2ShortIfCan(),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.width(48.dp),
+            modifier = Modifier.weight(1f, fill = false) // 关键！
         )
+
+        // 右侧 Column：宽度由内容决定，始终紧挨着 Text 的右侧
         Column(
-            modifier = Modifier.padding(start = Dimens.PaddingItem),
+            modifier = Modifier.padding(start = Dimens.PaddingItem)
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 ch.properties.forEach { prop -> PropertyChip(prop) }
@@ -301,8 +283,8 @@ private fun CharacteristicRow(ch: BLECharacteristic) {
                     text = value,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = Int.MAX_VALUE,      // 允许换行（如果你希望它不换行，可保持 1）
+                    overflow = TextOverflow.Ellipsis // 或 Visible，根据需求
                 )
             }
         }
@@ -312,10 +294,10 @@ private fun CharacteristicRow(ch: BLECharacteristic) {
 @Composable
 private fun PropertyChip(property: String) {
     val color = when (property) {
-        "Read" -> MaterialTheme.colorScheme.tertiary
-        "Write" -> MaterialTheme.colorScheme.primary
-        "Notify" -> MaterialTheme.colorScheme.secondary
-        "Indicate" -> MaterialTheme.colorScheme.error
+        "READ" -> MaterialTheme.colorScheme.tertiary
+        "WRITE", "WRITE_NO_RESPONSE" -> MaterialTheme.colorScheme.primary
+        "NOTIFY" -> MaterialTheme.colorScheme.secondary
+        "INDICATE" -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.outline
     }
     Surface(
@@ -328,86 +310,5 @@ private fun PropertyChip(property: String) {
             style = MaterialTheme.typography.labelSmall,
             color = color,
         )
-    }
-}
-
-@Composable
-private fun TestProtocolSection(
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    protocols: List<BLECommonProtocol>,
-) {
-    AccordionLabelItem(
-        expanded = expanded,
-        onToggle = onToggle,
-        title = {
-            Row(
-                modifier = Modifier.paddingPage(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    Icons.Default.Star,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.tertiary,
-                )
-                Spacer(Modifier.width(Dimens.PaddingItem))
-                Text(
-                    "测试协议 (${protocols.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-        },
-        content = {
-            Column {
-                protocols.forEach { protocol -> TestProtocolRow(protocol) }
-                Spacer(Modifier.padding(vertical = Dimens.PaddingItem / 2))
-
-                AnimatedVisibility(visible = protocols.isEmpty()) {
-                    Text(
-                        text = "暂无已注册的测试协议",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.paddingPage(),
-                    )
-                }
-            }
-        },
-    )
-}
-
-@Composable
-private fun TestProtocolRow(protocol: BLECommonProtocol) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.PaddingPage, vertical = Dimens.PaddingItem / 2),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimens.PaddingPage),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(protocol.name, style = MaterialTheme.typography.labelLarge)
-                Text(
-                    protocol.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f),
-            ) {
-                Text(
-                    protocol.status,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.tertiary,
-                )
-            }
-        }
     }
 }

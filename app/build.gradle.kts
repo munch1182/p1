@@ -40,6 +40,7 @@ dependencies {
 
     implementation(libs.compose.destinations)
     ksp(libs.compose.destinations.ksp)
+    ksp(libs.kotlin.metadata.jvm)
 
     implementation(libs.crashreport)
 

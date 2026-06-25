@@ -4,7 +4,7 @@ import java.io.File
 import java.util.Properties
 
 object AppConfig {
-    const val COMPILE_SDK = 36
+    const val COMPILE_SDK = 37
     const val MIN_SDK = 26
 
     fun versionCode() = getGitVersionCode()
