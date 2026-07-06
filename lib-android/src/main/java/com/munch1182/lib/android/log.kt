@@ -1,36 +1,63 @@
 ﻿package com.munch1182.lib.android
 
 import android.os.Build
-import com.munch1182.lib.android.Log.addLogger
 import com.munch1182.lib.common.LogLevel
 import com.munch1182.lib.common.Logger
 import com.munch1182.lib.common.TaggedLogger
 import com.tencent.mars.xlog.Xlog
 import java.io.Closeable
-import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * 日志记录器
- *
- * 使用时需要先调用[addLogger], 传入的参数才是实际执行的对象
- * 为简化调用，此方法不提供移除或关闭[Logger]的方法，如有需要，请使用自定义实现。
+ * 日志记录器门面
  */
 object Log : Logger {
-    private val loggers = CopyOnWriteArrayList<Logger>()
+    private var delegate: Logger = NoOpLogger
 
     /**
-     * 添加日志记录器
+     * 设置全局日志委托
      */
-    fun addLogger(logger: Logger): Log {
-        loggers.add(logger)
+    fun setLogger(logger: Logger) {
+        delegate = logger
+    }
+
+    override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) {
+        delegate.log(level, tag, message, throwable)
+    }
+}
+
+private object NoOpLogger : Logger {
+    override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) = Unit
+}
+
+/**
+ * 居合日志实现
+ */
+class CompositeLogger : Logger {
+    @Volatile
+    private var loggers: Array<Logger> = emptyArray()
+
+    private val writeLock = Any()  // 仅用于写操作
+
+    /**
+     * 添加日志记录器（仅在初始化时调用，极低频）
+     */
+    fun addLogger(logger: Logger): CompositeLogger {
+        synchronized(writeLock) { // 复制原数组并追加新元素，形成新快照
+            loggers += logger
+        }
         return this
     }
 
     /**
-     * 输出日志
+     * 日志输出路径——无锁、零分配
      */
     override fun log(level: LogLevel, tag: String, message: String, throwable: Throwable?) {
-        loggers.forEach { it.log(level, tag, message, throwable) }
+        // 获取当前快照引用（@Volatile 保证可见性）
+        val snapshot = loggers
+        // for-in 数组在 Kotlin/Native 和 JVM 上均编译为基于索引的循环，无迭代器创建
+        for (logger in snapshot) {
+            logger.log(level, tag, message, throwable)
+        }
     }
 }
 
@@ -39,7 +66,7 @@ object Log : Logger {
  *
  * 因为实际执行的还是Log, 其流程不会更改
  */
-fun Any.logger(tag: String = this::class.java.simpleName ?: "Unknown") = TaggedLogger(Log, tag)
+fun Any.logger(tag: String = this::class.java.simpleName ?: "Unknown"): Logger = TaggedLogger(Log, tag)
 
 /**
  * 默认初始化日志：
@@ -47,11 +74,12 @@ fun Any.logger(tag: String = this::class.java.simpleName ?: "Unknown") = TaggedL
  *
  * 只能在[android.app.Application.onCreate]及其之后调用
  */
-fun Log.initDefault() {
+fun initDefaultLogger() {
     System.loadLibrary("c++_shared")
     System.loadLibrary("marsxlog")
+    val compositeLogger = CompositeLogger()
     if (AppHelper.isDebug) {
-        addLogger(
+        compositeLogger.addLogger(
             ConsoleLogger(
                 AppHelper.isDebug, listOf(
                     Logger::class.java.name,
@@ -61,11 +89,12 @@ fun Log.initDefault() {
             )
         )
     }
-    addLogger(
+    compositeLogger.addLogger(
         FileLogger(
             newFile("logs").absolutePath, newCache("logs").absolutePath
         )
     )
+    Log.setLogger(compositeLogger)
 }
 
 /**

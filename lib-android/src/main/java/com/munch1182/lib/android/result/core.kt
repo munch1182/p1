@@ -34,7 +34,7 @@ internal class ResultRequestFragment : Fragment() {
             @Suppress("UNCHECKED_CAST") // 因为是通过id一一对应的, 所以可以直接转换
             vm.put(
                 requestId, RequestParams(
-                    contract as ActivityResultContract<Any, Any>, input as Any, onResult as (Any) -> Unit
+                    contract as ActivityResultContract<Any, Any>, input as Any, onResult as (Any?) -> Unit //也因为是一一对应的, 所以可以此次为可空的但0可以直接使用泛型
                 )
             )
 
@@ -100,7 +100,7 @@ internal class ResultRequestVM : ViewModel() {
 }
 
 internal data class RequestParams(
-    val contract: ActivityResultContract<Any, Any>, val input: Any, val onResult: (Any) -> Unit
+    val contract: ActivityResultContract<Any, Any>, val input: Any, val onResult: (Any?) -> Unit
 )
 
 /**
