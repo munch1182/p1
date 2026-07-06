@@ -1,4 +1,4 @@
-﻿package com.munch1182.p1
+package com.munch1182.p1
 
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -23,6 +23,7 @@ import com.ramcosta.composedestinations.annotation.ExternalNavGraph
 import com.ramcosta.composedestinations.annotation.NavHostGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.bluetooth.navgraphs.FeatureBluetoothNavGraph
+import com.ramcosta.composedestinations.generated.audio.navgraphs.FeatureAudioNavGraph
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -50,6 +51,7 @@ class MainActivity : BaseActivity() {
 @NavHostGraph
 annotation class AppGraph {
     @ExternalNavGraph<FeatureBluetoothNavGraph>
+    @ExternalNavGraph<FeatureAudioNavGraph>
     companion object Includes
 }
 

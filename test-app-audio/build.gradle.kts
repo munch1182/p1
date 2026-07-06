@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.munch1182.test.bluetooth"
+    namespace = "com.munch1182.test.audio"
     buildFeatures { compose = true }
 }
 
 testApp {
-    feature = "bluetooth"
-    label = "Test BLE"
+    feature = "audio"
+    label = "Test Audio"
 }
 
 renameApk {

@@ -1,5 +1,6 @@
 pluginManagement {
     includeBuild("build-logic")
+    includeBuild("test-app-plugin")
     repositories {
         maven { url = uri("https://mirrors.tencent.com/nexus/repository/maven-public/") }
         google {
@@ -39,3 +40,5 @@ include(":core-ui")
 include(":core-base")
 include(":feature-bluetooth")
 include(":test-app-bluetooth")
+include(":feature-audio")
+include(":test-app-audio")
