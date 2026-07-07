@@ -1,10 +1,21 @@
 ﻿package com.munch1182.lib.android
 
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.location.LocationManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.net.toUri
+
+/**
+ * 跳转至指定uri
+ */
+fun navigate2DeepLink(uri: String, ctx: Context = AppHelper) {
+    ctx.startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()).apply {
+        if (ctx !is Activity) newTask
+    })
+}
 
 /**
  * [Intent]附加带包名的uri, 以在有些intent中调整至本app相关的页面;

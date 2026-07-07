@@ -2,9 +2,9 @@
 
 import android.os.Bundle
 import android.view.WindowManager
-import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.FragmentActivity
 
-open class BaseActivity : AppCompatActivity() {
+open class BaseActivity : FragmentActivity() {
 
     private val screenName get() = this.javaClass.simpleName
 

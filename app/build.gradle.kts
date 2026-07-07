@@ -20,6 +20,7 @@ dependencies {
 
     implementation(projects.featureBluetooth)
     implementation(projects.featureAudio)
+    implementation(projects.featureBrowser)
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)

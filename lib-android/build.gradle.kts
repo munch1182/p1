@@ -10,6 +10,8 @@ dependencies {
 
     implementation(projects.libCommon)
 
+    implementation(libs.kotlinx.coroutines.core)
+
     implementation(libs.androidx.startup)
     implementation(projects.libXlog)
     implementation(libs.androidx.datastore)
