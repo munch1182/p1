@@ -1,36 +1,26 @@
 /**
- * 获取基于语义化标签（Tag）和提交偏移（Offset）的 Android Version Code。
+ * 获取基于 Git 提交历史计数的 Android Version Code。
  *
  * 计算逻辑：
- * 1. 提取标签中的数字部分（支持 "v1.2.3"、"1.2.3" 等格式）。
- * 2. 采用权重累加：Major * 1,000,000 + Minor * 1,000 + Patch。
- * 3. 加上自该标签起的提交次数（Offset）。
+ * - 使用 `git rev-list --count HEAD` 获取当前分支自仓库初始提交以来的总提交数。
+ * - 只要主分支（如 main/release）历史保持线性增长（不进行 force push 或 reset），
+ *   该值严格单调递增，完全满足 Google Play 对 versionCode 的要求。
  *
- * 理论极限与风险说明：
- * - 字段溢出风险：本算法假设 Minor 和 Patch 均不超过 999。若 Minor 为 1000，则会向 Major 进位（如 1.1000.0 变成 2.000.0）。
- * - Offset 挤压风险：若两次 Tag 之间的提交数超过 1000，则会向 Patch 进位。
- * - 整型溢出风险：Android versionCode 为 32 位正整数，最大值为 2,147,483,647。
- *   按本算法，Major 最大支持 2147（此时 Minor/Patch/Offset 必须为 0），超过此值将导致构建失败。
+ * 优点：
+ * - 无需依赖 Git Tag，从根本上避免了解析错误和版本回退风险。
+ * - 天然单调递增，无溢出担忧（21 亿上限在实际项目中几乎不可能达到）。
+ * - 实现极简，健壮可靠。
  *
- * @return 转换后的整型版本代码。
+ * 注意事项：
+ * - 如果在开发分支上执行了破坏性历史改写（git reset/rebase），仅会影响该分支上的
+ *   测试版构建，正式发布分支不受影响，因此对正式渠道完全安全。
+ *
+ * @return 基于提交计数的整型版本代码。
  */
 fun getGitVersionCode(): Int {
-    val tagName = getRawTagName()
-
-    // 使用正则提取所有数字部分，例如 "v1.22.5" -> ["1", "22", "5"]
-    val digits = Regex("\\d+").findAll(tagName).map { it.value.toInt() }.toList()
-
-    val major = digits.getOrElse(0) { 0 }
-    val minor = digits.getOrElse(1) { 0 }
-    val patch = digits.getOrElse(2) { 0 }
-
-    // 计算标签基础权重（每位预留 1000 个位置）
-    val base = (major * 1_000_000) + (minor * 1_000) + patch
-
-    // 获取自该标签以来的提交次数（即偏移量）
-    val offset = runCommand("git rev-list --count $tagName..HEAD").toIntOrNull() ?: 0
-
-    return base + offset
+    val count = runCommand("git rev-list --count HEAD").toIntOrNull()
+        ?: throw IllegalStateException("Unable to retrieve git commit count. Please check the repository.")
+    return count
 }
 
 /**

@@ -66,7 +66,7 @@ class CompositeLogger : Logger {
  *
  * 因为实际执行的还是Log, 其流程不会更改
  */
-fun Any.logger(tag: String = this::class.java.simpleName ?: "Unknown"): Logger = TaggedLogger(Log, tag)
+fun Any.logger(tag: String = this::class.java.simpleName ?: "Unknown") = TaggedLogger(Log, tag)
 
 /**
  * 默认初始化日志：

@@ -222,14 +222,14 @@ function AddToSettings($ModuleName) {
     $sf = Join-Path $RootDir "settings.gradle.kts"
     if (-not (Test-Path $sf)) { return }
 
-    $raw = Get-Content $sf -Raw
+    $raw = Get-Content $sf -Raw -Encoding UTF8
     $inc = 'include(":' + $ModuleName + '")'
     if ($raw.Contains($inc)) {
         Write-Host "  (already in settings.gradle.kts)" -ForegroundColor Gray
         return
     }
 
-    $lines = Get-Content $sf
+    $lines = Get-Content $sf -Encoding UTF8
     $last = -1
     for ($i = $lines.Count - 1; $i -ge 0; $i--) {
         if ($lines[$i] -match '^include\(') { $last = $i; break }
@@ -254,9 +254,9 @@ function AddToAppModule($Camel, $Name) {
     $buildFile = Join-Path $RootDir "app\build.gradle.kts"
     if (Test-Path $buildFile) {
         $depLine = "    implementation(projects.feature$Camel)"
-        $raw = Get-Content $buildFile -Raw
+        $raw = Get-Content $buildFile -Raw -Encoding UTF8
         if (-not $raw.Contains($depLine)) {
-            $lines = Get-Content $buildFile
+            $lines = Get-Content $buildFile -Encoding UTF8
             $lastFeatureIdx = -1
             for ($i = $lines.Count - 1; $i -ge 0; $i--) {
                 if ($lines[$i] -match 'implementation\(projects\.feature') { $lastFeatureIdx = $i; break }
@@ -281,9 +281,9 @@ function AddToAppModule($Camel, $Name) {
         $importLine = "import com.ramcosta.composedestinations.generated.$Name.navgraphs.Feature${Camel}NavGraph"
         $navGraphLine = "    @ExternalNavGraph<Feature${Camel}NavGraph>"
 
-        $raw = Get-Content $mainActivityFile -Raw
+        $raw = Get-Content $mainActivityFile -Raw -Encoding UTF8
         if (-not $raw.Contains($importLine)) {
-            $lines = Get-Content $mainActivityFile
+            $lines = Get-Content $mainActivityFile -Encoding UTF8
 
             $lastImportIdx = -1
             for ($i = $lines.Count - 1; $i -ge 0; $i--) {
