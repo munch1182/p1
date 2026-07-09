@@ -34,17 +34,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.munch1182.core.ui.PrimaryButton
+import com.munch1182.core.ui.ScrollPage
 import com.munch1182.core.ui.SplitH
 import com.munch1182.core.ui.SplitW
 import com.munch1182.core.ui.currAsFragmentActivityOrThrow
 import com.munch1182.core.ui.dialog.DialogFactory
 import com.munch1182.core.ui.theme.Dimens
 import com.munch1182.core.ui.theme.paddingItem
-import com.munch1182.core.ui.theme.paddingPage
 import com.munch1182.lib.android.result.request
 import com.munch1182.lib.common.launchIO
 
@@ -52,16 +53,21 @@ import com.munch1182.lib.common.launchIO
 fun ConvertScreen(vm: ConvertViewModel = hiltViewModel()) {
     val state by vm.uiState.collectAsStateWithLifecycle()
 
-    Column(Modifier.paddingPage()) {
+    ScrollPage {
         UploadSection { vm.selectFile(it) }
         state.error?.let { error ->
             SplitH()
             Text(error.str, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
         SplitH()
-        ConfigSection(state.config, state.currentFormatState, vm::selectFormat, vm::updateParam)
+        ConfigSection(
+            toolConfig = state.toolConfig,
+            formatState = state.currentFormatState,
+            onFormatSelected = vm::selectFormat,
+            onParamChange = vm::updateParam
+        )
         SplitH()
-        CommandView(state.currentFormatState?.cmd ?: "")
+        CommandView(state.currentFormatState?.fullCmd ?: "")
         SplitH()
         ConvertButton(enabled = state.currentFormatState != null && state.currFile != null, onClick = { })
     }
@@ -77,7 +83,8 @@ private fun CommandView(cmd: String) {
     Card(
         Modifier
             .fillMaxWidth()
-            .defaultMinSize(minHeight = 56.dp), colors = CardDefaults.cardColors(containerColor = Color.Black)
+            .defaultMinSize(minHeight = 56.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Black)
     ) {
         Column(Modifier.paddingItem()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -92,13 +99,17 @@ private fun CommandView(cmd: String) {
 
 @Composable
 private fun ConfigSection(
-    config: ConvertConfig?, formatState: FormatState?, onFormatSelected: (ConvertFormat) -> Unit, onParamChange: (String, String) -> Unit
+    toolConfig: ToolConfig?,
+    formatState: FormatState?,
+    onFormatSelected: (ConvertFormat) -> Unit,
+    onParamChange: (String, Option) -> Unit
 ) {
     var isShow by remember { mutableStateOf(false) }
     Column {
         Text("输出配置")
         SplitH()
 
+        // 格式选择卡片
         Card(
             Modifier
                 .fillMaxWidth()
@@ -107,36 +118,44 @@ private fun ConfigSection(
             Row(
                 Modifier
                     .fillMaxSize()
-                    .clickable(config?.formats?.isEmpty() != true) {
-                        val items = config?.formats?.map { it.name } ?: listOf()
-                        showSelectDialog(items) {
-                            onFormatSelected(config?.formats?.get(it) ?: return@showSelectDialog)
+                    .clickable {
+                        if (toolConfig == null || toolConfig.formats.isEmpty()) return@clickable
+                        isShow = !isShow
+                        val items = toolConfig.formats.map { it.name }
+                        showSelectDialog(items) { index ->
+                            isShow = !isShow
+                            onFormatSelected(toolConfig.formats[index])
                         }
                     }
-                    .padding(horizontal = Dimens.PaddingPage), verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = Dimens.PaddingPage),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (formatState?.format?.name != null) Icon(Icons.Default.Audiotrack, null, Modifier.size(24.dp))
+                Icon(Icons.Default.Audiotrack, null, Modifier.size(24.dp))
                 SplitW()
-                Text(formatState?.format?.name ?: "未选择", style = MaterialTheme.typography.titleMedium)
+                Text(formatState?.format?.name ?: "未选择", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
-                if ((config?.formats?.size ?: 0) > 1) {
+                if ((toolConfig?.formats?.size ?: 0) > 1) {
                     Icon(
-                        if (isShow) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, null, Modifier.size(24.dp)
+                        if (isShow) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        null,
+                        Modifier.size(24.dp)
                     )
                 }
             }
         }
 
+        // 参数卡片
         val params = formatState?.params
         if (!params.isNullOrEmpty()) {
             SplitH()
             Card(Modifier.fillMaxWidth()) {
                 params.forEach { (key, value) ->
                     ParamItem(
-                        key = key, //
-                        value = value, //
-                        options = config?.params?.get(key) ?: emptyList(), //
-                        onValueSelected = { newValue -> onParamChange(key, newValue) })
+                        key = key,
+                        opt = value,
+                        options = toolConfig?.params?.get(key) ?: emptyList(),
+                        onValueSelected = { newValue -> onParamChange(key, newValue) }
+                    )
                 }
             }
         }
@@ -145,7 +164,10 @@ private fun ConfigSection(
 
 @Composable
 private fun ParamItem(
-    key: String, value: String, options: List<String>, onValueSelected: (String) -> Unit
+    key: String,
+    opt: Option,
+    options: List<Option>,
+    onValueSelected: (Option) -> Unit
 ) {
     var isShow by remember { mutableStateOf(false) }
     Row(
@@ -154,9 +176,9 @@ private fun ParamItem(
             .defaultMinSize(minHeight = 48.dp)
             .clickable(enabled = options.size > 1) {
                 isShow = !isShow
-                showSelectDialog(options) {
+                showSelectDialog(options.map { it.name }) { index ->
                     isShow = !isShow
-                    onValueSelected(options[it])
+                    onValueSelected(options[index])
                 }
             }
             .padding(horizontal = Dimens.PaddingPage),
@@ -164,16 +186,18 @@ private fun ParamItem(
     ) {
         Text(key, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.weight(1f))
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(opt.name, style = MaterialTheme.typography.bodyMedium)
         if (options.size > 1) {
             Icon(
-                if (isShow) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, null, Modifier.size(24.dp)
+                if (isShow) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                null,
+                Modifier.size(24.dp)
             )
         }
     }
 }
 
-fun showSelectDialog(options: List<String>, function: (Int) -> Unit) {
+private fun showSelectDialog(options: List<String>, onSelect: (Int) -> Unit) {
     DialogFactory.newBottom(Unit) { control ->
         Column(Modifier.padding(vertical = Dimens.PaddingPage)) {
             options.forEachIndexed { idx, str ->
@@ -182,13 +206,13 @@ fun showSelectDialog(options: List<String>, function: (Int) -> Unit) {
                         .fillMaxWidth()
                         .height(48.dp)
                         .clickable {
-                            function(idx)
+                            onSelect(idx)
                             control.dismiss()
                         }
                         .paddingItem(),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(str)
+                    Text(str, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -202,15 +226,20 @@ private fun UploadSection(onSelect: (Uri) -> Unit) {
         Modifier
             .fillMaxWidth()
             .height(300.dp)
-            .clickable { scope.launchIO { selectFile(onSelect) } }) {
+            .clickable { scope.launchIO { selectFile(onSelect) } }
+    ) {
         Column(
-            modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(Icons.Filled.UploadFile, null, Modifier.size(80.dp))
             SplitH()
-            Text("点击选择音视频文件")
+            Text("点击选择音视频文件", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                "或者将文件分享到此应用", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                "或者将文件分享到此应用",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }

@@ -110,6 +110,7 @@ object NetworkMonitor {
             caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> NetworkType.ETHERNET
             caps.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> NetworkType.BLUETOOTH
             caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> NetworkType.VPN
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_USB) -> NetworkType.USB
             else -> NetworkType.OTHER
         }
 
@@ -129,5 +130,5 @@ data class NetworkStatus(
 val NetworkStatus.isUseWifi get() = type == NetworkType.WIFI
 
 enum class NetworkType {
-    NONE, WIFI, CELLULAR, ETHERNET, BLUETOOTH, VPN, OTHER
+    NONE, WIFI, CELLULAR, ETHERNET, BLUETOOTH, VPN, OTHER, USB
 }

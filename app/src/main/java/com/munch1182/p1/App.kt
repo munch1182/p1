@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.munch1182.core.base.CoreInit
 import com.munch1182.lib.android.AppHelper
+import com.munch1182.lib.android.CompositeLogger
 import com.munch1182.lib.android.ConsoleLogger
 import com.munch1182.lib.android.Log
 import com.munch1182.lib.android.isDebug
@@ -27,8 +28,8 @@ class App : Application() {
         appLauncherTimer = Timer(
             TAG_APP_LAUNCHER, ConsoleLogger( // 因为先于Log的初始化
                 isDebug, listOf(
-                    Logger::class.java.name, Log::class.java.name
-                )
+                    Logger::class, Log::class, CompositeLogger::class
+                ).map { it.java.name }
             ), !isDebug
         )
         appLauncherTimer?.start()

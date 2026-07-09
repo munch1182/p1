@@ -12,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.munch1182.core.ui.AccordionLabelItem
@@ -40,7 +39,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 @Destination<AppGraph>
 @Composable
 fun SettingScreen() {
-    ScrollPage(applyPadding = false) {
+    ScrollPage {
         ThemeSetting()
         SplitH()
         LangSetting()
@@ -68,7 +67,8 @@ private fun LangSetting(langVM: LanguageVM = hiltViewModel()) {
     var isSelect by remember { mutableStateOf(false) }
 
     AccordionLabelItem(
-        isSelect, modifier = Modifier.padding(end = Dimens.PaddingPage),
+        isSelect,
+        modifier = Modifier.padding(end = Dimens.PaddingPage),
         onToggle = { isSelect = !isSelect },
         title = {
             Row(modifier = Modifier.paddingPage()) {
@@ -78,7 +78,7 @@ private fun LangSetting(langVM: LanguageVM = hiltViewModel()) {
             }
         },
         content = {
-            Column(modifier = Modifier.paddingPage()) {
+            Column {
                 langs.forEachIndexed { idx, it ->
                     Checkbox(it, it == currLangStr) { select ->
                         if (select) {
@@ -110,11 +110,7 @@ private fun ThemeSetting(vm: ThemeVM = hiltViewModel()) {
             Text(text = "(${curr.second.mode2Str()})")
         }
     }, content = {
-        Column(
-            Modifier
-                .paddingPage()
-                .padding(top = 0.dp)
-        ) {
+        Column {
             darkMode.forEach {
                 Checkbox(it.mode2Str(), it == curr.second) { select ->
                     if (select) vm.switch(mode = it)

@@ -82,10 +82,11 @@ fun initDefaultLogger() {
         compositeLogger.addLogger(
             ConsoleLogger(
                 AppHelper.isDebug, listOf(
-                    Logger::class.java.name,
-                    Log::class.java.name,
-                    TaggedLogger::class.java.name
-                )
+                    Logger::class,
+                    Log::class,
+                    TaggedLogger::class,
+                    CompositeLogger::class
+                ).map { it.java.name }
             )
         )
     }

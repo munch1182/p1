@@ -17,14 +17,14 @@ import com.munch1182.core.ui.theme.paddingPage
 @Composable
 fun ScrollPage(
     modifier: Modifier = Modifier,
-    applyPadding: Boolean = true,
     applyVerticalSpace: Boolean = true,
     content: @Composable () -> Unit
 ) {
     Column(
-        modifier
-            .verticalScroll(rememberScrollState())
-            .then(if (applyPadding) Modifier.paddingPage() else Modifier),
+        Modifier
+            .paddingPage()
+            .then(modifier)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = if (applyVerticalSpace) Arrangement.spacedBy(Dimens.PaddingItem) else Arrangement.Top
     ) { content() }
 }

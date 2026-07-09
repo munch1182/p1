@@ -1,7 +1,8 @@
 package com.munch1182.feature.audio
 
-import com.munch1182.feature.audio.convert.ConvertConfig
 import com.munch1182.feature.audio.convert.ConvertFormat
+import com.munch1182.feature.audio.convert.Option
+import com.munch1182.feature.audio.convert.ToolConfig
 import kotlinx.serialization.json.Json
 import org.junit.Test
 
@@ -17,15 +18,16 @@ class ConfigDataUnitTest {
         println(Json.encodeToString(cfg))
     }
 
-    private fun createCfg() = ConvertConfig(
-        params = mapOf(
-            "encoding" to listOf("16000", "32000", "64000"),
-            "channel" to listOf("MONO", "STEREO")
-        ),
+    private fun createCfg() = ToolConfig(
+        cmd = "ffmpeg -y -i {{from}} {{format}} {{to}}",
+        params = buildMap {
+            put("encoding", listOf(Option("16 kHz", "16000")))
+            put("channel", listOf(Option("MONO", "0"), Option("STEREO", "1")))
+        },
         formats = listOf(
-            ConvertFormat(id = "1", name = "pcm", params = listOf("encoding", "channel"), cmd = "-e pcm -c {{channel}}"),
-            ConvertFormat(id = "2", name = "mp3", params = listOf("encoding", "channel"), cmd = "-e mp3 -c {{channel}}"),
-            ConvertFormat(id = "3", name = "wav", params = listOf("encoding", "channel"), cmd = "-e wav"),
+            ConvertFormat("1", "pcm", listOf("encoding", "channel"), "-e pcm -c {{channel}}"),
+            ConvertFormat("2", "mp3", listOf("encoding", "channel"), "-e mp3 -c {{channel}}"),
+            ConvertFormat("3", "wav", listOf("encoding", "channel"), "-e wav"),
         )
     )
 }

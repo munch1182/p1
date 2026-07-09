@@ -4,7 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.munch1182.lib.android.copy2File
-import com.munch1182.lib.android.newCache
+import com.munch1182.lib.android.newFile
 import com.munch1182.lib.common.launchIO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -18,102 +18,152 @@ import java.io.IOException
 class ConvertViewModel @Inject constructor() : ViewModel() {
     private val _uiState = MutableStateFlow(ConvertUiState())
     internal val uiState = _uiState.asStateFlow()
-    private val dir = newCache("audio")
+    private val dir = newFile("audio")
 
     init {
         viewModelScope.launchIO {
-            val defaultConfigFile = File(dir, "default-audio-convert.json")
+            val defaultConfigFile = File(dir, "config-audio-convert.json")
             if (defaultConfigFile.exists()) loadConfig(defaultConfigFile)
         }
     }
 
     /**
-     * 从文件中加载音频相关配置
+     * 从文件中加载音频转换配置
      */
     fun loadConfig(file: File) {
         viewModelScope.launchIO {
             try {
-                val config = parse(file.readText())
-                _uiState.value = _uiState.value.copy(config = config)
-                config.formats.firstOrNull()?.let { selectFormat(it) }
+                val toolConfig = parse(file.readText()) // 返回 ToolConfig
+                _uiState.value = _uiState.value.copy(toolConfig = toolConfig)
+                // 默认选择第一个格式
+                toolConfig.formats.firstOrNull()?.let { selectFormat(it) }
             } catch (e: IOException) {
                 _uiState.value = _uiState.value.copy(error = Error.File(e.message ?: ""))
             } catch (e: SerializationException) {
                 _uiState.value = _uiState.value.copy(error = Error.Serialization(e.message ?: ""))
+            } catch (e: IllegalStateException) {
+                _uiState.value = _uiState.value.copy(error = Error.CommandInvalid(e.message ?: ""))
             }
         }
     }
 
+    /**
+     * 选择输出格式
+     */
     fun selectFormat(format: ConvertFormat) {
-        val cfg = _uiState.value.config ?: return
-        // 取每个参数的默认值（第一个选项）
-        val paramValues = format.params.associateWith { key ->
-            cfg.params[key]?.firstOrNull() ?: "" // 默认空字符串，也可抛异常
-        }
-
-        // 生成命令
-        val cmd = try {
-            format.cmd.replaceTemplate(paramValues)
+        val tool = _uiState.value.toolConfig ?: return
+        // 获取每个参数默认值（第一个选项）
+        val paramValues = try {
+            format.params.associateWith { key ->
+                tool.params[key]?.firstOrNull()
+                    ?: throw IllegalStateException("Missing default value for param: $key")
+            }
         } catch (e: IllegalStateException) {
             _uiState.value = _uiState.value.copy(error = Error.CommandInvalid(e.message ?: ""))
             return
         }
+
+        // 替换格式模板中的 {{key}}
+        val formatCmd = try {
+            format.cmd.replaceTemplate(paramValues)
+        } catch (e: IllegalArgumentException) {
+            _uiState.value = _uiState.value.copy(error = Error.CommandInvalid(e.message ?: ""))
+            return
+        }
+
+        // 构建完整命令
+        val fullCmd = tool.buildCommand(format, formatCmd, _uiState.value.currFile)
+
         _uiState.value = _uiState.value.copy(
-            currentFormatState = FormatState(format = format, params = paramValues, cmd = cmd),
+            currentFormatState = FormatState(
+                format = format,
+                params = paramValues,
+                formatCmd = formatCmd,
+                fullCmd = fullCmd
+            ),
             error = null
         )
     }
 
+    /**
+     * 选择输入文件
+     */
     fun selectFile(uri: Uri) {
         viewModelScope.launchIO {
             val file = uri.copy2File(dir)
             if (file != null) {
                 _uiState.value = _uiState.value.copy(currFile = file)
+                // 如果有选中的格式，刷新完整命令（因为文件路径变化）
+                val state = _uiState.value.currentFormatState
+                if (state != null) {
+                    val tool = _uiState.value.toolConfig ?: return@launchIO
+                    val newFull = tool.buildCommand(state.format, state.formatCmd, file)
+                    _uiState.value = _uiState.value.copy(
+                        currentFormatState = state.copy(fullCmd = newFull)
+                    )
+                }
             } else {
                 _uiState.value = _uiState.value.copy(error = Error.File("选择的文件读取失败"))
             }
         }
     }
 
-    fun updateParam(key: String, value: String) {
+    /**
+     * 更新某个参数的值
+     */
+    fun updateParam(key: String, value: Option) {
         val currentState = _uiState.value.currentFormatState ?: return
         val newParams = currentState.params.toMutableMap().apply { put(key, value) }
 
-        // 重新生成命令
-        val newCmd = try {
+        // 重新生成格式命令
+        val newFormatCmd = try {
             currentState.format.cmd.replaceTemplate(newParams)
-        } catch (e: IllegalStateException) {
+        } catch (e: IllegalArgumentException) {
             _uiState.value = _uiState.value.copy(error = Error.CommandInvalid(e.message ?: ""))
             return
         }
+
+        // 重新构建完整命令
+        val tool = _uiState.value.toolConfig ?: return
+        val newFull = tool.buildCommand(currentState.format, newFormatCmd, _uiState.value.currFile)
+
         _uiState.value = _uiState.value.copy(
-            currentFormatState = currentState.copy(params = newParams, cmd = newCmd),
+            currentFormatState = currentState.copy(
+                params = newParams,
+                formatCmd = newFormatCmd,
+                fullCmd = newFull
+            ),
             error = null
         )
     }
 }
 
+/**
+ * UI 状态
+ */
 internal data class ConvertUiState(
-    // 文件相关
     val currFile: File? = null,
-    // 配置相关（整体）
-    val config: ConvertConfig? = null,
-    // 当前选中的格式及其参数、命令
+    val toolConfig: ToolConfig? = null,
     val currentFormatState: FormatState? = null,
-    // 错误信息
     val error: Error? = null,
-    // 是否正在加载
     val isLoading: Boolean = false
 )
 
+/**
+ * 当前格式的完整状态（包含参数和命令）
+ */
 internal data class FormatState(
-    val format: ConvertFormat, //
-    val params: Map<String, String>, // 参数名 -> 当前选中值（非空）
-    val cmd: String                  // 最终生成的命令
+    val format: ConvertFormat,
+    val params: Map<String, Option>,   // 参数名 -> 当前选中的 Option
+    val formatCmd: String,             // 已替换 {{key}} 的编码命令
+    val fullCmd: String                // 包含 from/to 的完整命令
 )
 
+/**
+ * 错误类型
+ */
 internal sealed class Error(val str: String) {
     data class File(val err: String) : Error("文件异常: $err")
     data class Serialization(val err: String) : Error("序列化错误: $err")
-    data class CommandInvalid(val err: String) : Error("名字生成错误: $err")
+    data class CommandInvalid(val err: String) : Error("命令生成错误: $err")
 }

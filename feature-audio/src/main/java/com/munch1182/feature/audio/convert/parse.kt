@@ -2,13 +2,37 @@ package com.munch1182.feature.audio.convert
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 /**
- * 注意解析失败会抛出异常
+ * 解析 JSON 字符串为 [ToolConfig]。
+ * 注意：解析失败会抛出异常。
  */
-fun parse(str: String) = Json.decodeFromString<ConvertConfig>(str)
+fun parse(str: String): ToolConfig = Json.decodeFromString(str)
+
+/**
+ * 根据工具配置、格式命令和输入文件构建完整命令。
+ * @param format 当前选中的格式
+ * @param formatCmd 已替换参数后的编码命令（如 "-c:a libmp3lame -ar 16000 ..."）
+ * @param fromFile 源文件（可为空，为空时使用占位符）
+ * @return 完整命令（含 from/to 替换）
+ */
+fun ToolConfig.buildCommand(format: ConvertFormat, formatCmd: String, fromFile: File?): String {
+    val from = fromFile?.absolutePath ?: "*"
+    val to = if (fromFile != null) {
+        val parent = fromFile.parentFile
+        val nameWithoutExt = fromFile.nameWithoutExtension
+        File(parent, "${nameWithoutExt}_converted.${format.id}").absolutePath
+    } else {
+        "*_${format.id}.*"
+    }
+    return cmd
+        .replace("{from}", from)
+        .replace("{to}", to)
+        .replace("{format}", formatCmd)
+}
 
 private val DOUBLE_BRACE_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}")
 
@@ -20,42 +44,58 @@ private val DOUBLE_BRACE_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}")
  * @return 替换后的字符串
  * @throws IllegalArgumentException 当存在未定义的占位符时
  */
-fun String.replaceTemplate(values: Map<String, String?>): String {
-    if (isEmpty()) return this  // 空串无需处理
+fun String.replaceTemplate(values: Map<String, Option>): String {
+    if (isEmpty()) return this
 
     val matcher = DOUBLE_BRACE_PATTERN.matcher(this)
     val result = StringBuffer()
 
     while (matcher.find()) {
-        // 获取占位符内的键名（正则保证至少一个非}字符，因此 group(1) 不会为 null）
         val key = matcher.group(1)
             ?: throw IllegalStateException("Unexpected empty placeholder group")
-        // 从映射中取值，如果为 null 则抛出异常
         val replacement = values[key]
             ?: throw IllegalArgumentException("Missing value for placeholder: {{$key}}")
-        // 安全替换（转义 $ 和 \）
-        matcher.appendReplacement(result, Matcher.quoteReplacement(replacement))
+        matcher.appendReplacement(result, Matcher.quoteReplacement(replacement.value))
     }
     matcher.appendTail(result)
     return result.toString()
 }
 
 /**
- * @param params 参数, 固定参数名及其可选值, 比如: "bitrate": ["16000", "320000"]
- *
+ * 工具配置，对应 JSON 中单个工具的配置。
+ * @param cmd 命令模板，如 "ffmpeg -y {from} {format} {to}"
+ * @param params 参数名 -> 可选值列表
+ * @param formats 可选择的输出格式列表
  */
 @Serializable
-data class ConvertConfig(
-    val params: Map<String, List<String>>, val formats: List<ConvertFormat>
+data class ToolConfig(
+    val cmd: String,
+    val params: Map<String, List<Option>>,
+    val formats: List<ConvertFormat>
 )
 
 /**
- * 格式配置
- *
- * @param params 可选的参数名, 即[ConvertConfig.params]的key
- * @param cmd 命令模版, 使用{param}表示变量, 会从[ConvertConfig.params]中去获取值并替换
+ * 参数选项，用于展示下拉列表。
+ * @param name 显示名称
+ * @param value 实际参数值
+ */
+@Serializable
+data class Option(
+    val name: String,
+    val value: String
+)
+
+/**
+ * 输出格式配置。
+ * @param id 格式标识（也用于生成输出文件扩展名）
+ * @param name 显示名称
+ * @param params 使用的参数名列表（需在 [ToolConfig.params] 中定义）
+ * @param cmd 编码命令模板，使用 {{key}} 占位符引用参数值
  */
 @Serializable
 data class ConvertFormat(
-    val id: String, val name: String, val params: List<String>, val cmd: String
+    val id: String,
+    val name: String,
+    val params: List<String>,
+    val cmd: String
 )
