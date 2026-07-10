@@ -93,6 +93,11 @@ splashscreen = { module = "androidx.core:core-splashscreen", version = "1.2.0" }
 # https://github.com/Kotlin/kotlinx.serialization#android
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.11.0" }
 
+# https://github.com/ktorio/ktor
+# https://ktor.io/docs/welcome.html
+ktor-server-netty = { module = "io.ktor:ktor-server-netty", version = "3.5.1" }
+ktor-server-websockets = { module = "io.ktor:ktor-server-websockets", version = "3.5.1" }
+
 [plugins]
 android-application = { id = "com.android.application", version = "9.1.1" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.4.0" }

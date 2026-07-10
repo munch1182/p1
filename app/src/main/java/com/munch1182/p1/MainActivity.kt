@@ -25,6 +25,7 @@ import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.audio.navgraphs.FeatureAudioNavGraph
 import com.ramcosta.composedestinations.generated.bluetooth.navgraphs.FeatureBluetoothNavGraph
 import com.ramcosta.composedestinations.generated.browser.navgraphs.FeatureBrowserNavGraph
+import com.ramcosta.composedestinations.generated.net.navgraphs.FeatureNetNavGraph
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -54,6 +55,7 @@ annotation class AppGraph {
     @ExternalNavGraph<FeatureBluetoothNavGraph>
     @ExternalNavGraph<FeatureAudioNavGraph>
     @ExternalNavGraph<FeatureBrowserNavGraph>
+    @ExternalNavGraph<FeatureNetNavGraph>
     companion object Includes
 }
 

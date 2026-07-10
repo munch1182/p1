@@ -39,7 +39,11 @@ fun PrimaryButton(
  * @param showProgress 为 true 时显示加载进度条（优先级高于文字）
  */
 data class ButtonStateConfig(
-    val text: String, val containerColor: Color, val contentColor: Color, val showProgress: Boolean = false, val enabled: Boolean = true
+    val text: String, //
+    val containerColor: Color , //
+    val contentColor: Color, //
+    val showProgress: Boolean = false, //
+    val enabled: Boolean = true //
 )
 
 /**

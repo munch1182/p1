@@ -17,8 +17,10 @@ import com.munch1182.lib.android.logger
 import com.munch1182.lib.common.launchIO
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -83,9 +85,13 @@ class BLEConnector(
 
     override fun receiveFlowProvider(): Flow<ByteArray> = _dataReceiveFlow
 
-    // 保护 _gatt 的锁
+    private data class ConnData(
+        val state: BluetoothConnectState = BluetoothConnectState.Disconnected,
+        val gatt: BluetoothGatt? = null
+    )
+
     private val _gattLock = Any()
-    private var _gatt: BluetoothGatt? = null
+    private var _connData = ConnData()
 
     private var connectionJob: Job? = null
 
@@ -109,9 +115,15 @@ class BLEConnector(
             }
             val from = _state.value
             logger.d("onConnectionStateChange: status=$status, $from -> $newStateEnum")
-            _state.value = newStateEnum
+            synchronized(_gattLock) {
+                if (newStateEnum.isDisconnected) {
+                    _connData.gatt?.close()
+                    updateConnData(ConnData())
+                } else {
+                    updateConnData(_connData.copy(state = newStateEnum))
+                }
+            }
             scope.launch { _gattResultsFlow.emit(GattResult.ConnectResult(status, newStateEnum)) }
-            if (newStateEnum.isDisconnected) disconnect()
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
@@ -170,31 +182,35 @@ class BLEConnector(
 
     /**
      * 发起蓝牙连接，非阻塞。
-     * 若当前已连接或正在连接，会先断开旧连接再重新连接。
+     * 若当前已连接或正在连接，会先断开旧连接再重新连接。(因此需要外部判断再调用此方法)
+     *
+     * @param phy 蓝牙连接的 PHY 层，默认为 2M PHY
      */
     fun connect(
-        transport: Int = BluetoothDevice.TRANSPORT_LE, phy: Int = BluetoothDevice.PHY_LE_1M_MASK, handler: Handler? = null
+        transport: Int = BluetoothDevice.TRANSPORT_LE, phy: Int = BluetoothDevice.PHY_LE_2M_MASK, handler: Handler? = null
     ) {
         connectionJob?.cancel()
         connectionJob = scope.launchIO {
-            // 串行化：每次 connect() 取消旧 job，确保只有一个连接流程在执行
             if (_state.value.isConnecting || _state.value.isConnected) {
                 logger.d("connect: already connecting/connected, disconnecting first")
                 synchronized(_gattLock) {
-                    _gatt?.disconnect()
-                    _gatt?.close()
-                    _gatt = null
+                    disconnectImpl()
+                    updateConnData(ConnData())
                 }
-                _state.value = BluetoothConnectState.Disconnected
                 delay(RECONNECT_DELAY_MS)
             }
             logger.d("connect")
-            _state.value = BluetoothConnectState.Connecting
+            synchronized(_gattLock) { updateConnData(_connData.copy(state = BluetoothConnectState.Connecting)) }
             val gatt = dev.connectGatt(AppHelper, false, callback, transport, phy, handler)
-            synchronized(_gattLock) { _gatt = gatt }
-            if (gatt == null) {
-                logger.d("connectGatt failed")
-                _state.value = BluetoothConnectState.Disconnected
+            synchronized(_gattLock) {
+                if (gatt == null) {
+                    updateConnData(ConnData())
+                } else if (_connData.state.isConnecting || _connData.state.isConnected) {
+                    _connData = _connData.copy(gatt = gatt)
+                } else {
+                    gatt.close()
+                    logger.d("connect: state changed(${_connData.state}) during connectGatt, releasing gatt")
+                }
             }
         }
     }
@@ -208,32 +224,40 @@ class BLEConnector(
     /** 断开连接并释放 GATT 资源（同步执行，线程安全） */
     fun disconnect() {
         connectionJob?.cancel()
-        if (_state.value.isDisconnected || _state.value.isDisconnecting) return
         synchronized(_gattLock) {
-            _gatt?.disconnect()
-            _gatt?.close()
-            _gatt = null
+            if (_connData.state.isDisconnected || _connData.state.isDisconnecting) return
+            disconnectImpl()
+            updateConnData(ConnData())
         }
-        _state.value = BluetoothConnectState.Disconnected
+    }
+
+    private fun disconnectImpl() {
+        _connData.gatt?.disconnect()
+        _connData.gatt?.close()
+    }
+
+    private fun updateConnData(newData: ConnData) {
+        _connData = newData
+        _state.value = newData.state
     }
 
     /** 执行服务发现，挂起直到完成或超时，返回结果或 null */
     suspend fun discoverServices(
         timeout: Duration = 15000.milliseconds, filter: (GattResult.DiscoverServices) -> Boolean = { true }
     ) = waitForGattResult(
-        operation = { synchronized(_gattLock) { _gatt?.discoverServices() ?: false } }, name = "discoverServices", timeout = timeout, filter = filter
+        operation = { synchronized(_gattLock) { _connData.gatt?.discoverServices() ?: false } }, name = "discoverServices", timeout = timeout, filter = filter
     )
 
     /** 根据正则表达式查找服务（线程安全） */
     fun findService(pattern: String): BluetoothGattService? {
         val regex = Regex(pattern, RegexOption.IGNORE_CASE)
         return synchronized(_gattLock) {
-            _gatt?.services?.find { regex.containsMatchIn(it.uuid.toString()) }
+            _connData.gatt?.services?.find { regex.containsMatchIn(it.uuid.toString()) }
         }
     }
 
     /** 返回所有服务， 应该在执行[discoverServices]之后才能查询 */
-    fun allServices() = synchronized(_gattLock) { _gatt?.services }
+    fun allServices() = synchronized(_gattLock) { _connData.gatt?.services }
 
     /** 在指定服务中根据正则查找特征 */
     fun findCharacteristic(service: BluetoothGattService, pattern: String): BluetoothGattCharacteristic? {
@@ -260,7 +284,7 @@ class BLEConnector(
     ): String? {
         val service = findService(nameServer) ?: return null
         val characteristic = findCharacteristic(service, nameChar) ?: return null
-        return waitForGattResult<GattResult.ReadName>(operation = { synchronized(_gattLock) { _gatt?.readCharacteristic(characteristic) ?: false } }, name = "readName", timeout = timeout, filter = { true })?.name
+        return waitForGattResult<GattResult.ReadName>(operation = { synchronized(_gattLock) { _connData.gatt?.readCharacteristic(characteristic) ?: false } }, name = "readName", timeout = timeout, filter = { true })?.name
     }
 
     /**
@@ -271,11 +295,12 @@ class BLEConnector(
     suspend fun requestMtu(
         mtu: Int = 512, timeout: Duration = 15000.milliseconds, filter: (GattResult.MtuChanged) -> Boolean = { true }
     ) = waitForGattResult(
-        operation = { synchronized(_gattLock) { _gatt?.requestMtu(mtu) ?: false } }, name = "requestMtu", timeout = timeout, filter = filter
+        operation = { synchronized(_gattLock) { _connData.gatt?.requestMtu(mtu) ?: false } },
+        name = "requestMtu", timeout = timeout, filter = filter
     )
 
     /** 开启或关闭特征的通知 */
-    fun setNotification(characteristic: BluetoothGattCharacteristic, enable: Boolean) = synchronized(_gattLock) { _gatt?.setCharacteristicNotification(characteristic, enable) ?: false }
+    fun setNotification(characteristic: BluetoothGattCharacteristic, enable: Boolean) = synchronized(_gattLock) { _connData.gatt?.setCharacteristicNotification(characteristic, enable) ?: false }
 
     /** 写入描述符，挂起直到写入完成或超时 */
     suspend fun writeDescriptor(
@@ -285,10 +310,11 @@ class BLEConnector(
     ) = waitForGattResult(
         operation = {
             synchronized(_gattLock) {
+                val gatt = _connData.gatt
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    _gatt?.writeDescriptor(descriptor, value) == BluetoothStatusCodes.SUCCESS
+                    gatt?.writeDescriptor(descriptor, value) == BluetoothStatusCodes.SUCCESS
                 } else {
-                    _gatt?.let {
+                    gatt?.let {
                         @Suppress("DEPRECATION")  //
                         descriptor.value = value
                         @Suppress("DEPRECATION") it.writeDescriptor(descriptor)
@@ -303,7 +329,7 @@ class BLEConnector(
         writer: BluetoothGattCharacteristic, data: ByteArray, type: Int = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
     ): Int {
         return synchronized(_gattLock) {
-            val gatt = _gatt ?: return -1
+            val gatt = _connData.gatt ?: return -1
             val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 gatt.writeCharacteristic(writer, data, type)
             } else {
@@ -320,14 +346,21 @@ class BLEConnector(
     /**
      * 内部通用方法：执行 GATT 操作并等待对应的回调结果。
      * 超时则返回 null。
+     *
+     * 先监听回调在执行操作;
      */
     private suspend inline fun <reified T : GattResult> waitForGattResult(
         crossinline operation: () -> Boolean, name: String, timeout: Duration, crossinline filter: (T) -> Boolean
     ): T? = withTimeoutOrNull(timeout) {
+        val deferred = async(start = CoroutineStart.UNDISPATCHED) {
+            _gattResultsFlow.filterIsInstance<T>().filter(filter).first()
+        }
         val success = operation()
         logger.d("$name: operation success=$success")
-        if (!success) return@withTimeoutOrNull null
-        _gattResultsFlow.filterIsInstance<T>().filter(filter).first()
+        if (!success) {
+            deferred.cancel(); return@withTimeoutOrNull null
+        }
+        deferred.await()
     }
 
     /** GATT 操作结果封装 */

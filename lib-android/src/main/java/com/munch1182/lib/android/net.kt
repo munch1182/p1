@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import java.net.InetAddress
+import java.net.NetworkInterface
 
 object NetworkMonitor {
     private val connectivityManager by lazy { AppHelper.getSystemService(ConnectivityManager::class.java) }
@@ -131,4 +133,16 @@ val NetworkStatus.isUseWifi get() = type == NetworkType.WIFI
 
 enum class NetworkType {
     NONE, WIFI, CELLULAR, ETHERNET, BLUETOOTH, VPN, OTHER, USB
+}
+
+fun currWifiIp4Address(): InetAddress? = currNetAddress { it.name.startsWith("wlan") }.firstOrNull { it.toString().contains(".") }
+
+fun currNetAddress(filter: (NetworkInterface) -> Boolean): List<InetAddress> {
+    val interfaces = NetworkInterface.getNetworkInterfaces() ?: return emptyList()
+    while (interfaces.hasMoreElements()) {
+        val interfaceName = interfaces.nextElement()
+        if (!filter(interfaceName)) continue
+        return interfaceName.inetAddresses?.toList() ?: emptyList()
+    }
+    return emptyList()
 }
