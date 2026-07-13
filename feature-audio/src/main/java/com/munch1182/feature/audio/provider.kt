@@ -1,7 +1,7 @@
 package com.munch1182.feature.audio
 
 import androidx.compose.runtime.Composable
-import com.munch1182.feature.audio.convert.ConvertScreen
+import com.munch1182.feature.audio.record.RecordScreen
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.ExternalModuleGraph
 import com.ramcosta.composedestinations.annotation.NavGraph
@@ -13,7 +13,8 @@ annotation class FeatureAudioGraph
 @Destination<FeatureAudioGraph>(start = true, visibility = CodeGenVisibility.INTERNAL)
 @Composable
 internal fun AudioScreen() {
-    ConvertScreen()
+    //ConvertScreen()
+    RecordScreen()
 }
 
 //@Module
